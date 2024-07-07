@@ -23,8 +23,9 @@ namespace MistNet
     public class ConfigLoader
     {
         private static readonly string ConfigFilePath = $"{Application.dataPath}/../auth.yaml";
+        public AuthConfig Config;
 
-        public AuthConfig LoadConfig()
+        public void LoadConfig()
         {
             if (!File.Exists(ConfigFilePath))
             {
@@ -36,8 +37,17 @@ namespace MistNet
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build();
 
-            var config = deserializer.Deserialize<AuthConfig>(yaml);
-            return config;
+            Config = deserializer.Deserialize<AuthConfig>(yaml);
+        }
+
+        public void Save()
+        {
+            var serializer = new SerializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+            var yaml = serializer.Serialize(Config);
+            File.WriteAllText(ConfigFilePath, yaml);
         }
 
         private void CreateConfig()
@@ -45,7 +55,7 @@ namespace MistNet
             var (privateKey, publicKey) = CreateKey();
             var config = new AuthConfig
             {
-                VerificationEnabled = true,
+                VerificationEnabled = false,
                 Keys = new Keys
                 {
                     PrivateKey = privateKey,
