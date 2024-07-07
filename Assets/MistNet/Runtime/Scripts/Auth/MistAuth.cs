@@ -1,3 +1,4 @@
+using System;
 using Chaos.NaCl;
 using UnityEngine;
 
@@ -5,7 +6,7 @@ namespace MistNet
 {
     public class MistAuth : MonoBehaviour
     {
-        private const string AuthMessage = "d2b9c48c07e54f969324a3c75b83b275";
+        private const string AuthMessage = "94a7873a2ca4473d97d030d67ab666b8";
         public static MistAuth I { get; private set; }
 
         public ConfigLoader ConfigLoader = new();
@@ -17,6 +18,9 @@ namespace MistNet
             I = this;
             ConfigLoader.LoadConfig();
             FriendsConfig.LoadConfig();
+            var signature = Sign(ConfigLoader.Config.Keys.PrivateKey);
+            var result = Verify(ConfigLoader.Config.Keys.PublicKey, signature);
+            Debug.Log($"Signature: {result}");
         }
 
         public void AddFriend(string name, string id)
@@ -29,14 +33,22 @@ namespace MistNet
             FriendsConfig.Save();
         }
 
-        public static byte[] SignData(byte[] data, byte[] privateKey)
+        public string Sign(string privateKey)
         {
-            return Ed25519.Sign(data, privateKey);
+            Debug.Log($"[Sign] {privateKey}");
+            var messageBytes = Convert.FromBase64String(AuthMessage);
+            var privateKeyBytes = Convert.FromBase64String(privateKey);
+            var signatureBytes = Ed25519.Sign(messageBytes,privateKeyBytes);
+            return Convert.ToBase64String(signatureBytes);
         }
 
-        public static bool VerifySignature(byte[] data, byte[] signature, byte[] publicKey)
+        public bool Verify(string publicKey, string signature)
         {
-            return Ed25519.Verify(signature, data, publicKey);
+            Debug.Log($"[Verify] {publicKey} {signature}");
+            var messageBytes = Convert.FromBase64String(AuthMessage);
+            var publicKeyBytes = Convert.FromBase64String(publicKey);
+            var signatureBytes = System.Convert.FromBase64String(signature);
+            return Ed25519.Verify(signatureBytes, messageBytes, publicKeyBytes);
         }
     }
 }
