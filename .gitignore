@@ -80,3 +80,5 @@ MistNetLog.log
 .idea/
 MistNet/evaluation.json
 Assets/Samples/
+auth.yaml
+friends.yaml
