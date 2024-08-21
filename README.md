@@ -14,7 +14,7 @@ https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-
 - パーシャルメッシュ型P2Pで接続を行います
 - 中央となるサーバーが存在しません
 - 通信にはWebRTCを使用します
-- 仮想空間の座標に基づいて接続先が自動的に決定されます
+- 仮想空間の座標に基づいて接続先が自動的に決定されます (不安定)
 
 # 導入方法
 UPM Package
@@ -121,10 +121,10 @@ void RPC_○○ () {}
 [SerializeField] MistSyncObject syncObject;
 
 // 自身を含めた全員に送信する方法
-syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
+syncObject.RPCAll(nameof(RPC_○○), args);
 
 // 接続しているPeer全員に送信する方法
-syncObject.RPCAll(nameof(RPC_○○), args);
+syncObject.RPCOther(nameof(RPC_○○), args);
 
 // 送信先のIDを指定して実行する方法
 syncObject.RPC(id, nameof(RPC_○○), args);
