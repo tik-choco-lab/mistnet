@@ -25,6 +25,8 @@ namespace MistNet
         public readonly Action<string> OnConnected;
         public readonly Action<string> OnDisconnected;
 
+        public AudioSource OutputAudioSource { get; set; }
+
         public MistPeer(string id)
         {
             Id = id;
@@ -48,7 +50,7 @@ namespace MistNet
             Connection.OnIceConnectionChange += OnIceConnectionChange;
             Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[Signaling][OnIceGatheringStateChange] {state}");
             Connection.OnNegotiationNeeded += () => MistDebug.Log($"[Signaling][OnNegotiationNeeded] -> {Id}");
-            Connection.OnTrack = e => MistDebug.Log($"[Signaling][OnTrack] -> {Id}");
+            Connection.OnTrack += OnTrack;
             // ----------------------------
             // DataChannels
             SetDataChannel();
@@ -303,6 +305,17 @@ namespace MistNet
         {
             MistDebug.Log($"[Signaling][OnIceCandidate] -> {Id}");
             OnCandidate?.Invoke(new Ice(candidate));
+        }
+
+        private void OnTrack(RTCTrackEvent e)
+        {
+            MistDebug.Log($"[MistPeer][OnTrack] -> {Id}");
+            if (e.Track is not AudioStreamTrack track) return;
+            if (OutputAudioSource == null) return;
+
+            OutputAudioSource.SetTrack(track);
+            OutputAudioSource.loop = true;
+            OutputAudioSource.Play();
         }
 
         private async UniTask Reconnect()
