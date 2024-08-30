@@ -25,7 +25,7 @@ namespace MistNet
         public readonly Action<string> OnConnected;
         public readonly Action<string> OnDisconnected;
 
-        public AudioSource OutputAudioSource { get; set; }
+        private AudioSource _outputAudioSource;
 
         public MistPeer(string id)
         {
@@ -195,6 +195,16 @@ namespace MistNet
             Connection.AddIceCandidate(candidate.Get());
         }
 
+        public void AddInputAudioSource(AudioSource audioSource)
+        {
+            Connection.AddTrack(new AudioStreamTrack(audioSource));
+        }
+
+        public void AddOutputAudioSource(AudioSource audioSource)
+        {
+
+        }
+
         public async UniTaskVoid Send(byte[] data)
         {
             if (MistConfig.LatencyMilliseconds > 0)
@@ -311,11 +321,11 @@ namespace MistNet
         {
             MistDebug.Log($"[MistPeer][OnTrack] -> {Id}");
             if (e.Track is not AudioStreamTrack track) return;
-            if (OutputAudioSource == null) return;
+            if (_outputAudioSource == null) return;
 
-            OutputAudioSource.SetTrack(track);
-            OutputAudioSource.loop = true;
-            OutputAudioSource.Play();
+            _outputAudioSource.SetTrack(track);
+            _outputAudioSource.loop = true;
+            _outputAudioSource.Play();
         }
 
         private async UniTask Reconnect()
