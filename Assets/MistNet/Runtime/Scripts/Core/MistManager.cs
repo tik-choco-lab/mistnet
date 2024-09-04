@@ -23,6 +23,8 @@ namespace MistNet
         public Action<string> OnConnectedAction;
         public Action<string> OnDisconnectedAction;
 
+        [SerializeField] private IConnectionSelector connectionSelector;
+
         public readonly MistRoutingTable RoutingTable = new();
         private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
@@ -243,7 +245,8 @@ namespace MistNet
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
             MistSyncManager.I.SendObjectInstantiateInfo(id);
-            MistOptimizationManager.I?.OnConnected(id);
+            // MistOptimizationManager.I?.OnConnected(id);
+            connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
         }
 
@@ -252,8 +255,8 @@ namespace MistNet
             MistDebug.Log($"[Disconnected] {id}");
             // MistPeerData.Dict.Remove(id);
             MistSyncManager.I.DestroyBySenderId(id);
-            MistOptimizationManager.I?.OnDisconnected(id);
-            
+            // MistOptimizationManager.I?.OnDisconnected(id);
+            connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
         }

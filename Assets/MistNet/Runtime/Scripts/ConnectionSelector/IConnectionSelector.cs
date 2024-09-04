@@ -1,8 +1,15 @@
+using UnityEngine;
+
 namespace MistNet
 {
-    interface IConnectionSelector
+    public abstract class IConnectionSelector : MonoBehaviour
     {
-        void OnConnected(string id);
-        void OnDisconnected(string id);
+        public virtual void OnConnected(string id)
+        {
+        }
+
+        public virtual void OnDisconnected(string id)
+        {
+        }
     }
 }

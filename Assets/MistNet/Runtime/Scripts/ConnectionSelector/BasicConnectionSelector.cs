@@ -1,13 +1,22 @@
+using System.Collections.Generic;
+using UnityEngine;
+
 namespace MistNet
 {
     public class BasicConnectionSelector : IConnectionSelector
     {
-        public void OnConnected(string id)
+        private readonly HashSet<string> _connectedNodes = new();
+
+        public override void OnConnected(string id)
         {
+            Debug.Log($"[BasicConnectionSelector] OnConnected: {id}");
+            _connectedNodes.Add(id);
         }
 
-        public void OnDisconnected(string id)
+        public override void OnDisconnected(string id)
         {
+            Debug.Log($"[BasicConnectionSelector] OnDisconnected: {id}");
+            _connectedNodes.Remove(id);
         }
     }
 }
