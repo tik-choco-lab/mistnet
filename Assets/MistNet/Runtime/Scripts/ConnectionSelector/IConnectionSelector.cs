@@ -11,5 +11,9 @@ namespace MistNet
         public virtual void OnDisconnected(string id)
         {
         }
+
+        protected virtual void OnMessage(byte[] data, string id)
+        {
+        }
     }
 }

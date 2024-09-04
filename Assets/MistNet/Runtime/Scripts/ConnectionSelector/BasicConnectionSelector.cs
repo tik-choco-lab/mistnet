@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MemoryPack;
 using UnityEngine;
 
 namespace MistNet
@@ -6,6 +7,11 @@ namespace MistNet
     public class BasicConnectionSelector : IConnectionSelector
     {
         private readonly HashSet<string> _connectedNodes = new();
+
+        private void Start()
+        {
+            MistManager.I.AddRPC(MistNetMessageType.ConnectionSelector, OnMessage);
+        }
 
         public override void OnConnected(string id)
         {
@@ -17,6 +23,11 @@ namespace MistNet
         {
             Debug.Log($"[BasicConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
+        }
+
+        protected override void OnMessage(byte[] data, string id)
+        {
+            var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
         }
     }
 }
