@@ -4,6 +4,5 @@ using UnityEngine;
 [MemoryPackable]
 public partial class P_ConnectionSelector
 {
-    public string Method { get; set; }
-    public string Args { get; set; }
+    public string Data { get; set; }
 }

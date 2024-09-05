@@ -92,9 +92,7 @@ messages:
 
   - name: ConnectionSelector
     fields:
-      - name: Method
-        type: string
-      - name: Args
+      - name: Data
         type: string
 
   - name: Ping
