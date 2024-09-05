@@ -7,7 +7,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;
-using UnityEngine.Serialization;
 
 namespace MistNet
 {
@@ -253,7 +252,6 @@ namespace MistNet
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
             MistSyncManager.I.SendObjectInstantiateInfo(id);
-            // MistOptimizationManager.I?.OnConnected(id);
             connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
         }
@@ -261,9 +259,7 @@ namespace MistNet
         public void OnDisconnected(string id)
         {
             MistDebug.Log($"[Disconnected] {id}");
-            // MistPeerData.Dict.Remove(id);
             MistSyncManager.I.DestroyBySenderId(id);
-            // MistOptimizationManager.I?.OnDisconnected(id);
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
