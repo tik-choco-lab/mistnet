@@ -89,7 +89,12 @@ messages:
         type: int
       - name: MaxConnectNum
         type: int
-        
+
+  - name: ConnectionSelector
+    fields:
+      - name: Data
+        type: string
+
   - name: Ping
     fields:
       - name: Time

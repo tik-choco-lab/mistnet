@@ -13,6 +13,7 @@ public enum MistNetMessageType
     DisconnectRequest,
     DisconnectResponse,
     PeerData,
+    ConnectionSelector,
     Ping,
     Pong,
     PropertyRequest,

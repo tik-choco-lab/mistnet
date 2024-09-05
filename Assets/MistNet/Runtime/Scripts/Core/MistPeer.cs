@@ -184,7 +184,7 @@ namespace MistNet
             if (remoteDescriptionOperation.IsError)
             {
                 MistDebug.LogError(
-                    $"[Signaling][Error][SetRemoteDescription] -> {Id} {remoteDescriptionOperation.Error.message}");
+                    $"[Signaling][Error][SetRemoteDescription] 接続要求が同時に発生している可能性があります\n-> {Id} {remoteDescriptionOperation.Error.message}");
                 MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 SignalingState = MistSignalingState.InitialStable;
             }
