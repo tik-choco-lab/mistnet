@@ -19,7 +19,6 @@ namespace MistNet
         
         public static void LogError(object message)
         {
-            if (!MistConfig.DebugLog) return;
             Debug.LogError(message);
         }
     }
