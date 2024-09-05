@@ -7,6 +7,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;
+using UnityEngine.Serialization;
 
 namespace MistNet
 {
@@ -24,8 +25,8 @@ namespace MistNet
         public Action<string> OnDisconnectedAction;
 
         [SerializeField] private IConnectionSelector connectionSelector;
+        [SerializeField] public IRouting Routing;
 
-        public readonly MistRoutingTable RoutingTable = new();
         private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _functionDict = new();
@@ -65,7 +66,7 @@ namespace MistNet
 
             if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = RoutingTable.Get(targetId);
+                targetId = Routing.Get(targetId);
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
@@ -189,18 +190,19 @@ namespace MistNet
             var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
             MistDebug.Log($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
 
-            // RoutingTable.Add(message.Id, id);
-
             if (IsMessageForSelf(message))
             {
+                // 自身宛のメッセージの場合
                 ProcessMessageForSelf(message, senderId);
                 return;
             }
 
+            // 他のPeer宛のメッセージの場合
+
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
-                targetId = RoutingTable.Get(message.TargetId);
+                targetId = Routing.Get(message.TargetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -220,12 +222,18 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
-            RoutingTable.Add(message.Id, senderId);
+            Routing.Add(message.Id, senderId);
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
         public async UniTaskVoid Connect(string id)
         {
+            if (id == MistPeerData.I.SelfId)
+            {
+                MistDebug.LogWarning("Connect to self");
+                return;
+            }
+
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
             

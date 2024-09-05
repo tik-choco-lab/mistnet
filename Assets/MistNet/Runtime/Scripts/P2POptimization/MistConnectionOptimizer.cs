@@ -63,7 +63,7 @@ namespace MistNet
             try
             {
                 var message = MemoryPackSerializer.Deserialize<P_PeerData>(data);
-                MistManager.I.RoutingTable.Add(message.Id, sourceId);
+                MistManager.I.Routing.Add(message.Id, sourceId);
 
                 if (string.IsNullOrEmpty(message.Id) || message.Id == MistManager.I.MistPeerData.SelfId)
                 {

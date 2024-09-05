@@ -35,6 +35,7 @@ namespace MistNet
             var nodes = dataStr.Split(',');
             foreach (var nodeId in nodes)
             {
+                if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
                 Debug.Log($"[BasicConnectionSelector] Connect: {nodeId}");
                 MistManager.I.Connect(nodeId).Forget();
