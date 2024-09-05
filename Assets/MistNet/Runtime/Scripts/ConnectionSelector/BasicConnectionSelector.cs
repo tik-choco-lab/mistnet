@@ -33,12 +33,18 @@ namespace MistNet
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
             var dataStr = message.Data;
             var nodes = dataStr.Split(',');
+
             foreach (var nodeId in nodes)
             {
                 if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
                 Debug.Log($"[BasicConnectionSelector] Connect: {nodeId}");
-                MistManager.I.Connect(nodeId).Forget();
+
+                // idの大きさを比較
+                if (MistManager.I.CompareId(nodeId))
+                {
+                    MistManager.I.Connect(nodeId).Forget();
+                }
             }
         }
 

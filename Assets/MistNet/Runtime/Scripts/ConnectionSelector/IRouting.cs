@@ -4,7 +4,6 @@ namespace MistNet
 {
     public abstract class IRouting : MonoBehaviour
     {
-
         public virtual void Add(string sourceId, string fromId)
         {
         }

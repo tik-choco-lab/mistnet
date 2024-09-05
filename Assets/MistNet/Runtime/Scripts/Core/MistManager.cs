@@ -327,5 +327,14 @@ namespace MistNet
             var bytes = MemoryPackSerializer.Serialize(sendData);
             SendAll(MistNetMessageType.ObjectInstantiate, bytes);
         }
+
+        /// <summary>
+        /// IDを比較する
+        /// </summary>
+        public bool CompareId(string sourceId)
+        {
+            var selfId = MistManager.I.MistPeerData.SelfId;
+            return string.CompareOrdinal(selfId, sourceId) < 0;
+        }
     }
 }
