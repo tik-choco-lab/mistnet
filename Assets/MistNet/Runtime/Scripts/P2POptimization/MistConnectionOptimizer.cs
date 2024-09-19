@@ -11,6 +11,7 @@ namespace MistNet
     /// <summary>
     /// 接続先を最適化するクラス
     /// </summary>
+    [Obsolete]
     public class MistConnectionOptimizer : MonoBehaviour
     {
         private const float RequestIntervalSec = 0.5f;

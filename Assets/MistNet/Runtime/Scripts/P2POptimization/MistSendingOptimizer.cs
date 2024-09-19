@@ -11,6 +11,7 @@ namespace MistNet
     /// 座標送信時の通信回数を減らす
     /// TODO: Listに格納する
     /// </summary>
+    [Obsolete]
     public class MistSendingOptimizer : MonoBehaviour
     {
         public static MistSendingOptimizer I;
