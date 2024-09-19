@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
@@ -8,6 +11,7 @@ namespace MistNet
 {
     public class MistSyncManager : MonoBehaviour
     {
+        private const float CheckExistObjectIntervalSeconds = 5f;
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }                           // 自身のSyncObject
 
@@ -30,6 +34,9 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
+            MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
+
+            UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public void SendObjectInstantiateInfo(string id)
@@ -49,6 +56,7 @@ namespace MistNet
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
         {
+            // await UniTask.Yield(); // これを入れないと生成に失敗することがある　おそらくどこかで初期化処理が走っているため
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
             if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
 
@@ -59,6 +67,18 @@ namespace MistNet
             syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
 
             RegisterSyncObject(syncObject);
+        }
+
+        public void RequestObjectInstantiateInfo(string id)
+        {
+            var sendData = new P_ObjectInstantiateRequest();
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
+        }
+
+        private void ReceiveObjectInstantiateInfoRequest(byte[] data, string sourceId)
+        {
+            SendObjectInstantiateInfo(sourceId);
         }
 
         private void ReceiveLocation(byte[] data, string sourceId)
@@ -192,6 +212,28 @@ namespace MistNet
             var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
             if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;
             syncAnimator.ReceiveAnimState(receiveData);
+        }
+
+        /// <summary>
+        /// 定期的に生成に失敗したObjectがないかチェックし、あれば再生成要求を送る
+        /// </summary>
+        /// <param name="token"></param>
+        private async UniTask UpdateCheckExistObject(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(CheckExistObjectIntervalSeconds), cancellationToken: token);
+
+                // PeerがあるのにまだObjectが生成されていないものを探す
+                var missingObjectIds = MistPeerData.I.GetAllPeer.Keys
+                    .Where(x => !OwnerIdAndObjIdDict.ContainsKey(x));
+
+                foreach (var id in missingObjectIds)
+                {
+                    Debug.Log($"[Debug][MistSyncManager] RequestObjectInstantiateInfo: {id}");
+                    RequestObjectInstantiateInfo(id);
+                }
+            }
         }
     }
 }

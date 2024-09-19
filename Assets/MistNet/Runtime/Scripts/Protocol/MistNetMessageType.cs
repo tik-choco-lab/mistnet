@@ -6,6 +6,7 @@ public enum MistNetMessageType
     Message,
     Log,
     ObjectInstantiate,
+    ObjectInstantiateRequest,
     ObjectChange,
     Signaling,
     SignalingRequest,

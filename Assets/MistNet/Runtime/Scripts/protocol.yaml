@@ -49,6 +49,8 @@ messages:
       - name: PrefabAddress
         type: string
 
+  - name: ObjectInstantiateRequest
+
   - name: ObjectChange
     fields:
       - name: ObjId

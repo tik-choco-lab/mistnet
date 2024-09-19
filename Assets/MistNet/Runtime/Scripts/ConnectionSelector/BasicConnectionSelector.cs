@@ -11,12 +11,13 @@ namespace MistNet
         private void Start()
         {
             MistManager.I.AddRPC(MistNetMessageType.ConnectionSelector, OnMessage);
-            Debug.Log($"[BasicConnectionSelector] Start {MistPeerData.I.SelfId}");
+            Debug.Log($"[BasicConnectionSelector] SelfId {MistPeerData.I.SelfId}");
         }
 
         public override void OnConnected(string id)
         {
             Debug.Log($"[BasicConnectionSelector] OnConnected: {id}");
+            // _connectedNodes.Add(id);
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
             SendMessage(dataStr);
@@ -32,12 +33,14 @@ namespace MistNet
         {
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
             var dataStr = message.Data;
+            Debug.Log($"[BasicConnectionSelector] Nodes: {dataStr}");
             var nodes = dataStr.Split(',');
 
             foreach (var nodeId in nodes)
             {
                 if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
+                // _connectedNodes.Add(id);
                 Debug.Log($"[BasicConnectionSelector] Connect: {nodeId}");
 
                 // idの大きさを比較
