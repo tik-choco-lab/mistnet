@@ -5,6 +5,7 @@ using System.Threading;
 
 namespace MistNet
 {
+    [Obsolete]
     public class MistOptimizationManager : MonoBehaviour
     {
         private static readonly float IntervalDistanceTimeSec = 1f;

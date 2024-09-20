@@ -52,14 +52,11 @@ namespace MistNet
 
         private void Awake()
         {
-            Debug.Log($"[Debug] MistSyncObject Awake {gameObject.name}");
             gameObject.TryGetComponent(out MistTransform);
         }
 
         private void Start()
         {
-            Debug.Log($"[Debug] MistSyncObject Start {gameObject.name}");
-
             // 既にScene上に配置されたObjectである場合
             if (string.IsNullOrEmpty(Id))
             {
@@ -73,7 +70,6 @@ namespace MistNet
 
         private void SetGlobalObject()
         {
-            Debug.Log($"[Debug] SetGlobalObject {gameObject.name}");
             // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
             var instanceId = _instanceIdCount++.ToString();
             Id = instanceId;
@@ -99,7 +95,6 @@ namespace MistNet
 
         public void SetData(string id, bool isOwner, string prefabAddress, string ownerId)
         {
-            Debug.Log($"[Debug] SetData {id}, {isOwner}, {prefabAddress}, {ownerId}");
             Id = id;
             IsOwner = isOwner;
             PrefabAddress = prefabAddress;

@@ -104,7 +104,7 @@ namespace MistNet
             peerData.State = MistPeerState.Disconnected;
             peerData.Peer?.Dispose();
             peerData.Peer = null;
-            // _dict.Remove(id);
+            _dict.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
         }
     }
 

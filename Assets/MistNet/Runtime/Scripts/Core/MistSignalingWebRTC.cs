@@ -55,10 +55,6 @@ namespace MistNet
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
             var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(receiveData.Data);
             var type = response["type"].ToString();
-            if (type == "offer")
-            {
-                MistDebug.Log($"[Info][RECV][Signaling][{type}] {sourceId} ->");
-            }
             MistDebug.Log($"[Info][RECV][Signaling][{type}] {sourceId} ->");
             _functions[type](response);
         }

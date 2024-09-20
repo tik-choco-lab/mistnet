@@ -10,11 +10,11 @@ namespace MistNet
     {
         public static MistSignalingWebSocket I;
         public WebSocket Ws => _ws;
-        
+
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
         private WebSocket _ws;
         private MistSignaling _mistSignaling;
-        private Queue<string> _messageQueue = new();
+        private readonly Queue<string> _messageQueue = new();
 
         private void Start()
         {

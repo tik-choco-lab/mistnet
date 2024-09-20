@@ -30,8 +30,13 @@ namespace MistNet
 
             // error送出
             MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
+
             // 適当に返す
-            return MistManager.I.MistPeerData.GetConnectedPeer[0].Id;
+            if (MistManager.I.MistPeerData.GetConnectedPeer.Count != 0)
+                return MistManager.I.MistPeerData.GetConnectedPeer[0].Id;
+
+            MistDebug.LogWarning("[RoutingTable] Not found connected peer");
+            return null;
         }
     }
 }

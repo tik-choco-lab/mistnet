@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace MistNet
 {
+    [Obsolete]
     public class MistOptimizationData
     {
         public readonly List<string> PeerConnectionPriorityList = new(); // id
