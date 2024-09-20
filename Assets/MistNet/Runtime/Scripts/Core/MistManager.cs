@@ -66,6 +66,7 @@ namespace MistNet
             if (!MistPeerData.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
+                if (targetId == null) return; // メッセージの破棄
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
