@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using MemoryPack;
 using UnityEngine;
 
 namespace MistNet
@@ -13,9 +12,9 @@ namespace MistNet
         private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
 
-        private void Start()
+        protected override void Start()
         {
-            MistManager.I.AddRPC(MistNetMessageType.ConnectionSelector, OnMessage);
+            base.Start();
             Debug.Log($"[BasicConnectionSelector] SelfId {MistPeerData.I.SelfId}");
             // UpdateAttemptConnectToFailedNode(this.GetCancellationTokenOnDestroy()).Forget();
         }
@@ -26,7 +25,7 @@ namespace MistNet
             // _connectedNodes.Add(id);
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
-            SendMessage(dataStr);
+            SendAll(dataStr);
         }
 
         public override void OnDisconnected(string id)
@@ -35,12 +34,10 @@ namespace MistNet
             _connectedNodes.Remove(id);
         }
 
-        protected override void OnMessage(byte[] data, string id)
+        protected override void OnMessage(string data, string id)
         {
-            var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
-            var dataStr = message.Data;
-            var nodes = dataStr.Split(',');
-            Debug.Log($"[BasicConnectionSelector] ({nodes.Length}) Nodes: {dataStr}");
+            var nodes = data.Split(',');
+            Debug.Log($"[BasicConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
             foreach (var nodeId in nodes)
             {
@@ -55,17 +52,6 @@ namespace MistNet
                     MistManager.I.Connect(nodeId).Forget();
                 }
             }
-        }
-
-        private void SendMessage(string data)
-        {
-            var message = new P_ConnectionSelector
-            {
-                Data = data
-            };
-
-            var serialized = MemoryPackSerializer.Serialize(message);
-            MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, serialized);
         }
 
         private async UniTask UpdateAttemptConnectToFailedNode(CancellationToken token)
