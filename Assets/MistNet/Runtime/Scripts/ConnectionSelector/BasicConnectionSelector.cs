@@ -13,7 +13,7 @@ namespace MistNet
         private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
         private readonly HashSet<string> _receivedMessageIds = new();
-        private readonly Dictionary<string, User> _users = new();
+        private readonly Dictionary<string, User> _users = new(); // key: userId, value: User
 
         protected override void Start()
         {
@@ -46,6 +46,7 @@ namespace MistNet
             if (!_receivedMessageIds.Add(message.id)) return; // 既に受信済みは破棄
 
             UpdateUserData(message);
+            UpdateSelfData(); // 自分のデータを更新
             SendAllUserData();
         }
 
@@ -81,11 +82,26 @@ namespace MistNet
                 }
             }
         }
+
+        private void UpdateSelfData()
+        {
+            var objectData = MistSyncManager.I.SelfSyncObject;
+            var selfData = _users.GetValueOrDefault(MistPeerData.I.SelfId);
+
+            var position = objectData.transform.position;
+            selfData.position = new Position(position.x, position.y, position.z);
+            selfData.chunk = selfData.position.ToChunk;
+            selfData.last_update = DateTime.Now.ToString("o");
+
+            _users[MistPeerData.I.SelfId] = selfData;
+        }
     }
 
-    [System.Serializable]
-    public class Position
+    [Serializable]
+    public struct Position
     {
+        private const int ChunkSize = 16;
+        private static readonly float ChunkSizeDivide = 1f / ChunkSize;
         public float x;
         public float y;
         public float z;
@@ -96,24 +112,45 @@ namespace MistNet
             this.y = y;
             this.z = z;
         }
+
+        public Chunk ToChunk => new(
+            Mathf.FloorToInt(x * ChunkSizeDivide),
+            Mathf.FloorToInt(y * ChunkSizeDivide),
+            Mathf.FloorToInt(z * ChunkSizeDivide)
+        );
     }
 
-    [System.Serializable]
+    [Serializable]
+    public struct Chunk
+    {
+        public int x;
+        public int y;
+        public int z;
+
+        public Chunk(int x, int y, int z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    [Serializable]
     public class User
     {
-        public string chunk_id; // 1,2,-1 のような形式
+        public Chunk chunk; // 1,2,-1 のような形式
         public Position position;
         public string last_update;
         public DateTime LastUpdate => DateTime.Parse(last_update);
 
-        public User(string chunkId, Position position)
+        public User(Chunk chunk, Position position)
         {
-            chunk_id = chunkId;
+            this.chunk = chunk;
             this.position = position;
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public class CheckAllNodes
     {
         public string type;
