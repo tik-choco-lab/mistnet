@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace MistNet
@@ -11,6 +12,8 @@ namespace MistNet
     {
         private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
+        private readonly HashSet<string> _receivedMessageIds = new();
+        private readonly Dictionary<string, User> _users = new();
 
         protected override void Start()
         {
@@ -36,22 +39,33 @@ namespace MistNet
 
         protected override void OnMessage(string data, string id)
         {
-            var nodes = data.Split(',');
-            Debug.Log($"[BasicConnectionSelector] ({nodes.Length}) Nodes: {data}");
+            // data -. Dictionary<string, object>
+            var message = JsonConvert.DeserializeObject<CheckAllNodes>(data);
+            Debug.Log($"[BasicConnectionSelector] OnMessage: {message.id}");
 
-            foreach (var nodeId in nodes)
+            if (!_receivedMessageIds.Add(message.id)) return; // 既に受信済みは破棄
+
+            UpdateUserData(message);
+            SendAllUserData();
+        }
+
+        private void UpdateUserData(CheckAllNodes message)
+        {
+            foreach (var (key, value) in message.users)
             {
-                if (nodeId == MistPeerData.I.SelfId) continue;
-                if (!_connectedNodes.Add(nodeId)) continue;
-                // _connectedNodes.Add(id);
-                Debug.Log($"[BasicConnectionSelector] Connect: {nodeId}");
-
-                // idの大きさを比較
-                if (MistManager.I.CompareId(nodeId))
-                {
-                    MistManager.I.Connect(nodeId).Forget();
-                }
+                _users.TryAdd(key, value);
+                if (_users[key].LastUpdate >= value.LastUpdate) continue;
+                _users[key] = value;
             }
+        }
+
+        private void SendAllUserData()
+        {
+            var messageId = Guid.NewGuid().ToString();
+            var message = new CheckAllNodes("check_all_nodes", id:messageId, _users);
+            var data = JsonConvert.SerializeObject(message);
+            Debug.Log($"[BasicConnectionSelector] SendAllUserData: {data}");
+            SendAll(data);
         }
 
         private async UniTask UpdateAttemptConnectToFailedNode(CancellationToken token)
@@ -66,6 +80,51 @@ namespace MistNet
                     MistManager.I.Connect(nodeId).Forget();
                 }
             }
+        }
+    }
+
+    [System.Serializable]
+    public class Position
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public Position(float x, float y, float z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    [System.Serializable]
+    public class User
+    {
+        public string chunk_id; // 1,2,-1 のような形式
+        public Position position;
+        public string last_update;
+        public DateTime LastUpdate => DateTime.Parse(last_update);
+
+        public User(string chunkId, Position position)
+        {
+            chunk_id = chunkId;
+            this.position = position;
+        }
+    }
+
+    [System.Serializable]
+    public class CheckAllNodes
+    {
+        public string type;
+        public string id;
+        public Dictionary<string, User> users;
+
+        public CheckAllNodes(string type, string id, Dictionary<string, User> users)
+        {
+            this.type = type;
+            this.id = id;
+            this.users = users;
         }
     }
 }
