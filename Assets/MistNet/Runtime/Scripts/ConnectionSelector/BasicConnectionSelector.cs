@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Newtonsoft.Json;
+using MemoryPack;
 using UnityEngine;
 
 namespace MistNet
@@ -12,8 +12,6 @@ namespace MistNet
     {
         private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
-        private readonly HashSet<string> _receivedMessageIds = new();
-        private readonly Dictionary<string, User> _users = new(); // key: userId, value: User
 
         protected override void Start()
         {
@@ -28,7 +26,7 @@ namespace MistNet
             // _connectedNodes.Add(id);
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
-            SendAll(dataStr);
+            SendMessage(dataStr);
         }
 
         public override void OnDisconnected(string id)
@@ -39,34 +37,33 @@ namespace MistNet
 
         protected override void OnMessage(string data, string id)
         {
-            // data -. Dictionary<string, object>
-            var message = JsonConvert.DeserializeObject<CheckAllNodes>(data);
-            Debug.Log($"[BasicConnectionSelector] OnMessage: {message.id}");
+            var nodes = data.Split(',');
+            Debug.Log($"[BasicConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
-            if (!_receivedMessageIds.Add(message.id)) return; // 既に受信済みは破棄
-
-            UpdateUserData(message);
-            UpdateSelfData(); // 自分のデータを更新
-            SendAllUserData();
-        }
-
-        private void UpdateUserData(CheckAllNodes message)
-        {
-            foreach (var (key, value) in message.users)
+            foreach (var nodeId in nodes)
             {
-                _users.TryAdd(key, value);
-                if (_users[key].LastUpdate >= value.LastUpdate) continue;
-                _users[key] = value;
+                if (nodeId == MistPeerData.I.SelfId) continue;
+                if (!_connectedNodes.Add(nodeId)) continue;
+                // _connectedNodes.Add(id);
+                Debug.Log($"[BasicConnectionSelector] Connect: {nodeId}");
+
+                // idの大きさを比較
+                if (MistManager.I.CompareId(nodeId))
+                {
+                    MistManager.I.Connect(nodeId).Forget();
+                }
             }
         }
 
-        private void SendAllUserData()
+        private void SendMessage(string data)
         {
-            var messageId = Guid.NewGuid().ToString();
-            var message = new CheckAllNodes("check_all_nodes", id:messageId, _users);
-            var data = JsonConvert.SerializeObject(message);
-            Debug.Log($"[BasicConnectionSelector] SendAllUserData: {data}");
-            SendAll(data);
+            var message = new P_ConnectionSelector
+            {
+                Data = data
+            };
+
+            var serialized = MemoryPackSerializer.Serialize(message);
+            MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, serialized);
         }
 
         private async UniTask UpdateAttemptConnectToFailedNode(CancellationToken token)
@@ -81,87 +78,6 @@ namespace MistNet
                     MistManager.I.Connect(nodeId).Forget();
                 }
             }
-        }
-
-        private void UpdateSelfData()
-        {
-            var objectData = MistSyncManager.I.SelfSyncObject;
-            var selfData = _users.GetValueOrDefault(MistPeerData.I.SelfId);
-
-            var position = objectData.transform.position;
-            selfData.position = new Position(position.x, position.y, position.z);
-            selfData.chunk = selfData.position.ToChunk;
-            selfData.last_update = DateTime.Now.ToString("o");
-
-            _users[MistPeerData.I.SelfId] = selfData;
-        }
-    }
-
-    [Serializable]
-    public struct Position
-    {
-        private const int ChunkSize = 16;
-        private static readonly float ChunkSizeDivide = 1f / ChunkSize;
-        public float x;
-        public float y;
-        public float z;
-
-        public Position(float x, float y, float z)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        public Chunk ToChunk => new(
-            Mathf.FloorToInt(x * ChunkSizeDivide),
-            Mathf.FloorToInt(y * ChunkSizeDivide),
-            Mathf.FloorToInt(z * ChunkSizeDivide)
-        );
-    }
-
-    [Serializable]
-    public struct Chunk
-    {
-        public int x;
-        public int y;
-        public int z;
-
-        public Chunk(int x, int y, int z)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
-
-    [Serializable]
-    public class User
-    {
-        public Chunk chunk; // 1,2,-1 のような形式
-        public Position position;
-        public string last_update;
-        public DateTime LastUpdate => DateTime.Parse(last_update);
-
-        public User(Chunk chunk, Position position)
-        {
-            this.chunk = chunk;
-            this.position = position;
-        }
-    }
-
-    [Serializable]
-    public class CheckAllNodes
-    {
-        public string type;
-        public string id;
-        public Dictionary<string, User> users;
-
-        public CheckAllNodes(string type, string id, Dictionary<string, User> users)
-        {
-            this.type = type;
-            this.id = id;
-            this.users = users;
         }
     }
 }
