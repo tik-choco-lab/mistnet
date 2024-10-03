@@ -13,18 +13,17 @@ namespace MistNet
         private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
         private readonly HashSet<string> _receivedMessageIds = new();
-        private readonly Dictionary<string, User> _users = new(); // key: userId, value: User
+        private readonly Dictionary<string, Node> _users = new(); // key: userId, value: User
 
         protected override void Start()
         {
             base.Start();
-            Debug.Log($"[BasicConnectionSelector] SelfId {MistPeerData.I.SelfId}");
-            // UpdateAttemptConnectToFailedNode(this.GetCancellationTokenOnDestroy()).Forget();
+            Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
         }
 
         public override void OnConnected(string id)
         {
-            Debug.Log($"[BasicConnectionSelector] OnConnected: {id}");
+            Debug.Log($"[ConnectionSelector] OnConnected: {id}");
             // _connectedNodes.Add(id);
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
@@ -33,26 +32,26 @@ namespace MistNet
 
         public override void OnDisconnected(string id)
         {
-            Debug.Log($"[BasicConnectionSelector] OnDisconnected: {id}");
+            Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
         }
 
         protected override void OnMessage(string data, string id)
         {
             var message = JsonConvert.DeserializeObject<CheckAllNodes>(data);
-            Debug.Log($"[BasicConnectionSelector] OnMessage: {message.id}");
+            Debug.Log($"[ConnectionSelector] OnMessage: {message.id}");
 
             if (!_receivedMessageIds.Add(message.id)) return; // 既に受信済みは破棄
 
-            UpdateUserData(message);
+            UpdateNodeData(message);
             UpdateSelfData(); // 自分のデータを更新
-            SendAllUserData();
-            ConnectNearUsers();
+            SendAllNodeData();
+            ConnectNearNodes();
         }
 
-        private void UpdateUserData(CheckAllNodes message)
+        private void UpdateNodeData(CheckAllNodes message)
         {
-            foreach (var (key, value) in message.users)
+            foreach (var (key, value) in message.nodes)
             {
                 _users.TryAdd(key, value);
                 if (_users[key].LastUpdate >= value.LastUpdate) continue;
@@ -60,16 +59,16 @@ namespace MistNet
             }
         }
 
-        private void SendAllUserData()
+        private void SendAllNodeData()
         {
             var messageId = Guid.NewGuid().ToString();
             var message = new CheckAllNodes("check_all_nodes", id:messageId, _users);
             var data = JsonConvert.SerializeObject(message);
-            Debug.Log($"[BasicConnectionSelector] SendAllUserData: {data}");
+            Debug.Log($"[ConnectionSelector] SendAllUserData: {data}");
             SendAll(data);
         }
 
-        private void ConnectNearUsers()
+        private void ConnectNearNodes()
         {
             var selfData = _users.GetValueOrDefault(MistPeerData.I.SelfId);
             var nearChunkList = new List<Chunk>
@@ -186,14 +185,14 @@ namespace MistNet
     }
 
     [Serializable]
-    public class User
+    public class Node
     {
         public Chunk chunk; // 1,2,-1 のような形式
         public Position position;
         public string last_update;
         public DateTime LastUpdate => DateTime.Parse(last_update);
 
-        public User(Chunk chunk, Position position)
+        public Node(Chunk chunk, Position position)
         {
             this.chunk = chunk;
             this.position = position;
@@ -205,13 +204,13 @@ namespace MistNet
     {
         public string type;
         public string id;
-        public Dictionary<string, User> users;
+        public Dictionary<string, Node> nodes;
 
-        public CheckAllNodes(string type, string id, Dictionary<string, User> users)
+        public CheckAllNodes(string type, string id, Dictionary<string, Node> nodes)
         {
             this.type = type;
             this.id = id;
-            this.users = users;
+            this.nodes = nodes;
         }
     }
 }
