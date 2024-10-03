@@ -27,6 +27,11 @@ namespace MistNet
             Mathf.FloorToInt(y * ChunkSizeDivide),
             Mathf.FloorToInt(z * ChunkSizeDivide)
         );
+
+        public Vector3 ToVector3()
+        {
+            return new Vector3(x, y, z);
+        }
     }
 
     [Serializable]
@@ -69,6 +74,7 @@ namespace MistNet
     public class Node
     {
         public Chunk chunk; // 1,2,-1 のような形式
+        public string id;
         public Position position;
         public string last_update;
         public DateTime LastUpdate => DateTime.Parse(last_update);
