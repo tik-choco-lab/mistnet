@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -7,19 +8,24 @@ namespace MistNet
 {
     public class OctreeConnectionSelector : IConnectionSelector
     {
+        // timeout時間
+        private const float PingTimeoutSeconds = 5f;
         private const int BucketSize = 20;
         private readonly HashSet<string> _connectedNodes = new();
         private readonly List<List<Node>> _buckets = new();
-        private Dictionary<string, Action<string>> _onMessageReceived;
+        private Dictionary<string, Action<string, string>> _onMessageReceived;
+        private Dictionary<string, bool> _pongWaitList = new();
 
         protected override void Start()
         {
             base.Start();
             Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
 
-            _onMessageReceived = new Dictionary<string, Action<string>>
+            _onMessageReceived = new Dictionary<string, Action<string, string>>
             {
-                { "node", OnNodeReceived }
+                { "node", OnNodeReceived },
+                { "ping", OnPingReceived },
+                { "pong", OnPongReceived },
             };
         }
 
@@ -37,22 +43,22 @@ namespace MistNet
             _connectedNodes.Remove(id);
         }
 
-        protected override void OnMessage(string data, string id)
+        protected override void OnMessage(string data, string senderId)
         {
             var message = JsonConvert.DeserializeObject<OctreeMessage>(data);
-            _onMessageReceived[message.type](message.data);
+            _onMessageReceived[message.type](message.data, senderId);
         }
 
-        private void OnNodeReceived(string data)
+        private void OnNodeReceived(string data, string senderId)
         {
             var node = JsonConvert.DeserializeObject<Node>(data);
             var nodeId = node.id;
             var position = node.position.ToVector3();
-            var index = GetBucketIndex(nodeId, position);
+            var index = GetBucketIndex(position);
 
             if (_buckets[index].Count >= BucketSize)
             {
-                SendPing(index);
+                SendPingAndAddNode(index, node).Forget();
             }
             else
             {
@@ -60,13 +66,53 @@ namespace MistNet
             }
         }
 
-        private void SendPing(int index)
+        private void OnPingReceived(string data, string senderId)
         {
-            var node = _buckets[index][0];
-            Send(JsonConvert.SerializeObject(node), node.id);
+            var message = new OctreeMessage
+            {
+                type = "pong",
+                data = MistPeerData.I.SelfId,
+            };
+            Send(JsonConvert.SerializeObject(message), senderId);
         }
 
-        private int GetBucketIndex(string nodeId, Vector3 position)
+        private void OnPongReceived(string data, string senderId)
+        {
+            // TODO: ping timeout の計測
+            _pongWaitList[senderId] = true;
+        }
+
+        /// <summary>
+        /// Churn耐性を持たせるために、バケツがいっぱいになった場合にPingを送信する
+        /// </summary>
+        /// <param name="index"></param>
+        private async UniTask SendPingAndAddNode(int index, Node newNode)
+        {
+            var oldNode = _buckets[index][0];
+
+            var octreeMessage = new OctreeMessage
+            {
+                type = "ping",
+            };
+
+            Send(JsonConvert.SerializeObject(octreeMessage), oldNode.id);
+            _pongWaitList.Add(oldNode.id, false);
+
+            // Timeoutになるか、pongが返ってくるまで待機
+            var pongReceivedTask = UniTask.WaitUntil(() => _pongWaitList[oldNode.id]);
+            var timeoutTask = UniTask.Delay(TimeSpan.FromSeconds(PingTimeoutSeconds));
+            await UniTask.WhenAny(pongReceivedTask, timeoutTask);
+
+            if (!_pongWaitList[oldNode.id])
+            {
+                _buckets[index].Add(newNode);
+                _buckets[index].RemoveAt(0);
+            }
+
+            _pongWaitList.Remove(oldNode.id);
+        }
+
+        private int GetBucketIndex(Vector3 position)
         {
             var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
             var distance = Vector3.Distance(selfPosition, position);
@@ -100,7 +146,7 @@ namespace MistNet
             return bucketIndex;
         }
 
-        private int CalculateBucketIndexUsingBaseN(float distance, int baseN)
+        private int CalculateBucketIndexUsingBaseN(float distance)
         {
             // 初期バケツインデックス
             int bucketIndex = 0;
@@ -115,9 +161,9 @@ namespace MistNet
             int intDistance = Mathf.FloorToInt(distance);
 
             // 基数 baseN で割り続ける
-            while (intDistance >= baseN)
+            while (intDistance >= BucketPower)
             {
-                intDistance /= baseN; // baseNで割る
+                intDistance /= BucketPower; // baseNで割る
                 bucketIndex++;
             }
 
