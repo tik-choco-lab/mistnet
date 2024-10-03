@@ -10,11 +10,17 @@ namespace MistNet
         private const int BucketSize = 20;
         private readonly HashSet<string> _connectedNodes = new();
         private readonly List<List<Node>> _buckets = new();
+        private Dictionary<string, Action<string>> _onMessageReceived;
 
         protected override void Start()
         {
             base.Start();
             Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
+
+            _onMessageReceived = new Dictionary<string, Action<string>>
+            {
+                { "node", OnNodeReceived }
+            };
         }
 
         public override void OnConnected(string id)
@@ -34,10 +40,7 @@ namespace MistNet
         protected override void OnMessage(string data, string id)
         {
             var message = JsonConvert.DeserializeObject<OctreeMessage>(data);
-            if (message.type == "node")
-            {
-                OnNodeReceived(message.data);
-            }
+            _onMessageReceived[message.type](message.data);
         }
 
         private void OnNodeReceived(string data)
