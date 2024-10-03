@@ -9,14 +9,12 @@ namespace MistNet
 {
     public class BasicConnectionSelector : IConnectionSelector
     {
-        private const float AttemptConnectIntervalTimeSeconds = 5f;
         private readonly HashSet<string> _connectedNodes = new();
 
         protected override void Start()
         {
             base.Start();
             Debug.Log($"[BasicConnectionSelector] SelfId {MistPeerData.I.SelfId}");
-            // UpdateAttemptConnectToFailedNode(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public override void OnConnected(string id)
@@ -48,20 +46,6 @@ namespace MistNet
 
                 // idの大きさを比較
                 if (MistManager.I.CompareId(nodeId))
-                {
-                    MistManager.I.Connect(nodeId).Forget();
-                }
-            }
-        }
-
-        private async UniTask UpdateAttemptConnectToFailedNode(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(AttemptConnectIntervalTimeSeconds), cancellationToken: token);
-                var failedNodes = _connectedNodes
-                    .Where(x => !MistPeerData.I.IsConnected(x) && MistManager.I.CompareId(x));
-                foreach (var nodeId in failedNodes)
                 {
                     MistManager.I.Connect(nodeId).Forget();
                 }
