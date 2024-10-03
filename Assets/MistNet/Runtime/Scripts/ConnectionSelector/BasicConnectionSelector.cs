@@ -26,7 +26,7 @@ namespace MistNet
             // _connectedNodes.Add(id);
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
-            SendMessage(dataStr);
+            SendAll(dataStr);
         }
 
         public override void OnDisconnected(string id)
@@ -53,17 +53,6 @@ namespace MistNet
                     MistManager.I.Connect(nodeId).Forget();
                 }
             }
-        }
-
-        private void SendMessage(string data)
-        {
-            var message = new P_ConnectionSelector
-            {
-                Data = data
-            };
-
-            var serialized = MemoryPackSerializer.Serialize(message);
-            MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, serialized);
         }
 
         private async UniTask UpdateAttemptConnectToFailedNode(CancellationToken token)
