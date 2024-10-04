@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -8,6 +10,7 @@ namespace MistNet
 {
     public class OctreeConnectionSelector : IConnectionSelector
     {
+        private const int MaxVisibleNodes = 20;
         // timeout時間
         private const float PingTimeoutSeconds = 5f;
         private const int BucketPower = 4; // 初期値を2に設定 (2の累乗)
@@ -15,7 +18,9 @@ namespace MistNet
         private readonly HashSet<string> _connectedNodes = new();
         private readonly List<List<Node>> _buckets = new();
         private Dictionary<string, Action<string, string>> _onMessageReceived;
-        private Dictionary<string, bool> _pongWaitList = new();
+        private readonly Dictionary<string, bool> _pongWaitList = new();
+        // Objectとして表示しているNodeのリスト
+        private readonly HashSet<string> _visibleNodes = new();
 
         protected override void Start()
         {
@@ -28,6 +33,8 @@ namespace MistNet
                 { "ping", OnPingReceived },
                 { "pong", OnPongReceived },
             };
+
+            UpdateRequestObjectInfo(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public override void OnConnected(string id)
@@ -177,6 +184,38 @@ namespace MistNet
         {
             public string type;
             public string data;
+        }
+
+        private async UniTask UpdateRequestObjectInfo(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
+                var index = 0;
+
+                for (var i = _visibleNodes.Count; i < MaxVisibleNodes; i++)
+                {
+                    if (index >= _buckets.Count) break;
+
+                    var nodes = _buckets[index++];
+                    foreach (var node in nodes.Where(node => !_visibleNodes.Contains(node.id)))
+                    {
+                        RequestObject(node.id);
+                    }
+                }
+            }
+        }
+
+        public override void OnSpawned(string id)
+        {
+            base.OnSpawned(id);
+            _visibleNodes.Add(id);
+        }
+
+        public override void OnDespawned(string id)
+        {
+            base.OnDespawned(id);
+            _visibleNodes.Remove(id);
         }
     }
 }

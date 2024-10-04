@@ -36,7 +36,7 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
 
-            UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
+            // UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public void SendObjectInstantiateInfo(string id)
@@ -67,6 +67,7 @@ namespace MistNet
             syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
 
             RegisterSyncObject(syncObject);
+            MistManager.I.OnSpawned(sourceId);
         }
 
         public void RequestObjectInstantiateInfo(string id)
@@ -153,6 +154,7 @@ namespace MistNet
             OwnerIdAndObjIdDict.Remove(syncObject.OwnerId);
             
             UnregisterSyncAnimator(syncObject);
+            MistManager.I.OnDespawned(syncObject.OwnerId);
         }
 
         public MistSyncObject GetSyncObject(string id)

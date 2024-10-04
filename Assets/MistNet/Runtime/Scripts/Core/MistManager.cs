@@ -248,7 +248,7 @@ namespace MistNet
 
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
-            MistSyncManager.I.SendObjectInstantiateInfo(id);
+            // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
         }
@@ -260,6 +260,18 @@ namespace MistNet
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
+        }
+
+        public void OnSpawned(string id)
+        {
+            MistDebug.Log($"[Spawned] {id}");
+            connectionSelector.OnSpawned(id);
+        }
+
+        public void OnDespawned(string id)
+        {
+            MistDebug.Log($"[Despawned] {id}");
+            connectionSelector.OnDespawned(id);
         }
 
         public void Disconnect(string id)

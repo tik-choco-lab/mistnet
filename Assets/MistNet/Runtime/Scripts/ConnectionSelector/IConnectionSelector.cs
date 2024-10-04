@@ -28,6 +28,19 @@ namespace MistNet
         {
         }
 
+        protected virtual void RequestObject(string targetId)
+        {
+            MistSyncManager.I.RequestObjectInstantiateInfo(targetId);
+        }
+
+        public virtual void OnSpawned(string id)
+        {
+        }
+
+        public virtual void OnDespawned(string id)
+        {
+        }
+
         protected void SendAll(string data)
         {
             MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
