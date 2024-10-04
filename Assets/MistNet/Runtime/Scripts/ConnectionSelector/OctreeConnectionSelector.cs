@@ -10,6 +10,7 @@ namespace MistNet
     {
         // timeout時間
         private const float PingTimeoutSeconds = 5f;
+        private const int BucketPower = 4; // 初期値を2に設定 (2の累乗)
         private const int BucketSize = 20;
         private readonly HashSet<string> _connectedNodes = new();
         private readonly List<List<Node>> _buckets = new();
@@ -78,8 +79,11 @@ namespace MistNet
 
         private void OnPongReceived(string data, string senderId)
         {
-            // TODO: ping timeout の計測
-            _pongWaitList[senderId] = true;
+            if (_pongWaitList.ContainsKey(senderId))
+            {
+                // keyがない場合はtimeoutしているということ
+                _pongWaitList[senderId] = true;
+            }
         }
 
         /// <summary>
@@ -117,10 +121,8 @@ namespace MistNet
             var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
             var distance = Vector3.Distance(selfPosition, position);
 
-            return CalculateBucketIndexUsingBitShift(distance);
+            return CalculateBucketIndexUsingBaseN(distance);
         }
-
-        private const int BucketPower = 2; // 初期値を2に設定 (2の累乗)
 
         private int CalculateBucketIndexUsingBitShift(float distance)
         {
