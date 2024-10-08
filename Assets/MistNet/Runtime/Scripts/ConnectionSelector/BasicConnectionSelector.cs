@@ -19,6 +19,7 @@ namespace MistNet
             if (!_connectedNodes.Add(id)) return;
             var dataStr = string.Join(",", _connectedNodes);
             SendAll(dataStr);
+            RequestObject(id);
         }
 
         public override void OnDisconnected(string id)

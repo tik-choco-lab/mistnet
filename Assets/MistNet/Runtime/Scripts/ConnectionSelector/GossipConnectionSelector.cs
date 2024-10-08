@@ -73,21 +73,21 @@ namespace MistNet
             var selfData = _users.GetValueOrDefault(MistPeerData.I.SelfId);
             var nearChunkList = new List<Chunk>
             {
-                new(selfData.chunk.x - 1, selfData.chunk.y, selfData.chunk.z),
-                new(selfData.chunk.x + 1, selfData.chunk.y, selfData.chunk.z),
-                new(selfData.chunk.x, selfData.chunk.y - 1, selfData.chunk.z),
-                new(selfData.chunk.x, selfData.chunk.y + 1, selfData.chunk.z),
-                new(selfData.chunk.x, selfData.chunk.y, selfData.chunk.z - 1),
-                new(selfData.chunk.x, selfData.chunk.y, selfData.chunk.z + 1),
+                new(selfData.Chunk.x - 1, selfData.Chunk.y, selfData.Chunk.z),
+                new(selfData.Chunk.x + 1, selfData.Chunk.y, selfData.Chunk.z),
+                new(selfData.Chunk.x, selfData.Chunk.y - 1, selfData.Chunk.z),
+                new(selfData.Chunk.x, selfData.Chunk.y + 1, selfData.Chunk.z),
+                new(selfData.Chunk.x, selfData.Chunk.y, selfData.Chunk.z - 1),
+                new(selfData.Chunk.x, selfData.Chunk.y, selfData.Chunk.z + 1),
             };
             var nearUsers = _users
                 .Where(x => x.Key != MistPeerData.I.SelfId)
-                .Where(x => nearChunkList.Contains(x.Value.chunk))
+                .Where(x => nearChunkList.Contains(x.Value.Chunk))
                 .Select(x => x.Key);
 
             var sameChunkUsers = _users
                 .Where(x => x.Key != MistPeerData.I.SelfId)
-                .Where(x => x.Value.chunk.Equals(selfData.chunk))
+                .Where(x => x.Value.Chunk.Equals(selfData.Chunk))
                 .Select(x => x.Key);
 
             foreach (var userId in sameChunkUsers)
@@ -116,9 +116,9 @@ namespace MistNet
             var selfData = _users.GetValueOrDefault(MistPeerData.I.SelfId);
 
             var position = objectData.transform.position;
-            selfData.position = new Position(position.x, position.y, position.z);
-            selfData.chunk = selfData.position.ToChunk;
-            selfData.last_update = DateTime.Now.ToString("o");
+            selfData.Position = new Position(position.x, position.y, position.z);
+            selfData.Chunk = selfData.Position.ToChunk;
+            selfData.LastUpdate = DateTime.Now;
 
             _users[MistPeerData.I.SelfId] = selfData;
         }

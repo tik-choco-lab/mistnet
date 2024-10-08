@@ -33,6 +33,11 @@ namespace MistNet
             MistSyncManager.I.RequestObjectInstantiateInfo(targetId);
         }
 
+        protected virtual void RemoveObject(string targetId)
+        {
+            MistSyncManager.I.RemoveObject(targetId);
+        }
+
         public virtual void OnSpawned(string id)
         {
         }

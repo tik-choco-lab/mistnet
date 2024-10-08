@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace MistNet
@@ -19,6 +20,13 @@ namespace MistNet
             this.x = x;
             this.y = y;
             this.z = z;
+        }
+
+        public Position(Vector3 vector3)
+        {
+            x = vector3.x;
+            y = vector3.y;
+            z = vector3.z;
         }
 
         public Chunk ToChunk => new
@@ -70,19 +78,79 @@ namespace MistNet
         }
     }
 
-    [Serializable]
     public class Node
     {
-        public Chunk chunk; // 1,2,-1 のような形式
-        public string id;
-        public Position position;
-        public string last_update;
-        public DateTime LastUpdate => DateTime.Parse(last_update);
+        public Chunk Chunk; // 1,2,-1 のような形式
+        public NodeId Id;
+        public Position Position;
+        public DateTime LastUpdate;
 
-        public Node(Chunk chunk, Position position)
+        public Node(NodeId nodeId, Position position)
         {
-            this.chunk = chunk;
-            this.position = position;
+            Id = nodeId;
+            Position = position;
+            Chunk = position.ToChunk;
+            LastUpdate = DateTime.Now;
+        }
+    }
+
+    [JsonConverter(typeof(NodeIdConverter))]
+    public readonly struct NodeId
+    {
+        private readonly string _nodeId;
+
+        public NodeId(string nodeId)
+        {
+            _nodeId = nodeId;
+        }
+
+        public override string ToString()
+        {
+            return _nodeId;
+        }
+
+        public static implicit operator string(NodeId nodeId)
+        {
+            return nodeId.ToString();
+        }
+
+        public static implicit operator NodeId(string nodeId)
+        {
+            return new NodeId(nodeId);
+        }
+
+        public static bool operator ==(NodeId a, NodeId b)
+        {
+            return a._nodeId == b._nodeId;
+        }
+
+        public static bool operator !=(NodeId a, NodeId b)
+        {
+            return a._nodeId != b._nodeId;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is NodeId other && _nodeId == other._nodeId;
+        }
+
+        public override int GetHashCode()
+        {
+            return _nodeId.GetHashCode();
+        }
+    }
+
+    public class NodeIdConverter : JsonConverter<NodeId>
+    {
+        public override void WriteJson(JsonWriter writer, NodeId value, JsonSerializer serializer)
+        {
+            writer.WriteValue(value.ToString());
+        }
+
+        public override NodeId ReadJson(JsonReader reader, Type objectType, NodeId existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            var nodeId = (string)reader.Value;
+            return new NodeId(nodeId);
         }
     }
 

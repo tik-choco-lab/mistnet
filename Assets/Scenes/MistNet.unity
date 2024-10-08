@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 55600893}
   - component: {fileID: 55600892}
+  - component: {fileID: 55600894}
   m_Layer: 0
   m_Name: OctreeConnectionSelector
   m_TagString: Untagged
@@ -167,6 +168,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5615826333483994238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &55600894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 55600891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2640667af6e531d42bbe751955710568, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &171857067
 GameObject:
   m_ObjectHideFlags: 0
@@ -1136,6 +1149,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
+      propertyPath: Routing
+      value: 
+      objectReference: {fileID: 55600894}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
       propertyPath: ShowLog
       value: 0
       objectReference: {fileID: 0}
@@ -1210,6 +1228,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7535620709568929115, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8137426695319156061, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: m_Name
@@ -1219,6 +1242,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9036998985847439126, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}

@@ -82,6 +82,11 @@ namespace MistNet
             SendObjectInstantiateInfo(sourceId);
         }
 
+        public void RemoveObject(string targetId)
+        {
+            DestroyBySenderId(targetId);
+        }
+
         private void ReceiveLocation(byte[] data, string sourceId)
         {
             var location = MemoryPackSerializer.Deserialize<P_Location>(data);
