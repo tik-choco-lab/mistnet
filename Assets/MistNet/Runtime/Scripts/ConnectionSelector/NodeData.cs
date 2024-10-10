@@ -78,7 +78,7 @@ namespace MistNet
         }
     }
 
-    public class Node
+    public struct Node
     {
         public Chunk Chunk; // 1,2,-1 のような形式
         public NodeId Id;
@@ -91,6 +91,27 @@ namespace MistNet
             Position = position;
             Chunk = position.ToChunk;
             LastUpdate = DateTime.Now;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            var other = (Node)obj;
+            return Id == other.Id;
+        }
+
+        public bool Equals(Node other)
+        {
+            return Id == other.Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
         }
     }
 

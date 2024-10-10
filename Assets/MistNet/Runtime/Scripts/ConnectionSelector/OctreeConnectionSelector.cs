@@ -10,7 +10,7 @@ namespace MistNet
 {
     public class OctreeConnectionSelector : IConnectionSelector
     {
-        private const int MaxVisibleNodes = 20;
+        private const int MaxVisibleNodes = 5;
         private const string NodeMessageType = "node";
         private const string PingMessageType = "ping";
         private const string PongMessageType = "pong";
@@ -23,10 +23,11 @@ namespace MistNet
         private const int RequestObjectIntervalSeconds = 1;
 
         private readonly HashSet<string> _connectedNodes = new();
-        private readonly List<List<Node>> _buckets = new();
+        private readonly List<HashSet<Node>> _buckets = new();
         private Dictionary<string, Action<string, string>> _onMessageReceived;
 
         private readonly Dictionary<string, bool> _pongWaitList = new();
+        private readonly Dictionary<string, int> _nodeIdToBucketIndex = new();
 
         // Objectとして表示しているNodeのリスト
         private readonly HashSet<string> _visibleNodes = new();
@@ -52,6 +53,7 @@ namespace MistNet
 
             UpdateRequestObjectInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateNodeInfo(this.GetCancellationTokenOnDestroy()).Forget();
+            UpdateDebugShowBucketInfo(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public override void OnConnected(string id)
@@ -81,14 +83,26 @@ namespace MistNet
             var index = GetBucketIndex(position);
 
             Debug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
+
+            var oldIndex = _nodeIdToBucketIndex.GetValueOrDefault(nodeId, -1);
+            var needUpdate = oldIndex != index;
+            if (oldIndex != -1 && needUpdate)
+            {
+                // 前回と値が異なる場合
+                var oldNode = _buckets[oldIndex].First(n => n.Id == nodeId);
+                _buckets[oldIndex].Remove(oldNode);
+            }
+
             if (index >= _buckets.Count)
             {
+                // 初期化
                 while (_buckets.Count <= index)
                 {
-                    _buckets.Add(new List<Node>());
+                    _buckets.Add(new HashSet<Node>());
                 }
 
-                _buckets[index] = new List<Node> { node };
+                // 新規追加
+                AddNode(index, node);
                 return;
             }
 
@@ -98,8 +112,15 @@ namespace MistNet
             }
             else
             {
-                _buckets[index].Add(node);
+                AddNode(index, node);
             }
+        }
+
+        private void AddNode(int index, Node node)
+        {
+            _buckets[index] ??= new HashSet<Node>();
+            _buckets[index].Add(node);
+            _nodeIdToBucketIndex[node.Id] = index;
         }
 
         private void OnPingReceived(string data, string senderId)
@@ -128,7 +149,8 @@ namespace MistNet
         /// <param name= "newNode" ></param>
         private async UniTask SendPingAndAddNode(int index, Node newNode)
         {
-            var oldNode = _buckets[index][0];
+            var oldNode = _buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
+            Debug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
 
             var octreeMessage = new OctreeMessage
             {
@@ -146,10 +168,16 @@ namespace MistNet
             if (!_pongWaitList[oldNode.Id])
             {
                 _buckets[index].Add(newNode);
-                _buckets[index].RemoveAt(0);
+                DeleteNode(index, oldNode);
             }
 
             _pongWaitList.Remove(oldNode.Id);
+        }
+
+        private void DeleteNode(int index, Node oldNode)
+        {
+            _buckets[index].Remove(oldNode);
+            _nodeIdToBucketIndex.Remove(oldNode.Id);
         }
 
         private int GetBucketIndex(Vector3 position)
@@ -160,6 +188,7 @@ namespace MistNet
             return CalculateBucketIndexUsingBaseN(distance);
         }
 
+        #region CalculateBucketIndex base N
         private int CalculateBucketIndexUsingBitShift(float distance)
         {
             // 初期バケツインデックス
@@ -183,11 +212,12 @@ namespace MistNet
 
             return bucketIndex;
         }
+        #endregion
 
         private int CalculateBucketIndexUsingBaseN(float distance)
         {
             // 初期バケツインデックス
-            int bucketIndex = 0;
+            var bucketIndex = 0;
 
             // 距離が1未満の場合、バケツ0に分類
             if (distance < 1)
@@ -196,7 +226,7 @@ namespace MistNet
             }
 
             // 整数部分にキャスト
-            int intDistance = Mathf.FloorToInt(distance);
+            var intDistance = Mathf.FloorToInt(distance);
 
             // 基数 baseN で割り続ける
             while (intDistance >= BucketBase)
@@ -268,6 +298,22 @@ namespace MistNet
             }
         }
 
+        private async UniTask UpdateDebugShowBucketInfo(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
+                for (var i = 0; i < _buckets.Count; i++)
+                {
+                    var outputStr = "";
+                    foreach (var node in _buckets[i])
+                    {
+                        outputStr += $"{node.Id}, ";
+                    }
+                    Debug.Log($"[ConnectionSelector] Bucket {i}: {_buckets[i].Count} {outputStr}");
+                }
+            }
+        }
 
         public override void OnSpawned(string id)
         {
