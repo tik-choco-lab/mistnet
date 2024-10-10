@@ -42,7 +42,7 @@ namespace MistNet
         {
         }
 
-        public virtual void OnDespawned(string id)
+        public virtual void OnDestroyed(string id)
         {
         }
 

@@ -12,6 +12,7 @@ namespace MistNet
     {
         private const int MaxVisibleNodes = 5;
         private const string NodeMessageType = "node";
+        private const string NodesMessageType = "nodes";
         private const string PingMessageType = "ping";
         private const string PongMessageType = "pong";
 
@@ -47,6 +48,7 @@ namespace MistNet
             _onMessageReceived = new Dictionary<string, Action<string, string>>
             {
                 { NodeMessageType, OnNodeReceived },
+                { NodesMessageType, OnNodesReceived },
                 { PingMessageType, OnPingReceived },
                 { PongMessageType, OnPongReceived },
             };
@@ -54,6 +56,7 @@ namespace MistNet
             UpdateRequestObjectInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateNodeInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateDebugShowBucketInfo(this.GetCancellationTokenOnDestroy()).Forget();
+            UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public override void OnConnected(string id)
@@ -78,7 +81,14 @@ namespace MistNet
         private void OnNodeReceived(string data, string senderId)
         {
             var node = JsonConvert.DeserializeObject<Node>(data);
+            OnNodeReceived(node, senderId);
+        }
+
+        private void OnNodeReceived(Node node, string senderId)
+        {
             var nodeId = node.Id;
+            if (nodeId == MistPeerData.I.SelfId) return; // 自分のNodeは無視
+
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
 
@@ -116,11 +126,26 @@ namespace MistNet
             }
         }
 
+        private void OnNodesReceived(string data, string senderId)
+        {
+            var nodes = JsonConvert.DeserializeObject<List<Node>>(data);
+            foreach (var node in nodes)
+            {
+                OnNodeReceived(node, senderId);
+            }
+        }
+
         private void AddNode(int index, Node node)
         {
             _buckets[index] ??= new HashSet<Node>();
             _buckets[index].Add(node);
             _nodeIdToBucketIndex[node.Id] = index;
+        }
+
+        private void DeleteNode(int index, Node oldNode)
+        {
+            _buckets[index].Remove(oldNode);
+            _nodeIdToBucketIndex.Remove(oldNode.Id);
         }
 
         private void OnPingReceived(string data, string senderId)
@@ -172,12 +197,6 @@ namespace MistNet
             }
 
             _pongWaitList.Remove(oldNode.Id);
-        }
-
-        private void DeleteNode(int index, Node oldNode)
-        {
-            _buckets[index].Remove(oldNode);
-            _nodeIdToBucketIndex.Remove(oldNode.Id);
         }
 
         private int GetBucketIndex(Vector3 position)
@@ -238,19 +257,36 @@ namespace MistNet
             return bucketIndex;
         }
 
-        private string CreateNodeInfo()
+        private static string CreateNodeInfo()
+        {
+            var node = CreateSelfNodeData();
+            var octreeMessage = new OctreeMessage
+            {
+                type = NodeMessageType,
+                data = JsonConvert.SerializeObject(node)
+            };
+            return JsonConvert.SerializeObject(octreeMessage);
+        }
+
+        private static Node CreateSelfNodeData()
         {
             var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
             var node = new Node(
                 nodeId: new NodeId(MistPeerData.I.SelfId),
                 position: new Position(selfPosition)
             );
+            return node;
+        }
+
+        private string CreateNodesInfo()
+        {
+            var nodes = _buckets.SelectMany(b => b).ToList();
+            nodes.Add(CreateSelfNodeData());
             var octreeMessage = new OctreeMessage
             {
-                type = NodeMessageType,
-                data = JsonConvert.SerializeObject(node)
+                type = NodesMessageType,
+                data = JsonConvert.SerializeObject(nodes)
             };
-
             return JsonConvert.SerializeObject(octreeMessage);
         }
 
@@ -260,7 +296,7 @@ namespace MistNet
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(NodeUpdateIntervalSeconds), cancellationToken: token);
 
-                var message = CreateNodeInfo();
+                var message = CreateNodesInfo();
                 foreach (var id in _connectedNodes)
                 {
                     Send(message, id);
@@ -315,15 +351,33 @@ namespace MistNet
             }
         }
 
+        private async UniTask UpdateFindNextConnect(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
+
+                foreach (var node in from bucket in _buckets where bucket.Count != 0 select bucket.First())
+                {
+                    if (MistManager.I.CompareId(node.Id))
+                    {
+                        MistManager.I.Connect(node.Id).Forget();
+                    }
+
+                    break;
+                }
+            }
+        }
+
         public override void OnSpawned(string id)
         {
             base.OnSpawned(id);
             _visibleNodes.Add(id);
         }
 
-        public override void OnDespawned(string id)
+        public override void OnDestroyed(string id)
         {
-            base.OnDespawned(id);
+            base.OnDestroyed(id);
             _visibleNodes.Remove(id);
         }
     }

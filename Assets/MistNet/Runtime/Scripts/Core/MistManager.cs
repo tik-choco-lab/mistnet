@@ -271,7 +271,7 @@ namespace MistNet
         public void OnDespawned(string id)
         {
             MistDebug.Log($"[Despawned] {id}");
-            connectionSelector.OnDespawned(id);
+            connectionSelector.OnDestroyed(id);
         }
 
         public void Disconnect(string id)
