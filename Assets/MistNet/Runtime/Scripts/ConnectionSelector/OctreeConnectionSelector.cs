@@ -10,7 +10,7 @@ namespace MistNet
 {
     public class OctreeConnectionSelector : IConnectionSelector
     {
-        private const int MaxVisibleNodes = 5;
+        private const int MaxVisibleNodes = 15;
         private const string NodeMessageType = "node";
         private const string NodesMessageType = "nodes";
         private const string PingMessageType = "ping";
@@ -31,7 +31,7 @@ namespace MistNet
         private readonly Dictionary<string, int> _nodeIdToBucketIndex = new();
 
         // Objectとして表示しているNodeのリスト
-        private readonly HashSet<string> _visibleNodes = new();
+        private readonly HashSet<NodeId> _visibleNodes = new();
 
         [Serializable]
         private class OctreeMessage
@@ -309,27 +309,33 @@ namespace MistNet
             while (!token.IsCancellationRequested)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(RequestObjectIntervalSeconds), cancellationToken: token);
-                var index = 0;
 
-                // 新規表示するノードの処理
-                for (var i = _visibleNodes.Count; i < MaxVisibleNodes; i++)
+                // 現在の位置を取得
+                var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
+
+                // バケツのノードを距離順にソートして新規表示ノードを選定
+                var visibleNodes = _buckets
+                    .Where(bucket => bucket.Count != 0)
+                    .SelectMany(bucket => bucket)
+                    .OrderBy(node => Vector3.Distance(selfPosition, node.Position.ToVector3()))
+                    .Take(MaxVisibleNodes)
+                    .Select(node => node.Id)
+                    .ToHashSet();
+
+                // 現在表示中のノードと比較し、表示する必要があるノードを追加
+                var nodesToShow = visibleNodes.Except(_visibleNodes).ToList();
+                foreach (var nodeId in nodesToShow)
                 {
-                    if (index >= _buckets.Count) break;
-
-                    var nodes = _buckets[index++];
-                    foreach (var node in nodes.Where(node => !_visibleNodes.Contains(node.Id)))
-                    {
-                        RequestObject(node.Id);
-                        _visibleNodes.Add(node.Id); // ノードを表示リストに追加
-                    }
+                    RequestObject(nodeId);
+                    _visibleNodes.Add(nodeId);
                 }
 
-                // 非表示にするノードの処理
-                var nodesToHide = _visibleNodes.Where(id => _buckets.SelectMany(b => b).All(n => n.Id != id)).ToList();
+                // 現在表示中のノードのうち、非表示にする必要があるノードを削除
+                var nodesToHide = _visibleNodes.Except(visibleNodes).ToList();
                 foreach (var nodeId in nodesToHide)
                 {
-                    RemoveObject(nodeId); // 非表示処理
-                    _visibleNodes.Remove(nodeId); // ノードを表示リストから削除
+                    RemoveObject(nodeId);
+                    _visibleNodes.Remove(nodeId);
                 }
             }
         }
