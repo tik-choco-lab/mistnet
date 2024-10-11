@@ -10,7 +10,7 @@ namespace MistNet
 {
     public class OctreeConnectionSelector : IConnectionSelector
     {
-        private const int MaxVisibleNodes = 15;
+        private const int MaxVisibleNodes = 5;
         private const string NodeMessageType = "node";
         private const string NodesMessageType = "nodes";
         private const string PingMessageType = "ping";
@@ -326,6 +326,7 @@ namespace MistNet
                 var nodesToShow = visibleNodes.Except(_visibleNodes).ToList();
                 foreach (var nodeId in nodesToShow)
                 {
+                    Debug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
                     RequestObject(nodeId);
                     _visibleNodes.Add(nodeId);
                 }
@@ -334,6 +335,7 @@ namespace MistNet
                 var nodesToHide = _visibleNodes.Except(visibleNodes).ToList();
                 foreach (var nodeId in nodesToHide)
                 {
+                    Debug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
                     RemoveObject(nodeId);
                     _visibleNodes.Remove(nodeId);
                 }
