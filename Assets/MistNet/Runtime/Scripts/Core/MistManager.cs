@@ -66,6 +66,7 @@ namespace MistNet
             if (!MistPeerData.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
+                if (targetId == null) return; // メッセージの破棄
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
@@ -227,16 +228,12 @@ namespace MistNet
 
         public async UniTaskVoid Connect(string id)
         {
-            if (id == MistPeerData.I.SelfId)
-            {
-                MistDebug.LogWarning("Connect to self");
-                return;
-            }
+            if (id == MistPeerData.I.SelfId) return;
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
             
-            await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
+            // await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
             
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
@@ -251,7 +248,7 @@ namespace MistNet
 
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
-            MistSyncManager.I.SendObjectInstantiateInfo(id);
+            // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
         }
@@ -263,6 +260,18 @@ namespace MistNet
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
+        }
+
+        public void OnSpawned(string id)
+        {
+            MistDebug.Log($"[Spawned] {id}");
+            connectionSelector.OnSpawned(id);
+        }
+
+        public void OnDespawned(string id)
+        {
+            MistDebug.Log($"[Despawned] {id}");
+            connectionSelector.OnDestroyed(id);
         }
 
         public void Disconnect(string id)

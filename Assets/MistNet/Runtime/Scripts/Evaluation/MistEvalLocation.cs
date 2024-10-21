@@ -13,8 +13,10 @@ namespace MyNamespace
     /// </summary>
     public class MistEvalLocation : MonoBehaviour
     {
+        private const string EvalServerUrl = "ws://localhost:3000";
         private static readonly float IntervalDistanceTimeSec = 0.95f;
         private CancellationTokenSource _cancelTokenSource = new();
+        private WebSocketHandler _ws;
 
         private Dictionary<string, object> _locationData = new()
         {
@@ -23,14 +25,17 @@ namespace MyNamespace
             { "location", ""},
             { "connection", ""},
         };
+
         private void Start()
         {
+            _ws = new WebSocketHandler(EvalServerUrl);
             SendLocationPeriodically(_cancelTokenSource.Token).Forget();
         }
         
         private void OnDestroy()
         {
             _cancelTokenSource.Cancel();
+            _ws?.Dispose();
         }
         
         // 定期的にサーバーに座標を送信する
@@ -44,13 +49,13 @@ namespace MyNamespace
 
                 _locationData["id"] = MistPeerData.I.SelfId;
                 
-                var connection = MistConnectionOptimizer.I.GetConnectionInfo();
+                // var connection = MistConnectionOptimizer.I.GetConnectionInfo();
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
                 var positionStr = $"{position.x},{position.y},{position.z}";
                 _locationData["location"] = positionStr;
-                _locationData["connection"] = connection;
+                // _locationData["connection"] = connection;
                 
-                MistSignalingWebSocket.I.Ws.Send(JsonConvert.SerializeObject(_locationData));
+                _ws.Send(JsonConvert.SerializeObject(_locationData));
                 MistDebug.Log($"[Eval] Send location: {positionStr}");
             }
         }

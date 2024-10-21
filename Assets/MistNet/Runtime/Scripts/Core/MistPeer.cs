@@ -225,7 +225,7 @@ namespace MistNet
                 MistDebug.LogWarning($"[Signaling][Send] DataChannel is null -> {Id}");
                 return;
             }
-            
+
             switch (_dataChannel)
             {
                 case { ReadyState: RTCDataChannelState.Closed }:
@@ -339,6 +339,7 @@ namespace MistNet
         {
             Connection?.Dispose();
             _dataChannel?.Dispose();
+            _dataChannel = null;
             Connection = null;
         }
     }
