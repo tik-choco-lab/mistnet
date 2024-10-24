@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json;
 
@@ -13,7 +14,7 @@ namespace MistNet
         private WebSocketHandler _ws;
         private MistSignaling _mistSignaling;
 
-        private void Start()
+        private async void Start()
         {
             I = this;
             _mistSignaling = new MistSignaling();
@@ -31,7 +32,8 @@ namespace MistNet
             // 接続
             ConnectToSignalingServer();
 
-            // Check
+            // try to connect to other nodes
+            await UniTask.Yield(); // VCの初期化でAudioSourceをあらかじめMistPeerDataに登録する必要があるため
             _mistSignaling.SendSignalingRequest();
         }
 

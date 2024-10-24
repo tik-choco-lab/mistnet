@@ -26,6 +26,8 @@ namespace MistNet
         public readonly Action<string> OnDisconnected;
 
         private AudioSource _outputAudioSource;
+        private MediaStream _receiveStream;
+        private RTCRtpSender _sender;
 
         public MistPeer(string id)
         {
@@ -97,15 +99,6 @@ namespace MistNet
         public async UniTask<RTCSessionDescription> CreateAnswer(RTCSessionDescription remoteDescription)
         {
             MistDebug.Log($"[Signaling][CreateAnswer] -> {Id}");
-
-            // GM.Msg("SetTrack", Connection); // 音声等を追加する
-            // Connection.OnTrack = e =>
-            // {
-            //     if (e.Track.Kind == TrackKind.Audio)
-            //     {
-            //         _remoteStream.AddTrack(e.Track);
-            //     }
-            // };
 
             // ----------------------------
             // RemoteDescription
@@ -197,12 +190,25 @@ namespace MistNet
 
         public void AddInputAudioSource(AudioSource audioSource)
         {
-            Connection.AddTrack(new AudioStreamTrack(audioSource));
+            Debug.Log($"[Debug][AddTrack][0] AddInputAudioSource {Id}");
+            var track = new AudioStreamTrack(audioSource);
+            var sendStream = new MediaStream();
+            _sender = Connection.AddTrack(track, sendStream);
         }
 
         public void AddOutputAudioSource(AudioSource audioSource)
         {
+            _outputAudioSource = audioSource;
+            _receiveStream = new MediaStream();
+            _receiveStream.OnAddTrack += e =>
+            {
+                if (e.Track is not AudioStreamTrack track) return;
 
+                Debug.Log($"[MistPeer][OnAddTrack] {Id}");
+                _outputAudioSource.SetTrack(track);
+                _outputAudioSource.loop = true;
+                _outputAudioSource.Play();
+            };
         }
 
         public async UniTaskVoid Send(byte[] data)
@@ -251,6 +257,7 @@ namespace MistNet
             // _dataChannel?.Close();
 
             // PeerConnectionを閉じる
+            Connection.RemoveTrack(_sender);
             Connection.Close();
             SignalingState = MistSignalingState.InitialStable;
             Connection = null;
@@ -317,15 +324,13 @@ namespace MistNet
             OnCandidate?.Invoke(new Ice(candidate));
         }
 
-        private void OnTrack(RTCTrackEvent e)
+        private async void OnTrack(RTCTrackEvent e)
         {
-            MistDebug.Log($"[MistPeer][OnTrack] -> {Id}");
-            if (e.Track is not AudioStreamTrack track) return;
-            if (_outputAudioSource == null) return;
-
-            _outputAudioSource.SetTrack(track);
-            _outputAudioSource.loop = true;
-            _outputAudioSource.Play();
+            if (e.Track.Kind != TrackKind.Audio) return;
+            Debug.Log($"[MistPeer][OnTrack] {Id}");
+            await UniTask.WaitUntil(() => _receiveStream != null);
+            Debug.Log($"[MistPeer][OnTrack] {Id} AddTrack");
+            _receiveStream.AddTrack(e.Track);
         }
 
         private async UniTask Reconnect()
