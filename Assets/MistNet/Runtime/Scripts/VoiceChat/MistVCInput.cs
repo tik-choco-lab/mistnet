@@ -42,14 +42,14 @@ namespace MistNet.VC
             Microphone.End(null);
 
             // 新しいマイクで録音を開始し、AudioSourceに設定
-            audioSource.clip = Microphone.Start(deviceName, true, 10, 44100);
             audioSource.loop = true;
+            audioSource.clip = Microphone.Start(deviceName, true, 10, 44100);
 
             // マイクが準備できるまで待つ
             while (!(Microphone.GetPosition(deviceName) > 0)) { }
 
             // 自身のマイク音声は再生しないのでコメントアウト
-            // audioSource.Play();
+            audioSource.Play();
 
             // MistPeerData にオーディオ入力を追加
             MistPeerData.I.AddInputAudioSource(audioSource);

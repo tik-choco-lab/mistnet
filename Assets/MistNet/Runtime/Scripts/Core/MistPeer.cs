@@ -18,14 +18,13 @@ namespace MistNet
 
         public string Id;
         private RTCDataChannel _dataChannel;
-        // private readonly MediaStream _remoteStream = new();
 
         public readonly Action<byte[], string> OnMessage;
         public Action<Ice> OnCandidate;
         public readonly Action<string> OnConnected;
         public readonly Action<string> OnDisconnected;
 
-        private MediaStream _receiveStream;
+        private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
 
         public MistPeer(string id)
@@ -187,28 +186,6 @@ namespace MistNet
             Connection.AddIceCandidate(candidate.Get());
         }
 
-        public void AddInputAudioSource(AudioSource audioSource)
-        {
-            Debug.Log($"[Debug][AddTrack][0] AddInputAudioSource {Id}");
-            var track = new AudioStreamTrack(audioSource);
-            var sendStream = new MediaStream();
-            _sender = Connection.AddTrack(track, sendStream);
-        }
-
-        public void AddOutputAudioSource(AudioSource audioSource)
-        {
-            _receiveStream = new MediaStream();
-            _receiveStream.OnAddTrack += e =>
-            {
-                if (e.Track is not AudioStreamTrack track) return;
-
-                Debug.Log($"[MistPeer][OnAddTrack] {Id}");
-                audioSource.SetTrack(track);
-                audioSource.loop = true;
-                audioSource.Play();
-            };
-        }
-
         public async UniTaskVoid Send(byte[] data)
         {
             if (MistConfig.LatencyMilliseconds > 0)
@@ -324,11 +301,25 @@ namespace MistNet
 
         private async void OnTrack(RTCTrackEvent e)
         {
-            if (e.Track.Kind != TrackKind.Audio) return;
+            if (e.Track is not AudioStreamTrack track) return;
+            await UniTask.WaitUntil(() => _outputAudioSource != null);
             Debug.Log($"[MistPeer][OnTrack] {Id}");
-            await UniTask.WaitUntil(() => _receiveStream != null);
-            Debug.Log($"[MistPeer][OnTrack] {Id} AddTrack");
-            _receiveStream.AddTrack(e.Track);
+
+            _outputAudioSource.SetTrack(track);
+            _outputAudioSource.loop = true;
+            _outputAudioSource.Play();
+        }
+
+        public void AddInputAudioSource(AudioSource audioSource)
+        {
+            Debug.Log($"[MistPeer][AddTrack] {Id}");
+            var track = new AudioStreamTrack(audioSource);
+            _sender = Connection.AddTrack(track);
+        }
+
+        public void AddOutputAudioSource(AudioSource audioSource)
+        {
+            _outputAudioSource = audioSource;
         }
 
         private async UniTask Reconnect()

@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioSource: {fileID: 8868082003619030801}
-  selectedMicDevice: "\u30DE\u30A4\u30AF (FIFINE K670 Microphone)"
+  selectedMicDevice: "\u30DE\u30A4\u30AF (C922 Pro Stream Webcam)"
 --- !u!82 &8868082003619030801
 AudioSource:
   m_ObjectHideFlags: 0
@@ -61,7 +61,7 @@ AudioSource:
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
