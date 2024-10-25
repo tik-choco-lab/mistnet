@@ -25,7 +25,6 @@ namespace MistNet
         public readonly Action<string> OnConnected;
         public readonly Action<string> OnDisconnected;
 
-        private AudioSource _outputAudioSource;
         private MediaStream _receiveStream;
         private RTCRtpSender _sender;
 
@@ -198,16 +197,15 @@ namespace MistNet
 
         public void AddOutputAudioSource(AudioSource audioSource)
         {
-            _outputAudioSource = audioSource;
             _receiveStream = new MediaStream();
             _receiveStream.OnAddTrack += e =>
             {
                 if (e.Track is not AudioStreamTrack track) return;
 
                 Debug.Log($"[MistPeer][OnAddTrack] {Id}");
-                _outputAudioSource.SetTrack(track);
-                _outputAudioSource.loop = true;
-                _outputAudioSource.Play();
+                audioSource.SetTrack(track);
+                audioSource.loop = true;
+                audioSource.Play();
             };
         }
 
