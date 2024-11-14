@@ -15,6 +15,7 @@ namespace MistNet
             _dict.Values.Where(x => x.State is MistPeerState.Connected or MistPeerState.Disconnecting).ToList();
 
         private readonly Dictionary<string, MistPeerDataElement> _dict = new();
+        private AudioSource _selfAudioSource;
 
         public void Init()
         {
@@ -42,12 +43,26 @@ namespace MistNet
         {
             if (_dict.TryGetValue(id, out var peerData))
             {
-                if (peerData.Peer == null) peerData.Peer = new MistPeer(id);
+                if (peerData.Peer == null)
+                {
+                    peerData.Peer = new MistPeer(id);
+                    // if (_selfAudioSource != null)
+                    {
+                        Debug.Log($"[Debug][AddInputAudioSource][0] {id}");
+                        peerData.Peer.AddInputAudioSource(_selfAudioSource);
+                    }
+                }
                 else peerData.Peer.Id = id;
                 return peerData.Peer;
             }
 
             _dict.Add(id, new MistPeerDataElement(id));
+            // if (_selfAudioSource != null)
+            {
+                Debug.Log($"[Debug][AddInputAudioSource][1] {id}");
+                _dict[id].Peer.AddInputAudioSource(_selfAudioSource);
+            }
+
             return _dict[id].Peer;
         }
 
@@ -105,6 +120,11 @@ namespace MistNet
             peerData.Peer?.Dispose();
             peerData.Peer = null;
             _dict.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
+        }
+
+        public void AddInputAudioSource(AudioSource audioSource)
+        {
+            _selfAudioSource = audioSource;
         }
     }
 
