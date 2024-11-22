@@ -82,3 +82,5 @@ MistNet/evaluation.json
 Assets/Samples/
 auth.yaml
 friends.yaml
+
+build_config.ini
