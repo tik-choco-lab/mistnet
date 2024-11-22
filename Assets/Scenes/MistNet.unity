@@ -1021,6 +1021,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: MistVCInput
       objectReference: {fileID: 0}
+    - target: {fileID: 2928613205662398830, guid: 68bfb2a594e90e6449b8920b81ac7013,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3786955586604841724, guid: 68bfb2a594e90e6449b8920b81ac7013,
         type: 3}
       propertyPath: selectedMicDevice
