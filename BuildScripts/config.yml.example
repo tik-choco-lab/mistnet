@@ -1,0 +1,17 @@
+project_path: "/mistnet"
+unity_path: "/Applications/Unity/Hub/Editor/6000.0.25f1/Unity.app/Contents/MacOS/Unity"
+method_name: "BuildScript.Build"
+build_target: "StandaloneWindows64"
+log_file: "/build/build.log"
+build_directory: "/build/"
+development: True
+server_url:
+# scenes: Assets/Scenes/Scene1.unity,Assets/Scenes/Scene2.unity
+
+# Available build targets:
+# StandaloneWindows
+# StandaloneWindows64
+# StandaloneOSX
+# StandaloneLinux64
+# iOS
+# Android
