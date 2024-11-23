@@ -83,23 +83,23 @@ public class BuildScript
         var buildDirectory = GetCommandLineArg("-buildDirectory") ?? "Builds/";
         // debug or release
         var buildOptions = developmentBuild ? "debug" : "release";
-        buildDirectory = $"{buildDirectory}{buildOptions}/";
+        buildDirectory = $"{buildDirectory}{buildOptions}/{buildTarget.ToString()}/";
         var productName = PlayerSettings.productName;
 
         switch (buildTarget)
         {
             case BuildTarget.StandaloneOSX:
-                return $"{buildDirectory}macOS/{productName}.app";
+                return $"{buildDirectory}{productName}.app";
             case BuildTarget.StandaloneWindows:
-                return $"{buildDirectory}Windows/{productName}_32.exe";
+                return $"{buildDirectory}{productName}_32.exe";
             case BuildTarget.StandaloneWindows64:
-                return $"{buildDirectory}Windows/{productName}.exe";
+                return $"{buildDirectory}{productName}.exe";
             case BuildTarget.StandaloneLinux64:
-                return $"{buildDirectory}Linux/{productName}";
+                return $"{buildDirectory}{productName}";
             case BuildTarget.iOS:
-                return $"{buildDirectory}iOS/{productName}";
+                return $"{buildDirectory}{productName}";
             case BuildTarget.Android:
-                return $"{buildDirectory}Android/{productName}.apk";
+                return $"{buildDirectory}{productName}.apk";
             default:
                 Debug.LogError("Unsupported build target.");
                 return $"{buildDirectory}Unknown/{productName}";

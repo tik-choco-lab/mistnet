@@ -1,6 +1,22 @@
 import subprocess
 import sys
-import configparser
+import yaml
+import os
+
+def load_build_config(config_path):
+    try:
+        with open(config_path, "r", encoding="utf-8") as file:
+            config = yaml.safe_load(file)
+        return config
+    except FileNotFoundError:
+        print(f"Error: Configuration file '{config_path}' not found.")
+        sys.exit(1)
+    except yaml.YAMLError as e:
+        print(f"Error parsing YAML file: {e}")
+        sys.exit(1)
+
+def parse_scenes(scenes):
+    return scenes.split(',') if scenes else None
 
 def build_unity_project(unity_path, project_path, method_name, build_target, log_file=None, build_directory=None, scenes=None, development=False):
     cmd = [
@@ -31,21 +47,25 @@ def build_unity_project(unity_path, project_path, method_name, build_target, log
     except subprocess.CalledProcessError as e:
         print(f"Error during build: {e}")
         sys.exit(1)
+        
+        
+def main():    
+    config_path = f"{os.path.dirname(__file__)}/config.yml"
+    
+    build_settings = load_build_config(config_path)
+    print(build_settings)
+    
+    unity_path = build_settings.get('unity_path', "C:/Program Files/Unity/Hub/Editor/6000.0.25f1/Editor/Unity.exe")
+    project_path = build_settings.get('project_path', "")
+    method_name = build_settings.get('method_name', "BuildScript.Build")
+    build_target = build_settings.get('build_target', "StandaloneWindows64")
+    log_file = build_settings.get('log_file', None)
+    build_directory = build_settings.get('build_directory', None)
+    scenes = parse_scenes(build_settings.get('scenes', None))
+    development = build_settings.get('development', False)
+
+    # Run the build
+    build_unity_project(unity_path, project_path, method_name, build_target, log_file, build_directory, scenes, development)
 
 if __name__ == "__main__":
-    config_path = "build_config.ini"
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    
-    unity_path = config.get('BuildSettings', 'unity_path', fallback="C:/Program Files/Unity/Hub/Editor/6000.0.25f1/Editor/Unity.exe")
-    project_path = config.get('BuildSettings', 'project_path', fallback="")
-    method_name = config.get('BuildSettings', 'method_name', fallback="BuildScript.Build")
-    build_target = config.get('BuildSettings', 'build_target', fallback="StandaloneWindows64")
-    log_file = config.get('BuildSettings', 'log_file', fallback="")
-    build_directory = config.get('BuildSettings', 'build_directory', fallback="")
-    scenes = config.get('BuildSettings', 'scenes', fallback=None)
-    if scenes:
-        scenes = scenes.split(',')
-    development = config.getboolean('BuildSettings', 'development', fallback=False)
-
-    build_unity_project(unity_path, project_path, method_name, build_target, log_file, build_directory, scenes, development)
+    main()
