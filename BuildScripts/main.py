@@ -14,14 +14,14 @@ f.close()
 release = "debug" if config["development"] else "release"
 build_directory = config["build_directory"]
 build_target = config["build_target"]
-build_path = f"{build_directory}/{release}/{build_target}"
+build_path = f"{build_directory}{release}/{build_target}"
 zip_path = f"{build_path}.zip"
 ftp_path = f"/data/{product_name}/{application_version}/{release}/{build_target}.zip"
 
-# build_unity_project()
+build_unity_project()
 
-# zip_directory(build_path, zip_path)
+zip_directory(build_path, zip_path)
 
-# ftps_file_transfer(zip_path, ftp_path)
+ftps_file_transfer(zip_path, ftp_path)
 
 print(f"URL: {config["server_url"]}{product_name}/{application_version}/{release}/{build_target}.zip")
