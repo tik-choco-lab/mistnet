@@ -312,6 +312,7 @@ namespace MistNet
 
         public void AddInputAudioSource(AudioSource audioSource)
         {
+            if (audioSource == null) return;
             Debug.Log($"[MistPeer][AddTrack] {Id}");
             var track = new AudioStreamTrack(audioSource);
             _sender = Connection.AddTrack(track);

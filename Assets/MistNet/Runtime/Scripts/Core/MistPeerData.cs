@@ -46,22 +46,15 @@ namespace MistNet
                 if (peerData.Peer == null)
                 {
                     peerData.Peer = new MistPeer(id);
-                    // if (_selfAudioSource != null)
-                    {
-                        Debug.Log($"[Debug][AddInputAudioSource][0] {id}");
-                        peerData.Peer.AddInputAudioSource(_selfAudioSource);
-                    }
+                    peerData.Peer.AddInputAudioSource(_selfAudioSource);
                 }
                 else peerData.Peer.Id = id;
+
                 return peerData.Peer;
             }
 
             _dict.Add(id, new MistPeerDataElement(id));
-            // if (_selfAudioSource != null)
-            {
-                Debug.Log($"[Debug][AddInputAudioSource][1] {id}");
-                _dict[id].Peer.AddInputAudioSource(_selfAudioSource);
-            }
+            _dict[id].Peer.AddInputAudioSource(_selfAudioSource);
 
             return _dict[id].Peer;
         }
@@ -98,7 +91,7 @@ namespace MistNet
             {
                 _dict.Add(id, new MistPeerDataElement(id));
             }
-            
+
             var peerData = _dict[id];
             peerData.Peer ??= new MistPeer(id);
             peerData.Id = id;
@@ -111,7 +104,7 @@ namespace MistNet
 
             // return peerData.State != MistPeerState.Connected;
         }
-        
+
         public void OnDisconnected(string id)
         {
             if (string.IsNullOrEmpty(id)) return;
@@ -140,6 +133,7 @@ namespace MistNet
         public MistPeerState State = MistPeerState.Disconnected;
         public float Distance { get; set; }
         public int BlockConnectIntervalTime { get; set; }
+
         public MistPeerDataElement(string id)
         {
             Id = id;
