@@ -232,22 +232,11 @@ namespace MistNet
             // _dataChannel?.Close();
 
             // PeerConnectionを閉じる
-            Connection.RemoveTrack(_sender);
+            if (_sender != null) Connection.RemoveTrack(_sender);
             Connection.Close();
             SignalingState = MistSignalingState.InitialStable;
             Connection = null;
         }
-
-        // public void ForceClose()
-        // {
-        //     // DataChannelを閉じる
-        //     _dataChannel?.Close();
-        //
-        //     // PeerConnectionを閉じる
-        //     Connection.Close();
-        //
-        //     SignalingState = MistSignalingState.InitialStable;
-        // }
 
         private void OnIceConnectionChange(RTCIceConnectionState state)
         {

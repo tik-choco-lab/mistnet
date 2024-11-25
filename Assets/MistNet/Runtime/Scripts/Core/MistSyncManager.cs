@@ -39,7 +39,7 @@ namespace MistNet
             // UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        public void SendObjectInstantiateInfo(string id)
+        private void SendObjectInstantiateInfo(string id)
         {
             var sendData = new P_ObjectInstantiate();
             foreach (var obj in _mySyncObjects.Values)
@@ -52,22 +52,29 @@ namespace MistNet
                 var data = MemoryPackSerializer.Serialize(sendData);
                 MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
             }
+            Debug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
         {
-            // await UniTask.Yield(); // これを入れないと生成に失敗することがある　おそらくどこかで初期化処理が走っているため
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
             if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
+
+            // -----------------
+            // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
+            await UniTask.Yield();
 
             var obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
             obj.transform.position = instantiateData.Position;
             obj.transform.rotation = Quaternion.Euler(instantiateData.Rotation);
+
+            // -----------------
             var syncObject = obj.GetComponent<MistSyncObject>();
             syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
 
             RegisterSyncObject(syncObject);
             MistManager.I.OnSpawned(sourceId);
+            Debug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
         public void RequestObjectInstantiateInfo(string id)
@@ -75,15 +82,23 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
+            Debug.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
         }
 
+        /// <summary>
+        /// TODO: ここが呼ばれないことがある
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="sourceId"></param>
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, string sourceId)
         {
+            Debug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
         public void RemoveObject(string targetId)
         {
+            Debug.Log($"[Debug] RemoveObject: {targetId}");
             DestroyBySenderId(targetId);
         }
 

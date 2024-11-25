@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 55600892}
   - component: {fileID: 55600894}
   m_Layer: 0
-  m_Name: OctreeConnectionSelector
+  m_Name: DhtConnectionSelector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -149,6 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b91d9986453bba74b9cad17ea3513446, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  routing: {fileID: 55600894}
 --- !u!4 &55600893
 Transform:
   m_ObjectHideFlags: 0
@@ -173,7 +174,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 55600891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2640667af6e531d42bbe751955710568, type: 3}
+  m_Script: {fileID: 11500000, guid: f5a35e57f5774ba7b34d59fce27ae5a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &171857067

@@ -34,25 +34,14 @@ namespace MistNet
             if (!_syncObject.IsOwner)
             {
                 _syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
-                return;
             }
+
+            Debug.Log($"[Debug] Start: {_syncObject.Id} {_syncObject.IsOwner}");
         }
 
         private void Update()
         {
             if (_sendData == null) return; // 初期化が終わっていない場合は、処理しない
-
-            // if (_syncObject.IsGlobalObject)
-            // {
-            //     Debug.Log($"[Transform][Update] {_sendData.ObjId}");
-            //     UpdateAndSendLocation();
-            //     InterpolationLocation();
-            //
-            //     // 受信時に座標が変わるため、その際の相手への送信を防ぐ
-            //     _previousPosition = transform.position;
-            //     _previousRotation = transform.rotation;
-            //     return;
-            // }
 
             if (_syncObject.IsOwner)
             {
@@ -80,12 +69,7 @@ namespace MistNet
 
             _sendData.Position = transform.position;
             _sendData.Rotation = transform.rotation.eulerAngles;
-            
-            if (_syncObject.IsPlayerObject && MistSendingOptimizer.I != null)
-            {
-                MistSendingOptimizer.I.SendLocationData = _sendData;
-                return;
-            }
+
 
             if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Send] {_sendData.ObjId}");
             if (_syncIntervalTimeSecond == 0) _syncIntervalTimeSecond = 0.1f;
@@ -103,15 +87,14 @@ namespace MistNet
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;
-            // MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
+
             _elapsedTime = 0f;
         }
 
         private void InterpolationLocation()
         {
             if (_syncIntervalTimeSecond == 0) return;
-            
-            // var timeRatio = _elapsedTime / _syncIntervalTimeSecond;
+
             var timeRatio = Mathf.Clamp01(_elapsedTime / _syncIntervalTimeSecond);
             _elapsedTime += Time.deltaTime;
             

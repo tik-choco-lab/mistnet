@@ -1,9 +1,14 @@
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace MistNet
 {
-    public class BasicRouting : IRouting
+    public class DhtRouting : IRouting
     {
+        public readonly HashSet<string> ConnectedNodes = new();
+        public readonly List<HashSet<Node>> Buckets = new();
+        public readonly Dictionary<string, int> NodeIdToBucketIndex = new();
         private readonly Dictionary<string, string> _routingTable = new();
 
         public override void Add(string sourceId, string fromId)
@@ -31,10 +36,17 @@ namespace MistNet
             MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
 
             // 適当に返す
-            if (MistManager.I.MistPeerData.GetConnectedPeer.Count != 0)
-                return MistManager.I.MistPeerData.GetConnectedPeer[0].Id;
+            if (NodeIdToBucketIndex.TryGetValue(targetId, out var bucketIndex))
+            {
+                var bucket = Buckets[bucketIndex];
+                if (bucket.Count != 0)
+                {
+                    var node = bucket.First(n => ConnectedNodes.Contains(n.Id));
+                    if (!string.IsNullOrEmpty(node.Id)) return node.Id;
+                }
+            }
 
-            MistDebug.LogWarning("[RoutingTable] Not found connected peer");
+            Debug.LogError($"[RoutingTable] Not found bucket index {targetId}");
             return null;
         }
     }

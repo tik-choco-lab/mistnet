@@ -66,7 +66,12 @@ namespace MistNet
             if (!MistPeerData.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
-                if (targetId == null) return; // メッセージの破棄
+                if (targetId == null)
+                {
+                    Debug.LogError($"[Error] {targetId} is not connected");
+                    return; // メッセージの破棄
+                }
+
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
@@ -232,9 +237,9 @@ namespace MistNet
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
-            
+
             // await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
-            
+
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
                 MistDebug.Log($"[Connect] {id} is not connected");
@@ -280,12 +285,12 @@ namespace MistNet
             peer.Close();
             OnDisconnected(id);
         }
-        
+
         public void AddJoinedCallback(Delegate callback)
         {
             OnConnectedAction += (Action<string>)callback;
         }
-        
+
         public void AddLeftCallback(Delegate callback)
         {
             OnDisconnectedAction += (Action<string>)callback;

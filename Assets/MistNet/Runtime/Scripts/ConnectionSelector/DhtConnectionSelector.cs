@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class OctreeConnectionSelector : IConnectionSelector
+    public class DhtConnectionSelector : IConnectionSelector
     {
         private const int MaxVisibleNodes = 5;
         private const string NodeMessageType = "node";
@@ -23,18 +23,16 @@ namespace MistNet
         private const int NodeUpdateIntervalSeconds = 5;
         private const int RequestObjectIntervalSeconds = 1;
 
-        private readonly HashSet<string> _connectedNodes = new();
-        private readonly List<HashSet<Node>> _buckets = new();
-        private Dictionary<string, Action<string, string>> _onMessageReceived;
+        [SerializeField] private DhtRouting routing;
 
+        private Dictionary<string, Action<string, string>> _onMessageReceived;
         private readonly Dictionary<string, bool> _pongWaitList = new();
-        private readonly Dictionary<string, int> _nodeIdToBucketIndex = new();
 
         // Objectとして表示しているNodeのリスト
         private readonly HashSet<NodeId> _visibleNodes = new();
 
         [Serializable]
-        private class OctreeMessage
+        private class ConnectionSelectorMessage
         {
             public string type;
             public string data;
@@ -62,19 +60,19 @@ namespace MistNet
         public override void OnConnected(string id)
         {
             Debug.Log($"[ConnectionSelector] OnConnected: {id}");
-            if (!_connectedNodes.Add(id)) return;
+            routing.ConnectedNodes.Add(id);
         }
 
         public override void OnDisconnected(string id)
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
-            _connectedNodes.Remove(id);
+            routing.ConnectedNodes.Remove(id);
         }
 
         protected override void OnMessage(string data, string senderId)
         {
             Debug.Log($"[ConnectionSelector] OnMessage: {data}");
-            var message = JsonConvert.DeserializeObject<OctreeMessage>(data);
+            var message = JsonConvert.DeserializeObject<ConnectionSelectorMessage>(data);
             _onMessageReceived[message.type](message.data, senderId);
         }
 
@@ -94,21 +92,21 @@ namespace MistNet
 
             Debug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
 
-            var oldIndex = _nodeIdToBucketIndex.GetValueOrDefault(nodeId, -1);
+            var oldIndex = routing.NodeIdToBucketIndex.GetValueOrDefault(nodeId, -1);
             var needUpdate = oldIndex != index;
             if (oldIndex != -1 && needUpdate)
             {
                 // 前回と値が異なる場合
-                var oldNode = _buckets[oldIndex].First(n => n.Id == nodeId);
-                _buckets[oldIndex].Remove(oldNode);
+                var oldNode = routing.Buckets[oldIndex].First(n => n.Id == nodeId);
+                routing.Buckets[oldIndex].Remove(oldNode);
             }
 
-            if (index >= _buckets.Count)
+            if (index >= routing.Buckets.Count)
             {
                 // 初期化
-                while (_buckets.Count <= index)
+                while (routing.Buckets.Count <= index)
                 {
-                    _buckets.Add(new HashSet<Node>());
+                    routing.Buckets.Add(new HashSet<Node>());
                 }
 
                 // 新規追加
@@ -116,7 +114,7 @@ namespace MistNet
                 return;
             }
 
-            if (_buckets[index].Count >= BucketSize)
+            if (routing.Buckets[index].Count >= BucketSize)
             {
                 SendPingAndAddNode(index, node).Forget();
             }
@@ -137,20 +135,20 @@ namespace MistNet
 
         private void AddNode(int index, Node node)
         {
-            _buckets[index] ??= new HashSet<Node>();
-            _buckets[index].Add(node);
-            _nodeIdToBucketIndex[node.Id] = index;
+            routing.Buckets[index] ??= new HashSet<Node>();
+            routing.Buckets[index].Add(node);
+            routing.NodeIdToBucketIndex[node.Id] = index;
         }
 
         private void DeleteNode(int index, Node oldNode)
         {
-            _buckets[index].Remove(oldNode);
-            _nodeIdToBucketIndex.Remove(oldNode.Id);
+            routing.Buckets[index].Remove(oldNode);
+            routing.NodeIdToBucketIndex.Remove(oldNode.Id);
         }
 
         private void OnPingReceived(string data, string senderId)
         {
-            var message = new OctreeMessage
+            var message = new ConnectionSelectorMessage
             {
                 type = PongMessageType,
                 data = MistPeerData.I.SelfId,
@@ -174,10 +172,10 @@ namespace MistNet
         /// <param name= "newNode" ></param>
         private async UniTask SendPingAndAddNode(int index, Node newNode)
         {
-            var oldNode = _buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
+            var oldNode = routing.Buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
             Debug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
 
-            var octreeMessage = new OctreeMessage
+            var octreeMessage = new ConnectionSelectorMessage
             {
                 type = PingMessageType,
             };
@@ -192,7 +190,7 @@ namespace MistNet
 
             if (!_pongWaitList[oldNode.Id])
             {
-                _buckets[index].Add(newNode);
+                routing.Buckets[index].Add(newNode);
                 DeleteNode(index, oldNode);
             }
 
@@ -260,7 +258,7 @@ namespace MistNet
         private static string CreateNodeInfo()
         {
             var node = CreateSelfNodeData();
-            var octreeMessage = new OctreeMessage
+            var octreeMessage = new ConnectionSelectorMessage
             {
                 type = NodeMessageType,
                 data = JsonConvert.SerializeObject(node)
@@ -280,9 +278,9 @@ namespace MistNet
 
         private string CreateNodesInfo()
         {
-            var nodes = _buckets.SelectMany(b => b).ToList();
+            var nodes = routing.Buckets.SelectMany(b => b).ToList();
             nodes.Add(CreateSelfNodeData());
-            var octreeMessage = new OctreeMessage
+            var octreeMessage = new ConnectionSelectorMessage
             {
                 type = NodesMessageType,
                 data = JsonConvert.SerializeObject(nodes)
@@ -297,8 +295,9 @@ namespace MistNet
                 await UniTask.Delay(TimeSpan.FromSeconds(NodeUpdateIntervalSeconds), cancellationToken: token);
 
                 var message = CreateNodesInfo();
-                foreach (var id in _connectedNodes)
+                foreach (var id in routing.ConnectedNodes)
                 {
+                    if (string.IsNullOrEmpty(id)) Debug.LogError("[ConnectionSelector] Connected node id is empty");
                     Send(message, id);
                 }
             }
@@ -314,7 +313,7 @@ namespace MistNet
                 var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
 
                 // バケツのノードを距離順にソートして新規表示ノードを選定
-                var visibleNodes = _buckets
+                var visibleNodes = routing.Buckets
                     .Where(bucket => bucket.Count != 0)
                     .SelectMany(bucket => bucket)
                     .OrderBy(node => Vector3.Distance(selfPosition, node.Position.ToVector3()))
@@ -327,7 +326,8 @@ namespace MistNet
                 foreach (var nodeId in nodesToShow)
                 {
                     Debug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
-                    RequestObject(nodeId);
+                    if (string.IsNullOrEmpty(nodeId)) Debug.LogError("[ConnectionSelector] Node id is empty");
+                    RequestObject(nodeId); // Objectを表示するRequestを出す
                     _visibleNodes.Add(nodeId);
                 }
 
@@ -336,7 +336,7 @@ namespace MistNet
                 foreach (var nodeId in nodesToHide)
                 {
                     Debug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
-                    RemoveObject(nodeId);
+                    RemoveObject(nodeId); // Objectを非表示にする
                     _visibleNodes.Remove(nodeId);
                 }
             }
@@ -347,14 +347,14 @@ namespace MistNet
             while (!token.IsCancellationRequested)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
-                for (var i = 0; i < _buckets.Count; i++)
+                for (var i = 0; i < routing.Buckets.Count; i++)
                 {
                     var outputStr = "";
-                    foreach (var node in _buckets[i])
+                    foreach (var node in routing.Buckets[i])
                     {
                         outputStr += $"{node.Id}, ";
                     }
-                    Debug.Log($"[ConnectionSelector] Bucket {i}: {_buckets[i].Count} {outputStr}");
+                    Debug.Log($"[ConnectionSelector] Bucket {i}: {routing.Buckets[i].Count} {outputStr}");
                 }
             }
         }
@@ -365,7 +365,7 @@ namespace MistNet
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
 
-                foreach (var node in from bucket in _buckets where bucket.Count != 0 select bucket.First())
+                foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
                     if (MistManager.I.CompareId(node.Id))
                     {
