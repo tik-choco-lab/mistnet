@@ -75,7 +75,7 @@ namespace MistNet
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
-            if (type == MistNetMessageType.Signaling)
+            if (type == MistNetMessageType.ObjectInstantiateRequest)
             {
                 MistDebug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
             }
@@ -84,7 +84,10 @@ namespace MistNet
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
                 peerData.Peer.Send(sendData).Forget();
+                return;
             }
+
+            Debug.LogError($"[Error] {targetId} is not connected");
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)

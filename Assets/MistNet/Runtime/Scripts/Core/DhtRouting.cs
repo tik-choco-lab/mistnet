@@ -41,8 +41,11 @@ namespace MistNet
                 var bucket = Buckets[bucketIndex];
                 if (bucket.Count != 0)
                 {
-                    var node = bucket.First(n => ConnectedNodes.Contains(n.Id));
-                    if (!string.IsNullOrEmpty(node.Id)) return node.Id;
+                    var node = bucket.FirstOrDefault(n => ConnectedNodes.Contains(n.Id));
+                    if (!string.IsNullOrEmpty(node.Id)) // デフォルト値もしくは条件不一致でない場合
+                    {
+                        return node.Id;
+                    }
                 }
             }
 

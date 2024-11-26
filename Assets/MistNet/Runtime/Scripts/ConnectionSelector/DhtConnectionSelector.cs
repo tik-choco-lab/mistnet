@@ -339,6 +339,14 @@ namespace MistNet
                     RemoveObject(nodeId); // Objectを非表示にする
                     _visibleNodes.Remove(nodeId);
                 }
+
+                // Debug用に表示
+                var outputStr = "";
+                foreach (var nodeId in _visibleNodes)
+                {
+                    outputStr += $"{nodeId}, ";
+                }
+                Debug.Log($"[ConnectionSelector] VisibleNodes: {_visibleNodes.Count} {outputStr}");
             }
         }
 

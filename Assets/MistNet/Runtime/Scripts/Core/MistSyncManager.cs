@@ -77,6 +77,10 @@ namespace MistNet
             Debug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
+        /// <summary>
+        /// 相手はRequestを出して，自身は出さないことがある
+        /// </summary>
+        /// <param name="id"></param>
         public void RequestObjectInstantiateInfo(string id)
         {
             var sendData = new P_ObjectInstantiateRequest();
