@@ -193,17 +193,17 @@ namespace MistNet
                 await UniTask.Delay(MistConfig.LatencyMilliseconds);
             }
 
-            if (SignalingState == MistSignalingState.NegotiationInProgress)
-            {
-                // TODO: Queueに変更する
-                Debug.Log("[Debug] Send Waiting...");
-                await UniTask.WaitUntil(() => _dataChannel is { ReadyState: RTCDataChannelState.Open });
-            }
+            // if (SignalingState == MistSignalingState.NegotiationInProgress)
+            // {
+            //     // TODO: Queueに変更する
+            //     Debug.Log("[Debug] Send Waiting...");
+            //     await UniTask.WaitUntil(() => _dataChannel is { ReadyState: RTCDataChannelState.Open });
+            // }
             
             // _dataChannelがCloseのとき
             if (_dataChannel == null)
             {
-                MistDebug.LogWarning($"[Signaling][Send] DataChannel is null -> {Id}");
+                Debug.LogError($"[Signaling][Send] DataChannel is null -> {Id}");
                 return;
             }
 
@@ -211,7 +211,7 @@ namespace MistNet
             {
                 case { ReadyState: RTCDataChannelState.Closed }:
                 case { ReadyState: RTCDataChannelState.Closing }:
-                    MistDebug.LogWarning($"[Signaling][Send] DataChannel is closed -> {Id}");
+                    Debug.LogError($"[Signaling][Send] DataChannel is closed -> {Id}");
                     return;
             }
             

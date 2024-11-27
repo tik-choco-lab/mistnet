@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.WebRTC;
 using UnityEngine;
 
 namespace MistNet
@@ -33,6 +34,11 @@ namespace MistNet
             }
         }
 
+        /// <summary>
+        /// TODO: IsConnectedが正しく機能していないかも
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public bool IsConnected(string id)
         {
             if (!_dict.TryGetValue(id, out var data)) return false;
@@ -130,6 +136,9 @@ namespace MistNet
         public int MinConnectNum = 2;
         public int LimitConnectNum;
         public int MaxConnectNum;
+        /// <summary>
+        /// TODO: ↓ 正しい値になっていないことがある
+        /// </summary>
         public MistPeerState State = MistPeerState.Disconnected;
         public float Distance { get; set; }
         public int BlockConnectIntervalTime { get; set; }
@@ -140,6 +149,6 @@ namespace MistNet
             Peer = new(id);
         }
 
-        public bool IsConnected => State == MistPeerState.Connected;
+        public bool IsConnected => Peer.Connection.ConnectionState == RTCPeerConnectionState.Connected;
     }
 }

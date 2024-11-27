@@ -6,10 +6,12 @@ namespace MistNet
 {
     public class DhtRouting : IRouting
     {
+        // ↓以下の2つ，まとめられそう？
         public readonly HashSet<string> ConnectedNodes = new();
+        private readonly Dictionary<string, string> _routingTable = new();
+
         public readonly List<HashSet<Node>> Buckets = new();
         public readonly Dictionary<string, int> NodeIdToBucketIndex = new();
-        private readonly Dictionary<string, string> _routingTable = new();
 
         public override void Add(string sourceId, string fromId)
         {
@@ -27,6 +29,8 @@ namespace MistNet
 
         public override string Get(string targetId)
         {
+            if (ConnectedNodes.Contains(targetId)) return targetId;
+
             MistDebug.Log($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {

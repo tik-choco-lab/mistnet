@@ -206,7 +206,6 @@ namespace MistNet
             }
 
             // 他のPeer宛のメッセージの場合
-
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {

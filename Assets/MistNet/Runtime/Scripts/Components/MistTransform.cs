@@ -84,6 +84,7 @@ namespace MistNet
             if (_syncObject.IsOwner) return;
 
             if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
+            Debug.Log($"[Debug][Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             _syncIntervalTimeSecond = location.Time;
