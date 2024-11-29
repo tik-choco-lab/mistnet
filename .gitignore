@@ -89,3 +89,5 @@ __pycache__/
 
 .env
 config.yml
+
+BuildScripts/build/*
