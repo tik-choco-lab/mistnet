@@ -256,7 +256,6 @@ namespace MistNet
 
                 foreach (var id in missingObjectIds)
                 {
-                    Debug.Log($"[Debug][MistSyncManager] RequestObjectInstantiateInfo: {id}");
                     RequestObjectInstantiateInfo(id);
                 }
             }

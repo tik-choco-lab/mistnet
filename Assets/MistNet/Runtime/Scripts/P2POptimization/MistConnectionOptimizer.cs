@@ -190,7 +190,7 @@ namespace MistNet
             if (id == MistManager.I.MistPeerData.SelfId) return;
             if (CompareId(id)) return;
             MistDebug.Log($"[Info][*] Connect Request {id}");
-            MistManager.I.Connect(id).Forget();
+            MistManager.I.Connect(id);
         }
 
         /// <summary>

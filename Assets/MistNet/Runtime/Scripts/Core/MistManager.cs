@@ -75,11 +75,6 @@ namespace MistNet
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
-            if (type == MistNetMessageType.ObjectInstantiateRequest)
-            {
-                MistDebug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
-            }
-
             if (MistPeerData.IsConnected(targetId))
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
@@ -233,9 +228,11 @@ namespace MistNet
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
-        public async UniTaskVoid Connect(string id)
+        public void Connect(string id)
         {
             if (id == MistPeerData.I.SelfId) return;
+            var state = MistPeerData.GetPeerData(id).State;
+            if (state is MistPeerState.Connected or MistPeerState.Connecting) return;
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;

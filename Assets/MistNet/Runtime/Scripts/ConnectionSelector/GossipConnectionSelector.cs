@@ -92,7 +92,7 @@ namespace MistNet
 
             foreach (var userId in sameChunkUsers)
             {
-                MistManager.I.Connect(userId).Forget();
+                MistManager.I.Connect(userId);
             }
         }
 
@@ -105,7 +105,7 @@ namespace MistNet
                     .Where(x => !MistPeerData.I.IsConnected(x) && MistManager.I.CompareId(x));
                 foreach (var nodeId in failedNodes)
                 {
-                    MistManager.I.Connect(nodeId).Forget();
+                    MistManager.I.Connect(nodeId);
                 }
             }
         }

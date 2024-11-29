@@ -377,7 +377,7 @@ namespace MistNet
                 {
                     if (MistManager.I.CompareId(node.Id))
                     {
-                        MistManager.I.Connect(node.Id).Forget();
+                        MistManager.I.Connect(node.Id);
                     }
 
                     break;
