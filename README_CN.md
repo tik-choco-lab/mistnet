@@ -109,10 +109,10 @@ void RPC_○○ () {}
 [SerializeField] MistSyncObject syncObject;
 
 // 發送給包括自己在內的所有人的方法
-syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
+syncObject.RPCAll(nameof(RPC_○○), args);
 
 // 向所有連接的Peer發送的方法
-syncObject.RPCAll(nameof(RPC_○○), args);
+syncObject.RPCOther(nameof(RPC_○○), args);
 
 // 指定接收者ID並執行的方法
 syncObject.RPC(id, nameof(RPC_○○), args);
