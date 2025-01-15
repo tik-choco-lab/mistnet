@@ -135,5 +135,6 @@ Furthermore, it is possible to execute a specific method at the time of synchron
 ```csharp
 [MistSync(OnChanged = nameof(OnChanged))]
 int hp { get; set; }
+
 void OnChanged();    
 ```
