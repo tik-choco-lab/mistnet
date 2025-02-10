@@ -94,12 +94,13 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerData in MistPeerData.GetConnectedPeer)
+            foreach (var peerId in Routing.ConnectedNodes)
             {
-                MistDebug.Log($"[SEND][{peerData.Id}] {type.ToString()}");
-                message.TargetId = peerData.Id;
+                MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
+                message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
-                peerData.Peer.Send(sendData).Forget();
+                var peerData = MistPeerData.GetPeer(peerId);
+                peerData.Send(sendData).Forget();
             }
         }
 
@@ -255,6 +256,7 @@ namespace MistNet
             // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
+            Routing.OnConnected(id);
         }
 
         public void OnDisconnected(string id)
@@ -264,6 +266,7 @@ namespace MistNet
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
+            Routing.OnDisconnected(id);
         }
 
         public void OnSpawned(string id)

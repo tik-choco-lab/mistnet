@@ -31,7 +31,6 @@ namespace MistNet
         public void RemovePeer(string id)
         {
             PeerConnectionPriorityList.Remove(id);
-            MistSendingOptimizer.I.RemoveCategory(id);
         }
 
         public void UpdateDistance()
@@ -76,8 +75,6 @@ namespace MistNet
                 category = key;
                 break;
             }
-
-            MistSendingOptimizer.I.SetCategory(id, category);
         }
     }
 }

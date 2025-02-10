@@ -57,18 +57,6 @@ namespace MistNet
             UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        public override void OnConnected(string id)
-        {
-            Debug.Log($"[ConnectionSelector] OnConnected: {id}");
-            routing.ConnectedNodes.Add(id);
-        }
-
-        public override void OnDisconnected(string id)
-        {
-            Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
-            routing.ConnectedNodes.Remove(id);
-        }
-
         protected override void OnMessage(string data, string senderId)
         {
             Debug.Log($"[ConnectionSelector] OnMessage: {data}");

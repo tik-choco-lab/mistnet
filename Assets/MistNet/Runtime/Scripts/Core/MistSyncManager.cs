@@ -196,12 +196,12 @@ namespace MistNet
         {
             if (!OwnerIdAndObjIdDict.ContainsKey(senderId))
             {
-                MistDebug.LogWarning("Already destroyed");
+                MistDebug.LogError("Already destroyed");
                 return;
             }
 
-            var objId = OwnerIdAndObjIdDict[senderId];
-            foreach (var id in objId)
+            var objIds = OwnerIdAndObjIdDict[senderId];
+            foreach (var id in objIds)
             {
                 Destroy(_syncObjects[id].gameObject);
                 _syncObjects.Remove(id);

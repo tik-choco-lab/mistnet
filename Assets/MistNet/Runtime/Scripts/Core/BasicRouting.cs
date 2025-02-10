@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MistNet
 {
@@ -31,8 +32,8 @@ namespace MistNet
             MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
 
             // 適当に返す
-            if (MistManager.I.MistPeerData.GetConnectedPeer.Count != 0)
-                return MistManager.I.MistPeerData.GetConnectedPeer[0].Id;
+            if (ConnectedNodes.Count != 0)
+                return ConnectedNodes.First();
 
             MistDebug.LogWarning("[RoutingTable] Not found connected peer");
             return null;

@@ -479,7 +479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab62af81ea3086a42a67d6c27ea73823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _syncIntervalTimeSecond: 0.1
+  syncIntervalTimeSecond: 0.1
 --- !u!114 &842117793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1374,6 +1374,7 @@ PrefabInstance:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
     m_RemovedGameObjects:
     - {fileID: 8750905894533009966, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
+    - {fileID: 2509968179627688950, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5898994104393881841, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}

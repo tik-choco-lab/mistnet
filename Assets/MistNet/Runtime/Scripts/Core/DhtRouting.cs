@@ -4,10 +4,12 @@ using UnityEngine;
 
 namespace MistNet
 {
+    /// <summary>
+    /// 基本，接続切断関係なく持つべきかも
+    /// </summary>
     public class DhtRouting : IRouting
     {
         // ↓以下の2つ，まとめられそう？
-        public readonly HashSet<string> ConnectedNodes = new();
         private readonly Dictionary<string, string> _routingTable = new();
 
         public readonly List<HashSet<Node>> Buckets = new();

@@ -12,9 +12,6 @@ namespace MistNet
         public string SelfId { get; private set; }
         public Dictionary<string, MistPeerDataElement> GetAllPeer => _dict;
 
-        public List<MistPeerDataElement> GetConnectedPeer =>
-            _dict.Values.Where(x => x.State is MistPeerState.Connected or MistPeerState.Disconnecting).ToList();
-
         private readonly Dictionary<string, MistPeerDataElement> _dict = new();
         private AudioSource _selfAudioSource;
 

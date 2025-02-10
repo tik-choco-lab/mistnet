@@ -3,7 +3,6 @@ using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
 using System;
-using Debug = UnityEngine.Debug;
 
 namespace MistNet
 {
@@ -74,7 +73,7 @@ namespace MistNet
             while (!token.IsCancellationRequested)
             {
                 // 現在の接続人数を調べる
-                var peers = MistPeerData.I.GetConnectedPeer;
+                var peers = MistManager.I.Routing.ConnectedNodes;
                 MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
                 
                 // 帯域幅(bps)を計算
