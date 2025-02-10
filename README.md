@@ -145,5 +145,6 @@ int hp { get; set; }
 ```csharp
 [MistSync(OnChanged = nameof(OnChanged))]
 int hp { get; set; }
+
 void OnChanged();    
 ```

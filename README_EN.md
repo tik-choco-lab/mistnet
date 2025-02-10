@@ -110,10 +110,10 @@ void RPC_○○ () {}
 [SerializeField] MistSyncObject syncObject;
 
 // Method to send to everyone including oneself
-syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
+syncObject.RPCAll(nameof(RPC_○○), args);
 
 // Method to send to all connected Peers
-syncObject.RPCAll(nameof(RPC_○○), args);
+syncObject.RPCOther(nameof(RPC_○○), args);
 
 // Method to execute by specifying the recipient's ID
 syncObject.RPC(id, nameof(RPC_○○), args);
@@ -135,5 +135,6 @@ Furthermore, it is possible to execute a specific method at the time of synchron
 ```csharp
 [MistSync(OnChanged = nameof(OnChanged))]
 int hp { get; set; }
+
 void OnChanged();    
 ```
