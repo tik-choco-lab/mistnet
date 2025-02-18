@@ -73,6 +73,8 @@ namespace MistNet
         private void OnNodeReceived(Node node, string senderId)
         {
             var nodeId = node.Id;
+            routing.Add(nodeId, senderId);
+
             if (nodeId == MistPeerData.I.SelfId) return; // 自分のNodeは無視
 
             var position = node.Position.ToVector3();
@@ -276,6 +278,10 @@ namespace MistNet
             return JsonConvert.SerializeObject(octreeMessage);
         }
 
+        /// <summary>
+        /// Node情報を接続中のNodeに送信する
+        /// </summary>
+        /// <param name="token"></param>
         private async UniTask UpdateNodeInfo(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -291,6 +297,11 @@ namespace MistNet
             }
         }
 
+        /// <summary>
+        /// 定期的に実行する
+        /// 表示するObjectの情報を更新する
+        /// </summary>
+        /// <param name="token"></param>
         private async UniTask UpdateRequestObjectInfo(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -338,6 +349,10 @@ namespace MistNet
             }
         }
 
+        /// <summary>
+        /// [Debug] バケツ情報を表示
+        /// </summary>
+        /// <param name="token"></param>
         private async UniTask UpdateDebugShowBucketInfo(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -355,6 +370,10 @@ namespace MistNet
             }
         }
 
+        /// <summary>
+        /// 次に接続するNodeを探す
+        /// </summary>
+        /// <param name="token"></param>
         private async UniTask UpdateFindNextConnect(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -363,6 +382,8 @@ namespace MistNet
 
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
+                    if (MistPeerData.I.IsConnected(node.Id)) continue;
+                    Debug.Log($"[ConnectionSelector] Connect: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {
                         MistManager.I.Connect(node.Id);

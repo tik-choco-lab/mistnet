@@ -21,11 +21,16 @@ namespace MistNet
 
         public virtual void Add(string sourceId, string fromId)
         {
+            Debug.LogError($"[RoutingTable] Add {sourceId} from {fromId}");
         }
 
         public virtual string Get(string targetId)
         {
             return null;
+        }
+
+        public virtual void Remove(string id)
+        {
         }
     }
 }

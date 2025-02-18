@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.WebRTC;
 using UnityEngine;
 
@@ -84,28 +83,6 @@ namespace MistNet
                 peerData.Peer.Dispose();
                 peerData.Peer = null;
             }
-        }
-
-        public void UpdatePeerData(string id, P_PeerData data)
-        {
-            if (string.IsNullOrEmpty(id)) return;
-
-            if (!_dict.ContainsKey(id))
-            {
-                _dict.Add(id, new MistPeerDataElement(id));
-            }
-
-            var peerData = _dict[id];
-            peerData.Peer ??= new MistPeer(id);
-            peerData.Id = id;
-            peerData.Peer.Id = id;
-            peerData.Position = data.Position;
-            peerData.CurrentConnectNum = data.CurrentConnectNum;
-            peerData.MinConnectNum = data.MinConnectNum;
-            peerData.LimitConnectNum = data.LimitConnectNum;
-            peerData.MaxConnectNum = data.MaxConnectNum;
-
-            // return peerData.State != MistPeerState.Connected;
         }
 
         public void OnDisconnected(string id)

@@ -9,7 +9,6 @@ namespace MistNet
     /// </summary>
     public class DhtRouting : IRouting
     {
-        // ↓以下の2つ，まとめられそう？
         private readonly Dictionary<string, string> _routingTable = new();
 
         public readonly List<HashSet<Node>> Buckets = new();
@@ -20,7 +19,7 @@ namespace MistNet
             if (sourceId == MistManager.I.MistPeerData.SelfId) return;
             if (sourceId == fromId) return;
 
-            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
+            Debug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
             if (_routingTable.TryAdd(sourceId, fromId))
             {
                 return;
@@ -57,6 +56,16 @@ namespace MistNet
 
             Debug.LogError($"[RoutingTable] Not found bucket index {targetId}");
             return null;
+        }
+
+        public override void Remove(string id)
+        {
+            if (!_routingTable.ContainsKey(id)) return;
+
+            Debug.Log($"[RoutingTable] Remove {id}");
+            _routingTable.Remove(id);
+            Buckets[NodeIdToBucketIndex[id]].RemoveWhere(n => n.Id == id);
+            NodeIdToBucketIndex.Remove(id);
         }
     }
 }

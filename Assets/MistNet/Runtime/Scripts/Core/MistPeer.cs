@@ -211,7 +211,7 @@ namespace MistNet
             {
                 case { ReadyState: RTCDataChannelState.Closed }:
                 case { ReadyState: RTCDataChannelState.Closing }:
-                    Debug.LogError($"[Signaling][Send] DataChannel is closed -> {Id}");
+                    // Debug.LogError($"[Signaling][Send] DataChannel is closed -> {Id}");
                     return;
             }
             

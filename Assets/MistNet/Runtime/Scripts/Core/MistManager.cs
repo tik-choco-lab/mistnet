@@ -82,7 +82,7 @@ namespace MistNet
                 return;
             }
 
-            Debug.LogError($"[Error] {targetId} is not connected");
+            Routing.Remove(targetId);
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
@@ -100,7 +100,10 @@ namespace MistNet
                 message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
                 var peerData = MistPeerData.GetPeer(peerId);
-                peerData.Send(sendData).Forget();
+                if (MistPeerData.GetPeerData(peerId).State is MistPeerState.Connected)
+                {
+                    peerData.Send(sendData).Forget();
+                }
             }
         }
 
@@ -232,8 +235,8 @@ namespace MistNet
         public void Connect(string id)
         {
             if (id == MistPeerData.I.SelfId) return;
-            var state = MistPeerData.GetPeerData(id).State;
-            if (state is MistPeerState.Connected or MistPeerState.Connecting) return;
+            // var state = MistPeerData.GetPeerData(id).State;
+            // if (state is MistPeerState.Connected or MistPeerState.Connecting) return;
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
