@@ -36,7 +36,7 @@ namespace MistNet
                 syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
             }
 
-            Debug.Log($"[Debug] Start: {_syncObject.Id} {_syncObject.IsOwner}");
+            MistDebug.Log($"[MistDebug] Start: {_syncObject.Id} {_syncObject.IsOwner}");
         }
 
         private void Update()
@@ -56,11 +56,8 @@ namespace MistNet
         private void UpdateAndSendLocation()
         {
             _time += Time.deltaTime;
-            if (_time < syncIntervalTimeSecond)
-            {
-                Debug.Log($"[Debug][Transform][Update] _syncIntervalTimeSecond: {_time}");
-                return;
-            }
+            if (_time < syncIntervalTimeSecond) return;
+            
             _time = 0;
 
             // 座標が変わっていない場合は、送信しない
@@ -75,7 +72,7 @@ namespace MistNet
             _sendData.Rotation = transform.rotation.eulerAngles;
 
 
-            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Send] {_sendData.ObjId}");
+            if (_syncObject.IsGlobalObject) MistDebug.Log($"[Transform][Send] {_sendData.ObjId}");
             if (syncIntervalTimeSecond == 0) syncIntervalTimeSecond = 0.1f;
             _sendData.Time = syncIntervalTimeSecond;
             var bytes = MemoryPackSerializer.Serialize(_sendData);
@@ -84,12 +81,12 @@ namespace MistNet
         
         public void ReceiveLocation(P_Location location)
         {
-            Debug.Log($"[Debug][Transform][Receive] {location.ObjId} {location.Position}");
+            MistDebug.Log($"[MistDebug][Transform][Receive] {location.ObjId} {location.Position}");
             if (_syncObject == null) return;
             if (_syncObject.IsOwner) return;
 
-            if (_syncObject.IsGlobalObject) Debug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
-            Debug.Log($"[Debug][Transform][Receive] {location.ObjId} {location.Position}");
+            if (_syncObject.IsGlobalObject) MistDebug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
+            MistDebug.Log($"[MistDebug][Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             syncIntervalTimeSecond = location.Time;
