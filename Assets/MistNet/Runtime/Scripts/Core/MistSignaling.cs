@@ -85,7 +85,7 @@ namespace MistNet
             //     return;
             // }
 
-            var peer = MistManager.I.MistPeerData.GetPeer(targetId);
+            var peer = MistPeerData.I.GetPeer(targetId);
             if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
             
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);

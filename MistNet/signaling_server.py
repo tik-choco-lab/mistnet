@@ -72,7 +72,8 @@ class WebSocketServer:
         if len(self.signaling_request_ids) > 0:
             client = self.client_by_id_dict[client_id]
             # randomに選択
-            index = random.randint(0, len(self.signaling_request_ids) - 1)
+            # index = random.randint(0, len(self.signaling_request_ids) - 1)
+            index = 0
             target_id = self.signaling_request_ids[index]
             await self.send_message(client, {"type": "signaling_response", "target_id": target_id, "request": "offer"})                        
         

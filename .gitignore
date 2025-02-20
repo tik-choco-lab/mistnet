@@ -83,8 +83,11 @@ Assets/Samples/
 auth.yaml
 friends.yaml
 
+Memo/
 .DS_Store
 __pycache__/
 
 .env
 config.yml
+
+BuildScripts/build/*

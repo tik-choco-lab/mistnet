@@ -1,25 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json;
-using WebSocketSharp;
 
 namespace MistNet
 {
     public class MistSignalingWebSocket : MonoBehaviour
     {
         public static MistSignalingWebSocket I;
-        public WebSocket Ws => _ws;
 
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
-        private WebSocket _ws;
+        private WebSocketHandler _ws;
         private MistSignaling _mistSignaling;
-        private readonly Queue<string> _messageQueue = new();
 
-        private void Start()
+        private async void Start()
         {
             I = this;
-            _messageQueue.Clear();
             _mistSignaling = new MistSignaling();
             _mistSignaling.Send += Send;
 
@@ -35,39 +32,31 @@ namespace MistNet
             // 接続
             ConnectToSignalingServer();
 
-            // Check
+            // try to connect to other nodes
+            await UniTask.Yield(); // VCの初期化でAudioSourceをあらかじめMistPeerDataに登録する必要があるため
             _mistSignaling.SendSignalingRequest();
         }
 
         private void OnDestroy()
         {
-            if (_ws != null)
-            {
-                _ws.Close();
-            }
-        }
-
-        private void Update()
-        {
-            if (_messageQueue.Count == 0) return;
-            
-            var text = _messageQueue.Dequeue();
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(text);
-            var type = response["type"].ToString();
-            _functions[type](response);
+            _ws?.Dispose();
         }
 
         private void ConnectToSignalingServer()
         {
-            _ws = new WebSocket(MistConfig.SignalingServerAddress);
-            _ws.OnOpen += (sender, e) => { MistDebug.Log("[WebSocket] Connected"); };
-            _ws.OnClose += (sender, e) => { MistDebug.Log("[WebSocket] Closed"); };
-            _ws.OnMessage += (sender, e) =>
-            {
-                _messageQueue.Enqueue(e.Data);
-            };
-            _ws.OnError += (sender, e) => { MistDebug.LogError($"[WebSocket] Error {e.Message}"); };
+            _ws = new WebSocketHandler(MistConfig.SignalingServerAddress);
+            _ws.OnOpen += () => { MistDebug.Log("[WebSocket] Opened"); };
+            _ws.OnClose += message => { MistDebug.Log($"[WebSocket] Closed {message}"); };
+            _ws.OnMessage += OnMessage;
+            _ws.OnError += message => { MistDebug.LogError($"[WebSocket] Error {message}"); };
             _ws.Connect();
+        }
+
+        private void OnMessage(string message)
+        {
+            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
+            var type = response["type"].ToString();
+            _functions[type](response);
         }
 
         private void Send(Dictionary<string, object> sendData, string _)

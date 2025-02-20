@@ -213,7 +213,6 @@ namespace MistNet
 
                 RegisterRPCMethods(methodsWithAttribute, component);
 
-
                 // 各Componentで定義されているPropertyを取得し、Attributeが付与されたプロパティを検索
                 var propertyInfos = component.GetType()
                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)

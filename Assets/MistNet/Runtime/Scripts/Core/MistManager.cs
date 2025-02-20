@@ -66,20 +66,23 @@ namespace MistNet
             if (!MistPeerData.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
-                if (targetId == null) return; // メッセージの破棄
-                MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
-            }
+                if (targetId == null)
+                {
+                    Debug.LogError($"[Error] {targetId} is not connected");
+                    return; // メッセージの破棄
+                }
 
-            if (type == MistNetMessageType.Signaling)
-            {
-                MistDebug.Log($"[SEND][{type.ToString()}] {targetId} -> {message.TargetId}");
+                MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
             if (MistPeerData.IsConnected(targetId))
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
                 peerData.Peer.Send(sendData).Forget();
+                return;
             }
+
+            Routing.Remove(targetId);
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
@@ -91,12 +94,16 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerData in MistPeerData.GetConnectedPeer)
+            foreach (var peerId in Routing.ConnectedNodes)
             {
-                MistDebug.Log($"[SEND][{peerData.Id}] {type.ToString()}");
-                message.TargetId = peerData.Id;
+                MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
+                message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
-                peerData.Peer.Send(sendData).Forget();
+                var peerData = MistPeerData.GetPeer(peerId);
+                if (MistPeerData.GetPeerData(peerId).State is MistPeerState.Connected)
+                {
+                    peerData.Send(sendData).Forget();
+                }
             }
         }
 
@@ -198,7 +205,6 @@ namespace MistNet
             }
 
             // 他のPeer宛のメッセージの場合
-
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
@@ -226,15 +232,17 @@ namespace MistNet
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
-        public async UniTaskVoid Connect(string id)
+        public void Connect(string id)
         {
             if (id == MistPeerData.I.SelfId) return;
+            // var state = MistPeerData.GetPeerData(id).State;
+            // if (state is MistPeerState.Connected or MistPeerState.Connecting) return;
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
-            
+
             // await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
-            
+
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
                 MistDebug.Log($"[Connect] {id} is not connected");
@@ -248,9 +256,10 @@ namespace MistNet
 
             // InstantiateしたObject情報の送信
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
-            MistSyncManager.I.SendObjectInstantiateInfo(id);
+            // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
             OnConnectedAction?.Invoke(id);
+            Routing.OnConnected(id);
         }
 
         public void OnDisconnected(string id)
@@ -260,6 +269,19 @@ namespace MistNet
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
             OnDisconnectedAction?.Invoke(id);
+            Routing.OnDisconnected(id);
+        }
+
+        public void OnSpawned(string id)
+        {
+            MistDebug.Log($"[Spawned] {id}");
+            connectionSelector.OnSpawned(id);
+        }
+
+        public void OnDespawned(string id)
+        {
+            MistDebug.Log($"[Despawned] {id}");
+            connectionSelector.OnDestroyed(id);
         }
 
         public void Disconnect(string id)
@@ -268,12 +290,12 @@ namespace MistNet
             peer.Close();
             OnDisconnected(id);
         }
-        
+
         public void AddJoinedCallback(Delegate callback)
         {
             OnConnectedAction += (Action<string>)callback;
         }
-        
+
         public void AddLeftCallback(Delegate callback)
         {
             OnDisconnectedAction += (Action<string>)callback;

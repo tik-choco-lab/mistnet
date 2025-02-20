@@ -42,6 +42,7 @@ namespace MistNet
                 Data = JsonConvert.SerializeObject(sendData)
             };
             var data = MemoryPackSerializer.Serialize(message);
+            // if (MistPeerData.I.IsConnected(targetId) == false) return;
             MistManager.I.Send(MistNetMessageType.Signaling, data, targetId);
             var type = sendData["type"].ToString();
             MistDebug.Log($"[SEND][Signaling][{type}] -> {targetId}");
