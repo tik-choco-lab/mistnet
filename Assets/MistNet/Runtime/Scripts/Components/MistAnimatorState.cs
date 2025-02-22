@@ -37,18 +37,18 @@ namespace MistNet
                 if (_previousStateHash == currentStateHash) continue;
 
                 _previousStateHash = currentStateHash;
-                SyncObject.RPCOther(nameof(RPC_PlayAnimation), currentStateHash, i);
+                SyncObject.RPCOther(nameof(RPC_PlayAnimation), currentStateHash, i, stateInfo.normalizedTime);
             }
         }
 
         [MistRpc]
-        private void RPC_PlayAnimation(int animationHash, int layer = 0)
+        private void RPC_PlayAnimation(int animationHash, int layer = 0, float normalizedTime = 0)
         {
             if (Animator == null) return;
             var currentState = Animator.GetCurrentAnimatorStateInfo(layer);
             if (currentState.shortNameHash == animationHash) return;
 
-            Animator.Play(animationHash, layer, 0);
+            Animator.Play(animationHash, layer, normalizedTime);
         }
     }
 }
