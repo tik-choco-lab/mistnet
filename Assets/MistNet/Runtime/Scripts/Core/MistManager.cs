@@ -160,6 +160,11 @@ namespace MistNet
         private void OnRPC(byte[] data, string sourceId)
         {
             var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
+            if (!_functionDict.ContainsKey(message.Method))
+            {
+                MistDebug.LogError($"[Error][RPC] {message.Method} is not found");
+                return;
+            }
             var args = ConvertStringToObjects(message.Method, message.Args);
             var argsLength = _functionArgsLengthDict[message.Method];
 
