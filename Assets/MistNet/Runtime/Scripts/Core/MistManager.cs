@@ -66,12 +66,7 @@ namespace MistNet
             if (!MistPeerData.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
-                if (targetId == null)
-                {
-                    Debug.LogError($"[Error] {targetId} is not connected");
-                    return; // メッセージの破棄
-                }
-
+                if (targetId == null) return; // メッセージの破棄
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
 
