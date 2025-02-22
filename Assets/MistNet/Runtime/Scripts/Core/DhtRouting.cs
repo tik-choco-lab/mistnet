@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace MistNet
 {
@@ -19,7 +18,7 @@ namespace MistNet
             if (sourceId == MistManager.I.MistPeerData.SelfId) return;
             if (sourceId == fromId) return;
 
-            Debug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
             if (_routingTable.TryAdd(sourceId, fromId))
             {
                 return;
@@ -54,7 +53,7 @@ namespace MistNet
                 }
             }
 
-            Debug.LogError($"[RoutingTable] Not found bucket index {targetId}");
+            MistDebug.LogError($"[RoutingTable] Not found bucket index {targetId}");
             return null;
         }
 
@@ -62,7 +61,7 @@ namespace MistNet
         {
             if (!_routingTable.ContainsKey(id)) return;
 
-            Debug.Log($"[RoutingTable] Remove {id}");
+            MistDebug.Log($"[RoutingTable] Remove {id}");
             _routingTable.Remove(id);
             Buckets[NodeIdToBucketIndex[id]].RemoveWhere(n => n.Id == id);
             NodeIdToBucketIndex.Remove(id);
