@@ -5,12 +5,10 @@ namespace MistNet
     public class MistAnimatorState : MonoBehaviour
     {
         private MistSyncObject SyncObject { get; set; }
-        public float transitionDurationSeconds = 0.5f;
         [field: SerializeField] public Animator Animator { get; set; }
         private bool _isDirty;
 
         private int _previousStateHash = -1;
-        private float _previousNormalizedTime = -1f;
 
         private void Awake()
         {
@@ -50,12 +48,7 @@ namespace MistNet
             var currentState = Animator.GetCurrentAnimatorStateInfo(layer);
             if (currentState.shortNameHash == animationHash) return;
 
-            Animator.CrossFadeInFixedTime(
-                animationHash,
-                transitionDurationSeconds,
-                layer,
-                currentState.normalizedTime
-            );
+            Animator.Play(animationHash, layer, 0);
         }
     }
 }
