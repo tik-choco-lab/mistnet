@@ -45,8 +45,6 @@ namespace MistNet
         private void RPC_PlayAnimation(int animationHash, int layer = 0, float normalizedTime = 0)
         {
             if (Animator == null) return;
-            var currentState = Animator.GetCurrentAnimatorStateInfo(layer);
-            if (currentState.shortNameHash == animationHash) return;
 
             Animator.Play(animationHash, layer, normalizedTime);
         }
