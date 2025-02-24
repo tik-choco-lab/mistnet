@@ -40,19 +40,25 @@ namespace MistNet
                 if (IsSameAnimation(ref stateInfo, layerIndex)) continue;
 
                 var currentStateHash = stateInfo.shortNameHash;
-                _previousStateHash = currentStateHash;
-                _previousTime[layerIndex] = Animator.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime;
                 SyncObject.RPCOther(nameof(RPC_PlayAnimation), currentStateHash, layerIndex, stateInfo.normalizedTime);
             }
         }
 
         private bool IsSameAnimation(ref AnimatorStateInfo stateInfo, int layerIndex)
         {
-            if (stateInfo.shortNameHash != _previousStateHash) return false;
+            var currentStateHash = stateInfo.shortNameHash;
+            if (currentStateHash != _previousStateHash)
+            {
+                _previousStateHash = currentStateHash;
+                return false;
+            }
 
             var normalizedTime = stateInfo.normalizedTime;
             var isReplay = normalizedTime < _previousTime[layerIndex]; // 再度再生されたか
-            return !isReplay;
+            _previousTime[layerIndex] = normalizedTime;
+            if (isReplay) return false;
+
+            return true;
         }
 
         private void InitTimeDict(int layerCount)
