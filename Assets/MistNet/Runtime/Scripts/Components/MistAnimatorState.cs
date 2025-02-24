@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -9,6 +10,8 @@ namespace MistNet
         private bool _isDirty;
 
         private int _previousStateHash = -1;
+        private readonly List<float> _currentTime = new();
+        private readonly List<float> _previousTime = new();
 
         private void Awake()
         {
@@ -28,16 +31,38 @@ namespace MistNet
             if (Animator == null) return;
 
             var layerCount = Animator.layerCount;
+            if (_currentTime.Count != layerCount) InitTimeDict(layerCount);
 
-            for (var i = 0; i < layerCount; i++)
+            for (var layerIndex = 0; layerIndex < layerCount; layerIndex++)
             {
-                var stateInfo = Animator.GetCurrentAnimatorStateInfo(i);
+                var stateInfo = Animator.GetCurrentAnimatorStateInfo(layerIndex);
+
+                if (IsSameAnimation(ref stateInfo, layerIndex)) continue;
 
                 var currentStateHash = stateInfo.shortNameHash;
-                if (_previousStateHash == currentStateHash) continue;
-
                 _previousStateHash = currentStateHash;
-                SyncObject.RPCOther(nameof(RPC_PlayAnimation), currentStateHash, i, stateInfo.normalizedTime);
+                _previousTime[layerIndex] = Animator.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime;
+                SyncObject.RPCOther(nameof(RPC_PlayAnimation), currentStateHash, layerIndex, stateInfo.normalizedTime);
+            }
+        }
+
+        private bool IsSameAnimation(ref AnimatorStateInfo stateInfo, int layerIndex)
+        {
+            if (stateInfo.shortNameHash != _previousStateHash) return false;
+
+            var normalizedTime = stateInfo.normalizedTime;
+            var isReplay = normalizedTime < _previousTime[layerIndex]; // 再度再生されたか
+            return !isReplay;
+        }
+
+        private void InitTimeDict(int layerCount)
+        {
+            _currentTime.Clear();
+            _previousTime.Clear();
+            for (var i = 0; i < layerCount; i++)
+            {
+                _currentTime.Add(0);
+                _previousTime.Add(0);
             }
         }
 
