@@ -10,19 +10,18 @@ namespace MistNet
     public class MistSignalingWebRTC : MonoBehaviour
     {
         private MistSignalingHandler _mistSignalingHandler;
-        private Dictionary<string, Action<Dictionary<string, object>>> _functions;
+        private Dictionary<SignalingType, Action<SignalingData>> _functions;
         
         private void Start()
         {
             _mistSignalingHandler = new MistSignalingHandler();
             _mistSignalingHandler.Send += SendSignalingMessage;
             // Functionの登録
-            _functions = new()
+            _functions = new Dictionary<SignalingType, Action<SignalingData>>
             {
-                { "signaling_response", _mistSignalingHandler.ReceiveSignalingResponse},
-                { "offer", _mistSignalingHandler.ReceiveOffer },
-                { "answer", _mistSignalingHandler.ReceiveAnswer },
-                { "candidate_add", _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
+                { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
+                { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
             };
             
             MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
@@ -35,17 +34,14 @@ namespace MistNet
         /// </summary>
         /// <param name="sendData"></param>
         /// <param name="targetId"></param>
-        private void SendSignalingMessage(Dictionary<string, object> sendData, string targetId)
+        private void SendSignalingMessage(SignalingData sendData, string targetId)
         {
             var message = new P_Signaling
             {
                 Data = JsonConvert.SerializeObject(sendData)
             };
             var data = MemoryPackSerializer.Serialize(message);
-            // if (MistPeerData.I.IsConnected(targetId) == false) return;
             MistManager.I.Send(MistNetMessageType.Signaling, data, targetId);
-            var type = sendData["type"].ToString();
-            MistDebug.Log($"[SEND][Signaling][{type}] -> {targetId}");
         }
 
         /// <summary>
@@ -54,8 +50,8 @@ namespace MistNet
         private void ReceiveSignalingMessage(byte[] bytes, string sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(receiveData.Data);
-            var type = response["type"].ToString();
+            var response = JsonConvert.DeserializeObject<SignalingData>(receiveData.Data);
+            var type = response.Type;
             MistDebug.Log($"[Info][RECV][Signaling][{type}] {sourceId} ->");
             _functions[type](response);
         }

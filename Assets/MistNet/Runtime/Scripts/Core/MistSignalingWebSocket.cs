@@ -8,33 +8,25 @@ namespace MistNet
 {
     public class MistSignalingWebSocket : MonoBehaviour
     {
-        public static MistSignalingWebSocket I;
-
-        private Dictionary<string, Action<Dictionary<string, object>>> _functions;
+        private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
 
-        private async void Start()
+        private void Start()
         {
-            I = this;
             _mistSignalingHandler = new MistSignalingHandler();
             _mistSignalingHandler.Send += Send;
 
             // Functionの登録
             _functions = new()
             {
-                { "signaling_response", _mistSignalingHandler.ReceiveSignalingResponse},
-                { "offer", _mistSignalingHandler.ReceiveOffer },
-                { "answer", _mistSignalingHandler.ReceiveAnswer },
-                { "candidate_add", _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
+                { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
+                { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
             };
             
             // 接続
             ConnectToSignalingServer();
-
-            // try to connect to other nodes
-            await UniTask.Yield(); // VCの初期化でAudioSourceをあらかじめMistPeerDataに登録する必要があるため
-            _mistSignalingHandler.SendSignalingRequest();
         }
 
         private void OnDestroy()
@@ -87,12 +79,12 @@ namespace MistNet
 
         private void OnMessage(string message)
         {
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
-            var type = response["type"].ToString();
+            var response = JsonConvert.DeserializeObject<SignalingData>(message);
+            var type = response.Type;
             _functions[type](response);
         }
 
-        private void Send(Dictionary<string, object> sendData, string _)
+        private void Send(SignalingData sendData, string _)
         {
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);

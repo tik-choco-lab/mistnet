@@ -13,45 +13,44 @@ namespace MistNet
     /// </summary>
     public class MistSignalingServer : MonoBehaviour
     {
-        private static readonly int Port = 8080;
-        [SerializeField] private bool isServerMode = false;
         private WebSocketServer _webSocketServer;
 
-        private void Awake()
+        private void Start()
         {
-            if (!isServerMode) return;
-            
-            _webSocketServer = new WebSocketServer(Port);
-            _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/ws");
+            if (!MistConfig.Data.GlobalNode.Enable) return;
+
+            var port = MistConfig.Data.GlobalNode.Port;
+            _webSocketServer = new WebSocketServer(port);
+            _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
-            MistDebug.Log($"[MistSignalingServer] Start {Port}");
+            MistDebug.Log($"[MistSignalingServer] Start {port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            MistDebug.Log($"[MistSignalingServer] Stop {Port}");
+            MistDebug.Log($"[MistSignalingServer] End");
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior
         {
-            private static Dictionary<string, string> sessionIdToClientId = new();
-            private static ConcurrentQueue<string> signalingRequestIds = new();
+            private static readonly Dictionary<string, string> SessionIdToClientId = new();
+            private static ConcurrentQueue<string> _signalingRequestIds = new();
 
             protected override void OnOpen()
             {
                 MistDebug.Log($"[SERVER][OPEN] {ID}");
-                signalingRequestIds.Enqueue(ID);
+                _signalingRequestIds.Enqueue(ID);
             }
 
             protected override void OnClose(CloseEventArgs e)
             {
                 MistDebug.Log($"[SERVER][CLOSE] {ID}");
-                sessionIdToClientId.Remove(ID);
+                SessionIdToClientId.Remove(ID);
 
-                var newList = signalingRequestIds.Where(x => x != ID).ToList();
-                signalingRequestIds = new ConcurrentQueue<string>(newList);
+                var newList = _signalingRequestIds.Where(x => x != ID).ToList();
+                _signalingRequestIds = new ConcurrentQueue<string>(newList);
             }
 
             protected override void OnMessage(MessageEventArgs e)
@@ -60,10 +59,10 @@ namespace MistNet
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(e.Data);
                 var messageType = data["type"].ToString();
-                if (!sessionIdToClientId.ContainsKey(ID))
+                if (!SessionIdToClientId.ContainsKey(ID))
                 {
                     var id = data["id"].ToString();
-                    sessionIdToClientId.TryAdd(ID, id);
+                    SessionIdToClientId.TryAdd(ID, id);
                 }
 
                 if (messageType == "signaling_request")
@@ -73,7 +72,7 @@ namespace MistNet
                 else
                 {
                     var targetId = data["target_id"].ToString();
-                    var targetSessionId = sessionIdToClientId.FirstOrDefault(x => x.Value == targetId).Key;
+                    var targetSessionId = SessionIdToClientId.FirstOrDefault(x => x.Value == targetId).Key;
                     if (!string.IsNullOrEmpty(targetSessionId))
                     {
                         Sessions.SendTo(e.Data, targetSessionId);
@@ -83,21 +82,21 @@ namespace MistNet
 
             private void HandleSignalingRequest()
             {
-                var availableSessionIds = signalingRequestIds.Where(id => id != ID).ToList();
-                if (availableSessionIds.Count > 0)
-                {
-                    var random = new System.Random();
-                    var targetSessionId = availableSessionIds[random.Next(availableSessionIds.Count)];
+                var availableSessionIds = _signalingRequestIds.Where(id => id != ID).ToList();
+                if (availableSessionIds.Count <= 0) return;
+                var random = new System.Random();
+                var targetSessionId = availableSessionIds[random.Next(availableSessionIds.Count)];
 
-                    if (sessionIdToClientId.TryGetValue(targetSessionId, out var targetClientId))
-                    {
-                        var response = new { type = "signaling_response", target_id = targetClientId, request = "offer" };
-                        var sendData = JsonConvert.SerializeObject(response);
-                        Sessions.SendTo(sendData, ID);
-                    }
-                }
+                if (!SessionIdToClientId.TryGetValue(targetSessionId, out var targetClientId)) return;
+                var response = new
+                {
+                    type = "signaling_response",
+                    target_id = targetClientId,
+                    request = "offer"
+                };
+                var sendData = JsonConvert.SerializeObject(response);
+                Sessions.SendTo(sendData, ID);
             }
         }
-
     }
 }

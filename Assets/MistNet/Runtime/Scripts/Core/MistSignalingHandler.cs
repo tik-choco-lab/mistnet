@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Unity.WebRTC;
 using UnityEngine;
 
@@ -8,55 +9,39 @@ namespace MistNet
 {
     public class MistSignalingHandler
     {
-        public Action<Dictionary<string, object>, string> Send;
+        public Action<SignalingData, string> Send;
         private readonly HashSet<string> _candidateData = new();
-
-        public void SendSignalingRequest()
-        {
-            var sendData = CreateSendData();
-            sendData.Add("type", "signaling_request");
-            Send(sendData, "");
-        }
-
-        public void ReceiveSignalingResponse(Dictionary<string, object> message)
-        {
-            if (message["request"].ToString() == "offer")
-            {
-                var targetId = message["target_id"].ToString();
-                SendOffer(targetId).Forget();
-            }
-        }
 
         /// <summary>
         /// ★send offer → receive answer
         /// </summary>
         /// <returns></returns>
-        public async UniTask SendOffer(string targetId)
+        public async UniTask SendOffer(string receiverId)
         {
-            MistDebug.Log($"[MistSignaling] SendOffer: {targetId}");
-            var peer = MistManager.I.MistPeerData.GetPeer(targetId);
-            peer.OnCandidate = ice => SendCandidate(ice, targetId);
+            MistDebug.Log($"[MistSignaling] SendOffer: {receiverId}");
+            var peer = MistManager.I.MistPeerData.GetPeer(receiverId);
+            peer.OnCandidate = ice => SendCandidate(ice, receiverId);
 
             var desc = await peer.CreateOffer();
             var sendData = CreateSendData();
-            sendData.Add("type", "offer");
-            sendData.Add("sdp", desc);
-            sendData.Add("target_id", targetId);
+            sendData.Type = SignalingType.Offer;
+            sendData.Data = JsonConvert.SerializeObject(desc);
+            sendData.ReceiverId = receiverId;
 
-            Send(sendData, targetId);
+            Send(sendData, receiverId);
         }
 
         /// <summary>
         /// send offer → ★receive answer
         /// </summary>
         /// <param name="response"></param>
-        public void ReceiveAnswer(Dictionary<string, object> response)
+        public void ReceiveAnswer(SignalingData response)
         {
-            var targetId = response["id"].ToString();
+            var targetId = response.SenderId;
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
-            
-            var sdpString = response["sdp"]?.ToString();
-            if (string.IsNullOrEmpty(sdpString))
+
+            var sdpJson = response.Data;
+            if (string.IsNullOrEmpty(sdpJson))
             {
                 MistDebug.LogError("sdp is null or empty");
                 return;
@@ -65,7 +50,7 @@ namespace MistNet
             if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
             if (peer.SignalingState == MistSignalingState.InitialStable) return;
 
-            var sdp = JsonUtility.FromJson<RTCSessionDescription>(sdpString);
+            var sdp = JsonConvert.DeserializeObject<RTCSessionDescription>(sdpJson);
             peer.SetRemoteDescription(sdp).Forget();
         }
 
@@ -74,9 +59,9 @@ namespace MistNet
         /// </summary>
         /// <param name="response"></param>
         /// <returns></returns>
-        public void ReceiveOffer(Dictionary<string, object> response)
+        public void ReceiveOffer(SignalingData response)
         {
-            var targetId = response["id"].ToString();
+            var targetId = response.SenderId;
 
             var peer = MistPeerData.I.GetPeer(targetId);
             if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
@@ -84,7 +69,8 @@ namespace MistNet
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
 
             MistDebug.Log($"[MistSignaling][SignalingState] {peer.Connection.SignalingState}");
-            var sdp = JsonUtility.FromJson<RTCSessionDescription>(response["sdp"].ToString());
+            var sdpJson = response.Data;
+            var sdp = JsonConvert.DeserializeObject<RTCSessionDescription>(sdpJson);
             SendAnswer(peer, sdp, targetId).Forget();
         }
 
@@ -99,9 +85,9 @@ namespace MistNet
             var desc = await peer.CreateAnswer(sdp);
 
             var sendData = CreateSendData();
-            sendData.Add("type", "answer");
-            sendData.Add("sdp", desc);
-            sendData.Add("target_id", targetId);
+            sendData.Type = SignalingType.Answer;
+            sendData.Data = JsonConvert.SerializeObject(desc);
+            sendData.ReceiverId = targetId;
             Send(sendData, targetId);
 
             if (_candidateData.Count == 0) return;
@@ -122,9 +108,9 @@ namespace MistNet
             }
 
             var sendData = CreateSendData();
-            sendData.Add("type", "candidate_add");
-            sendData.Add("candidate", candidateString);
-            sendData.Add("target_id", targetId);
+            sendData.Type = SignalingType.Candidate;
+            sendData.ReceiverId = targetId;
+            sendData.Data = candidateString;
             Send(sendData, targetId);
             _candidateData.Add(candidateString);
             
@@ -133,10 +119,10 @@ namespace MistNet
             RegisterIceConnectionChangeHandler(targetId, peer);
         }
 
-        public async void ReceiveCandidate(Dictionary<string, object> response)
+        public async void ReceiveCandidate(SignalingData response)
         {
-            var targetId = response["id"].ToString();
-            var dataStr = response["candidate"].ToString();
+            var targetId = response.SenderId;
+            var dataStr = response.Data;
 
             MistPeer peer;
             while (true)
@@ -167,11 +153,12 @@ namespace MistNet
         /// 送信用データを作成する
         /// </summary>
         /// <returns></returns>
-        private Dictionary<string, object> CreateSendData()
+        private static SignalingData CreateSendData()
         {
-            var sendData = new Dictionary<string, object>
+            var sendData = new SignalingData
             {
-                { "id", MistManager.I.MistPeerData.SelfId },
+                SenderId = MistManager.I.MistPeerData.SelfId,
+                RoomId = MistConfig.Data.RoomId
             };
 
             return sendData;
@@ -183,7 +170,7 @@ namespace MistNet
             {
                 if (state == RTCIceConnectionState.Connected || state == RTCIceConnectionState.Completed)
                 {
-                    _candidateData.RemoveWhere(c => c.Contains($"\"target_id\":\"{targetId}\""));
+                    _candidateData.RemoveWhere(c => c.Contains($"\"receiverId\":\"{targetId}\""));
                 }
 
                 if (state == RTCIceConnectionState.Closed || state == RTCIceConnectionState.Failed || state == RTCIceConnectionState.Disconnected)
