@@ -41,7 +41,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
+            MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
 
             _onMessageReceived = new Dictionary<string, Action<string, string>>
             {
@@ -59,7 +59,7 @@ namespace MistNet
 
         protected override void OnMessage(string data, string senderId)
         {
-            Debug.Log($"[ConnectionSelector] OnMessage: {data}");
+            MistDebug.Log($"[ConnectionSelector] OnMessage: {data}");
             var message = JsonConvert.DeserializeObject<ConnectionSelectorMessage>(data);
             _onMessageReceived[message.type](message.data, senderId);
         }
@@ -80,7 +80,7 @@ namespace MistNet
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
 
-            Debug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
+            MistDebug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
 
             var oldIndex = routing.NodeIdToBucketIndex.GetValueOrDefault(nodeId, -1);
             var needUpdate = oldIndex != index;
@@ -163,7 +163,7 @@ namespace MistNet
         private async UniTask SendPingAndAddNode(int index, Node newNode)
         {
             var oldNode = routing.Buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
-            Debug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
+            MistDebug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
 
             var octreeMessage = new ConnectionSelectorMessage
             {
@@ -291,7 +291,7 @@ namespace MistNet
                 var message = CreateNodesInfo();
                 foreach (var id in routing.ConnectedNodes)
                 {
-                    if (string.IsNullOrEmpty(id)) Debug.LogError("[ConnectionSelector] Connected node id is empty");
+                    if (string.IsNullOrEmpty(id)) MistDebug.LogError("[ConnectionSelector] Connected node id is empty");
                     Send(message, id);
                 }
             }
@@ -324,8 +324,8 @@ namespace MistNet
                 var nodesToShow = visibleNodes.Except(_visibleNodes).ToList();
                 foreach (var nodeId in nodesToShow)
                 {
-                    Debug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
-                    if (string.IsNullOrEmpty(nodeId)) Debug.LogError("[ConnectionSelector] Node id is empty");
+                    MistDebug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
+                    if (string.IsNullOrEmpty(nodeId)) MistDebug.LogError("[ConnectionSelector] Node id is empty");
                     RequestObject(nodeId); // Objectを表示するRequestを出す
                     _visibleNodes.Add(nodeId);
                 }
@@ -334,7 +334,7 @@ namespace MistNet
                 var nodesToHide = _visibleNodes.Except(visibleNodes).ToList();
                 foreach (var nodeId in nodesToHide)
                 {
-                    Debug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
+                    MistDebug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
                     RemoveObject(nodeId); // Objectを非表示にする
                     _visibleNodes.Remove(nodeId);
                 }
@@ -345,7 +345,7 @@ namespace MistNet
                 {
                     outputStr += $"{nodeId}, ";
                 }
-                Debug.Log($"[ConnectionSelector] VisibleNodes: {_visibleNodes.Count} {outputStr}");
+                MistDebug.Log($"[ConnectionSelector] VisibleNodes: {_visibleNodes.Count} {outputStr}");
             }
         }
 
@@ -365,7 +365,7 @@ namespace MistNet
                     {
                         outputStr += $"{node.Id}, ";
                     }
-                    Debug.Log($"[ConnectionSelector] Bucket {i}: {routing.Buckets[i].Count} {outputStr}");
+                    MistDebug.Log($"[ConnectionSelector] Bucket {i}: {routing.Buckets[i].Count} {outputStr}");
                 }
             }
         }
@@ -383,7 +383,7 @@ namespace MistNet
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
                     if (MistPeerData.I.IsConnected(node.Id)) continue;
-                    Debug.Log($"[ConnectionSelector] Connect: {node.Id}");
+                    MistDebug.Log($"[ConnectionSelector] Connect: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {
                         MistManager.I.Connect(node.Id);
