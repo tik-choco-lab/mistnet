@@ -54,7 +54,7 @@ namespace MistNet
             var message = new MistMessage
             {
                 Id = MistPeerData.SelfId,
-                Data = data,
+                Payload = data,
                 TargetId = targetId,
                 Type = type,
             };
@@ -82,7 +82,7 @@ namespace MistNet
             var message = new MistMessage
             {
                 Id = MistPeerData.SelfId,
-                Data = data,
+                Payload = data,
                 Type = type,
             };
 
@@ -226,7 +226,7 @@ namespace MistNet
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
             routing.Add(message.Id, senderId);
-            _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
+            _onMessageDict[message.Type].DynamicInvoke(message.Payload, message.Id);
         }
 
         public void Connect(string id)

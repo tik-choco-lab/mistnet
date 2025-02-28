@@ -9,9 +9,8 @@ namespace MistNet
     {
         public static MistPeerData I { get; private set; } = new();
         public string SelfId { get; private set; }
-        public Dictionary<string, MistPeerDataElement> GetAllPeer => _dict;
+        public Dictionary<string, MistPeerDataElement> GetAllPeer { get; } = new();
 
-        private readonly Dictionary<string, MistPeerDataElement> _dict = new();
         private AudioSource _selfAudioSource;
 
         public void Init()
@@ -19,12 +18,12 @@ namespace MistNet
             I = this;
             SelfId = Guid.NewGuid().ToString("N");
             MistDebug.Log($"[Self ID] {SelfId}");
-            _dict.Clear();
+            GetAllPeer.Clear();
         }
 
         public void AllForceClose()
         {
-            foreach (var peerData in _dict.Values)
+            foreach (var peerData in GetAllPeer.Values)
             {
                 peerData.Peer.Close();
             }
@@ -37,13 +36,12 @@ namespace MistNet
         /// <returns></returns>
         public bool IsConnected(string id)
         {
-            if (!_dict.TryGetValue(id, out var data)) return false;
-            return data.IsConnected;
+            return GetAllPeer.TryGetValue(id, out var data) && data.IsConnected;
         }
 
         public MistPeer GetPeer(string id)
         {
-            if (_dict.TryGetValue(id, out var peerData))
+            if (GetAllPeer.TryGetValue(id, out var peerData))
             {
                 if (peerData.Peer == null)
                 {
@@ -55,10 +53,10 @@ namespace MistNet
                 return peerData.Peer;
             }
 
-            _dict.Add(id, new MistPeerDataElement(id));
-            _dict[id].Peer.AddInputAudioSource(_selfAudioSource);
+            GetAllPeer.Add(id, new MistPeerDataElement(id));
+            GetAllPeer[id].Peer.AddInputAudioSource(_selfAudioSource);
 
-            return _dict[id].Peer;
+            return GetAllPeer[id].Peer;
         }
 
         public MistPeerDataElement GetPeerData(string id)
@@ -69,14 +67,13 @@ namespace MistNet
             }
 
             MistDebug.Log($"[GetPeerData] {id}");
-            return _dict.GetValueOrDefault(id);
-            // peerData.Peer ??= new(id); // TODO: ここでPeerを生成しても大丈夫か
+            return GetAllPeer.GetValueOrDefault(id);
         }
 
         public void SetState(string id, MistPeerState state)
         {
             if (string.IsNullOrEmpty(id)) return;
-            if (!_dict.TryGetValue(id, out var peerData)) return;
+            if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
             peerData.State = state;
             if (state == MistPeerState.Disconnected && peerData.Peer != null)
             {
@@ -88,11 +85,11 @@ namespace MistNet
         public void OnDisconnected(string id)
         {
             if (string.IsNullOrEmpty(id)) return;
-            if (!_dict.TryGetValue(id, out var peerData)) return;
+            if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
             peerData.State = MistPeerState.Disconnected;
             peerData.Peer?.Dispose();
             peerData.Peer = null;
-            _dict.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
+            GetAllPeer.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
         }
 
         public void AddInputAudioSource(AudioSource audioSource)
@@ -104,22 +101,13 @@ namespace MistNet
     public class MistPeerDataElement
     {
         public MistPeer Peer;
-        public string Id;
-        public Vector3 Position;
-        public int CurrentConnectNum;
-        public int MinConnectNum = 2;
-        public int LimitConnectNum;
-        public int MaxConnectNum;
         /// <summary>
         /// TODO: ↓ 正しい値になっていないことがある
         /// </summary>
         public MistPeerState State = MistPeerState.Disconnected;
-        public float Distance { get; set; }
-        public int BlockConnectIntervalTime { get; set; }
 
         public MistPeerDataElement(string id)
         {
-            Id = id;
             Peer = new(id);
         }
 

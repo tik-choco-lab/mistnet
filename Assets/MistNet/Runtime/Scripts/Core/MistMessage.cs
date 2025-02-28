@@ -6,7 +6,7 @@ public partial class MistMessage
     public MistNetMessageType Type;
     public string TargetId;
     public string Id;
-    public byte[] Data;
+    public byte[] Payload;
 }
 
 namespace MistNet
