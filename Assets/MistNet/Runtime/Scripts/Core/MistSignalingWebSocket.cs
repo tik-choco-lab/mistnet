@@ -42,14 +42,47 @@ namespace MistNet
             _ws?.Dispose();
         }
 
+        private int _currentAddressIndex;
+
         private void ConnectToSignalingServer()
         {
-            _ws = new WebSocketHandler(MistConfig.SignalingServerAddress);
-            _ws.OnOpen += () => { MistDebug.Log("[WebSocket] Opened"); };
-            _ws.OnClose += message => { MistDebug.Log($"[WebSocket] Closed {message}"); };
+            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
+            {
+                MistDebug.LogError("[WebSocket] All signaling server addresses failed.");
+                return;
+            }
+
+            var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
+            _ws = new WebSocketHandler(address);
+
+            _ws.OnOpen += () =>
+            {
+                MistDebug.Log("[WebSocket] Opened");
+            };
+
+            _ws.OnClose += message =>
+            {
+                MistDebug.Log($"[WebSocket] Closed {message}");
+                // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
+                TryNextAddress();
+            };
+
             _ws.OnMessage += OnMessage;
-            _ws.OnError += message => { MistDebug.LogError($"[WebSocket] Error {message}"); };
+
+            _ws.OnError += message =>
+            {
+                MistDebug.LogError($"[WebSocket] Error {message}");
+                // エラーが発生した場合も再接続を試みる
+                TryNextAddress();
+            };
+
             _ws.Connect();
+        }
+
+        private void TryNextAddress()
+        {
+            _currentAddressIndex++;
+            ConnectToSignalingServer();
         }
 
         private void OnMessage(string message)

@@ -91,3 +91,4 @@ __pycache__/
 config.yml
 
 BuildScripts/build/*
+mistnet_config.json

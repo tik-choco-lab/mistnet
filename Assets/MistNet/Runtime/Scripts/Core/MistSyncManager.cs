@@ -52,7 +52,7 @@ namespace MistNet
                 var data = MemoryPackSerializer.Serialize(sendData);
                 MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
             }
-            Debug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
+            MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
@@ -74,7 +74,7 @@ namespace MistNet
 
             RegisterSyncObject(syncObject);
             MistManager.I.OnSpawned(sourceId);
-            Debug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
+            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
-            Debug.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
+            MistDebug.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
         }
 
         /// <summary>
@@ -96,13 +96,13 @@ namespace MistNet
         /// <param name="sourceId"></param>
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, string sourceId)
         {
-            Debug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
+            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
         public void RemoveObject(string targetId)
         {
-            Debug.Log($"[Debug] RemoveObject: {targetId}");
+            MistDebug.Log($"[Debug] RemoveObject: {targetId}");
             DestroyBySenderId(targetId);
         }
 

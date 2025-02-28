@@ -39,7 +39,7 @@ namespace MistNet
             var configuration = default(RTCConfiguration);
             configuration.iceServers = new RTCIceServer[]
             {
-                new() { urls = MistConfig.StunUrls }
+                new() { urls = MistConfig.Data.StunUrls }
             };
             Connection = new RTCPeerConnection(ref configuration);
 
