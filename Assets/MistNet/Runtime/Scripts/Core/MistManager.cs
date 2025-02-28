@@ -6,7 +6,6 @@ using System.Reflection;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.ResourceLocations;
 
 namespace MistNet
 {
@@ -15,16 +14,14 @@ namespace MistNet
     /// </summary>
     public class MistManager : MonoBehaviour
     {
-        private static readonly float WaitConnectingTimeSec = 3f;
-
         public static MistManager I;
         public MistPeerData MistPeerData;
         public Action<string> ConnectAction;
-        public Action<string> OnConnectedAction;
-        public Action<string> OnDisconnectedAction;
+        private Action<string> _onConnectedAction;
+        private Action<string> _onDisconnectedAction;
 
         [SerializeField] private IConnectionSelector connectionSelector;
-        [SerializeField] public IRouting Routing;
+        [SerializeField] public IRouting routing;
 
         private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
@@ -65,7 +62,7 @@ namespace MistNet
 
             if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = Routing.Get(targetId);
+                targetId = routing.Get(targetId);
                 if (targetId == null) return; // メッセージの破棄
                 MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
             }
@@ -77,7 +74,7 @@ namespace MistNet
                 return;
             }
 
-            Routing.Remove(targetId);
+            routing.Remove(targetId);
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
@@ -89,7 +86,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in Routing.ConnectedNodes)
+            foreach (var peerId in routing.ConnectedNodes)
             {
                 MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -208,7 +205,7 @@ namespace MistNet
             var targetId = message.TargetId;
             if (!MistPeerData.IsConnected(message.TargetId))
             {
-                targetId = Routing.Get(message.TargetId);
+                targetId = routing.Get(message.TargetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -228,20 +225,16 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, string senderId)
         {
-            Routing.Add(message.Id, senderId);
+            routing.Add(message.Id, senderId);
             _onMessageDict[message.Type].DynamicInvoke(message.Data, message.Id);
         }
 
         public void Connect(string id)
         {
             if (id == MistPeerData.I.SelfId) return;
-            // var state = MistPeerData.GetPeerData(id).State;
-            // if (state is MistPeerState.Connected or MistPeerState.Connecting) return;
 
             ConnectAction.Invoke(id);
             MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
-
-            // await UniTask.Delay(TimeSpan.FromSeconds(WaitConnectingTimeSec));
 
             if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
             {
@@ -258,8 +251,8 @@ namespace MistNet
             MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
             // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
-            OnConnectedAction?.Invoke(id);
-            Routing.OnConnected(id);
+            _onConnectedAction?.Invoke(id);
+            routing.OnConnected(id);
         }
 
         public void OnDisconnected(string id)
@@ -268,8 +261,8 @@ namespace MistNet
             MistSyncManager.I.DestroyBySenderId(id);
             connectionSelector.OnDisconnected(id);
             MistPeerData.I.OnDisconnected(id);
-            OnDisconnectedAction?.Invoke(id);
-            Routing.OnDisconnected(id);
+            _onDisconnectedAction?.Invoke(id);
+            routing.OnDisconnected(id);
         }
 
         public void OnSpawned(string id)
@@ -284,36 +277,14 @@ namespace MistNet
             connectionSelector.OnDestroyed(id);
         }
 
-        public void Disconnect(string id)
-        {
-            var peer = MistPeerData.GetPeer(id);
-            peer.Close();
-            OnDisconnected(id);
-        }
-
         public void AddJoinedCallback(Delegate callback)
         {
-            OnConnectedAction += (Action<string>)callback;
+            _onConnectedAction += (Action<string>)callback;
         }
 
         public void AddLeftCallback(Delegate callback)
         {
-            OnDisconnectedAction += (Action<string>)callback;
-        }
-
-        /// <summary>
-        /// TODO: prefabAddress.PrimaryKeyがAddressを表しているかどうかの確認が必要
-        /// </summary>
-        /// <param name="prefabAddress"></param>
-        /// <param name="position"></param>
-        /// <param name="rotation"></param>
-        /// <returns></returns>
-        public async UniTask<GameObject> InstantiateAsync(IResourceLocation prefabAddress, Vector3 position,
-            Quaternion rotation)
-        {
-            var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiateObject(prefabAddress.PrimaryKey, position, rotation, obj);
-            return obj;
+            _onDisconnectedAction += (Action<string>)callback;
         }
 
         public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation)

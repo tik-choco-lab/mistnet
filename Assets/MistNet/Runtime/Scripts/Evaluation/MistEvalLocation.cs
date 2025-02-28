@@ -15,10 +15,10 @@ namespace MyNamespace
     {
         private const string EvalServerUrl = "ws://localhost:3000";
         private static readonly float IntervalDistanceTimeSec = 0.95f;
-        private CancellationTokenSource _cancelTokenSource = new();
+        private readonly CancellationTokenSource _cancelTokenSource = new();
         private WebSocketHandler _ws;
 
-        private Dictionary<string, object> _locationData = new()
+        private readonly Dictionary<string, object> _locationData = new()
         {
             { "id", "" },
             { "type", "evaluation" },
