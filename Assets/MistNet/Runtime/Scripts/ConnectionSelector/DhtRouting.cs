@@ -53,7 +53,7 @@ namespace MistNet
                 }
             }
 
-            MistDebug.LogError($"[RoutingTable] Not found bucket index {targetId}");
+            MistDebug.LogWarning($"[RoutingTable] Not found bucket index {targetId}");
             return null;
         }
 
