@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class MistSignaling
+    public class MistSignalingHandler
     {
         public Action<Dictionary<string, object>, string> Send;
         private readonly HashSet<string> _candidateData = new();
@@ -44,7 +44,6 @@ namespace MistNet
             sendData.Add("target_id", targetId);
 
             Send(sendData, targetId);
-            // _sentOffers.Add(targetId);
         }
 
         /// <summary>
@@ -79,12 +78,6 @@ namespace MistNet
         {
             var targetId = response["id"].ToString();
 
-            // if (_processedOffers.Contains(targetId))
-            // {
-            //     MistDebug.LogWarning($"[MistSignaling] Offer already processed from: {targetId}");
-            //     return;
-            // }
-
             var peer = MistPeerData.I.GetPeer(targetId);
             if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
             
@@ -93,7 +86,6 @@ namespace MistNet
             MistDebug.Log($"[MistSignaling][SignalingState] {peer.Connection.SignalingState}");
             var sdp = JsonUtility.FromJson<RTCSessionDescription>(response["sdp"].ToString());
             SendAnswer(peer, sdp, targetId).Forget();
-            // _processedOffers.Add(targetId);
         }
 
         /// <summary>
@@ -118,10 +110,6 @@ namespace MistNet
                 var value = JsonUtility.FromJson<Ice>(candidate);
                 peer.AddIceCandidate(value);
             }
-            
-            // 接続が完了したら、関連するオファーを削除
-            // _processedOffers.Remove(targetId);
-            // _sentOffers.Remove(targetId);
         }
 
         private void SendCandidate(Ice candidate, string targetId = "")

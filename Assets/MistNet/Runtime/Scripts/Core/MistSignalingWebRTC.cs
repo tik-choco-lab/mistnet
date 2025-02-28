@@ -9,20 +9,20 @@ namespace MistNet
 {
     public class MistSignalingWebRTC : MonoBehaviour
     {
-        private MistSignaling _mistSignaling;
+        private MistSignalingHandler _mistSignalingHandler;
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
         
         private void Start()
         {
-            _mistSignaling = new MistSignaling();
-            _mistSignaling.Send += SendSignalingMessage;
+            _mistSignalingHandler = new MistSignalingHandler();
+            _mistSignalingHandler.Send += SendSignalingMessage;
             // Functionの登録
             _functions = new()
             {
-                { "signaling_response", _mistSignaling.ReceiveSignalingResponse},
-                { "offer", _mistSignaling.ReceiveOffer },
-                { "answer", _mistSignaling.ReceiveAnswer },
-                { "candidate_add", _mistSignaling.ReceiveCandidate },
+                { "signaling_response", _mistSignalingHandler.ReceiveSignalingResponse},
+                { "offer", _mistSignalingHandler.ReceiveOffer },
+                { "answer", _mistSignalingHandler.ReceiveAnswer },
+                { "candidate_add", _mistSignalingHandler.ReceiveCandidate },
             };
             
             MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
@@ -63,7 +63,7 @@ namespace MistNet
         private void Connect(string id)
         {
             MistDebug.Log($"[MistSignalingWebRTC] Connect: {id}");
-            _mistSignaling.SendOffer(id).Forget();
+            _mistSignalingHandler.SendOffer(id).Forget();
         }
     }
 }

@@ -49,12 +49,10 @@ namespace MyNamespace
 
                 _locationData["id"] = MistPeerData.I.SelfId;
                 
-                // var connection = MistConnectionOptimizer.I.GetConnectionInfo();
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
                 var positionStr = $"{position.x},{position.y},{position.z}";
                 _locationData["location"] = positionStr;
-                // _locationData["connection"] = connection;
-                
+
                 _ws.Send(JsonConvert.SerializeObject(_locationData));
                 MistDebug.Log($"[Eval] Send location: {positionStr}");
             }

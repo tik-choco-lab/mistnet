@@ -70,7 +70,7 @@ namespace MistNet
             if (MistPeerData.IsConnected(targetId))
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
-                peerData.Peer.Send(sendData).Forget();
+                peerData.Peer.Send(sendData);
                 return;
             }
 
@@ -94,7 +94,7 @@ namespace MistNet
                 var peerData = MistPeerData.GetPeer(peerId);
                 if (MistPeerData.GetPeerData(peerId).State is MistPeerState.Connected)
                 {
-                    peerData.Send(sendData).Forget();
+                    peerData.Send(sendData);
                 }
             }
         }
@@ -212,7 +212,7 @@ namespace MistNet
             {
                 var peer = MistPeerData.GetPeer(targetId);
                 if (peer == null) return;
-                peer.Send(data).Forget();
+                peer.Send(data);
                 MistDebug.Log(
                     $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
             }

@@ -74,7 +74,7 @@ namespace MistNet
             {
                 // 現在の接続人数を調べる
                 var peers = MistManager.I.routing.ConnectedNodes;
-                MistDebug.Log($"[STATS][Peers] {peers.Count}/{MistConfig.LimitConnection}/{MistConfig.MaxConnection}");
+                MistDebug.Log($"[STATS][Peers] {peers.Count}");
                 
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;

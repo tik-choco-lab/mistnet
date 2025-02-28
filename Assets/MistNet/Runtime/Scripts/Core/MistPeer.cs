@@ -10,8 +10,8 @@ namespace MistNet
     /// </summary>
     public class MistPeer: IDisposable
     {
-        private static readonly float WaitReconnectTimeSec = 3f;
-        private static readonly string DataChannelLabel = "data";
+        private const float WaitReconnectTimeSec = 3f;
+        private const string DataChannelLabel = "data";
 
         public RTCPeerConnection Connection;
         public MistSignalingState SignalingState;
@@ -186,13 +186,8 @@ namespace MistNet
             Connection.AddIceCandidate(candidate.Get());
         }
 
-        public async UniTaskVoid Send(byte[] data)
+        public void Send(byte[] data)
         {
-            if (MistConfig.LatencyMilliseconds > 0)
-            {
-                await UniTask.Delay(MistConfig.LatencyMilliseconds);
-            }
-
             if (_dataChannel == null)
             {
                 Debug.LogError($"[Signaling][Send] DataChannel is null -> {Id}");
@@ -279,7 +274,7 @@ namespace MistNet
         {
             if (e.Track is not AudioStreamTrack track) return;
             await UniTask.WaitUntil(() => _outputAudioSource != null);
-            Debug.Log($"[MistPeer][OnTrack] {Id}");
+            MistDebug.Log($"[MistPeer][OnTrack] {Id}");
 
             _outputAudioSource.SetTrack(track);
             _outputAudioSource.loop = true;
@@ -289,7 +284,7 @@ namespace MistNet
         public void AddInputAudioSource(AudioSource audioSource)
         {
             if (audioSource == null) return;
-            Debug.Log($"[MistPeer][AddTrack] {Id}");
+            MistDebug.Log($"[MistPeer][AddTrack] {Id}");
             var track = new AudioStreamTrack(audioSource);
             _sender = Connection.AddTrack(track);
         }

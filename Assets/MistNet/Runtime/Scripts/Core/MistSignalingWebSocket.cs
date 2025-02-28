@@ -12,21 +12,21 @@ namespace MistNet
 
         private Dictionary<string, Action<Dictionary<string, object>>> _functions;
         private WebSocketHandler _ws;
-        private MistSignaling _mistSignaling;
+        private MistSignalingHandler _mistSignalingHandler;
 
         private async void Start()
         {
             I = this;
-            _mistSignaling = new MistSignaling();
-            _mistSignaling.Send += Send;
+            _mistSignalingHandler = new MistSignalingHandler();
+            _mistSignalingHandler.Send += Send;
 
             // Functionの登録
             _functions = new()
             {
-                { "signaling_response", _mistSignaling.ReceiveSignalingResponse},
-                { "offer", _mistSignaling.ReceiveOffer },
-                { "answer", _mistSignaling.ReceiveAnswer },
-                { "candidate_add", _mistSignaling.ReceiveCandidate },
+                { "signaling_response", _mistSignalingHandler.ReceiveSignalingResponse},
+                { "offer", _mistSignalingHandler.ReceiveOffer },
+                { "answer", _mistSignalingHandler.ReceiveAnswer },
+                { "candidate_add", _mistSignalingHandler.ReceiveCandidate },
             };
             
             // 接続
@@ -34,7 +34,7 @@ namespace MistNet
 
             // try to connect to other nodes
             await UniTask.Yield(); // VCの初期化でAudioSourceをあらかじめMistPeerDataに登録する必要があるため
-            _mistSignaling.SendSignalingRequest();
+            _mistSignalingHandler.SendSignalingRequest();
         }
 
         private void OnDestroy()
