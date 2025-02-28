@@ -5,6 +5,5 @@ namespace MistNet
         Disconnected,
         Connecting,
         Connected,
-        Disconnecting,
     }
 }

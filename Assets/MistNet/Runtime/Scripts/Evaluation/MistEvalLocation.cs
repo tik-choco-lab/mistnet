@@ -15,10 +15,10 @@ namespace MyNamespace
     {
         private const string EvalServerUrl = "ws://localhost:3000";
         private static readonly float IntervalDistanceTimeSec = 0.95f;
-        private CancellationTokenSource _cancelTokenSource = new();
+        private readonly CancellationTokenSource _cancelTokenSource = new();
         private WebSocketHandler _ws;
 
-        private Dictionary<string, object> _locationData = new()
+        private readonly Dictionary<string, object> _locationData = new()
         {
             { "id", "" },
             { "type", "evaluation" },
@@ -49,12 +49,10 @@ namespace MyNamespace
 
                 _locationData["id"] = MistPeerData.I.SelfId;
                 
-                // var connection = MistConnectionOptimizer.I.GetConnectionInfo();
                 var position = MistSyncManager.I.SelfSyncObject.transform.position;
                 var positionStr = $"{position.x},{position.y},{position.z}";
                 _locationData["location"] = positionStr;
-                // _locationData["connection"] = connection;
-                
+
                 _ws.Send(JsonConvert.SerializeObject(_locationData));
                 MistDebug.Log($"[Eval] Send location: {positionStr}");
             }

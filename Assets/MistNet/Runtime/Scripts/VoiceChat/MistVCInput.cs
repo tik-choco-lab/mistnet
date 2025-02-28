@@ -23,7 +23,7 @@ namespace MistNet.VC
                 selectedMicDevice = Microphone.devices.Length > 0 ? Microphone.devices[0] : null;
             }
 
-            Debug.Log($"[MistMicSettings] Selected microphone: {selectedMicDevice}");
+            MistDebug.Log($"[MistMicSettings] Selected microphone: {selectedMicDevice}");
 
             if (!string.IsNullOrEmpty(selectedMicDevice))
             {
@@ -31,7 +31,7 @@ namespace MistNet.VC
             }
             else
             {
-                Debug.LogError("No microphone devices found.");
+                MistDebug.LogError("No microphone devices found.");
             }
         }
 
@@ -71,7 +71,7 @@ namespace MistNet.VC
             }
             else
             {
-                Debug.LogError("Selected microphone device not found.");
+                MistDebug.LogError("Selected microphone device not found.");
             }
         }
     }
