@@ -31,7 +31,7 @@ namespace MistNet
 
         public void Awake()
         {
-            _config.ReadConfig();
+            MistConfig.ReadConfig();
             MistPeerData = new();
             MistPeerData.Init();
             I = this;
@@ -45,6 +45,7 @@ namespace MistNet
         public void OnDestroy()
         {
             MistPeerData.AllForceClose();
+            MistConfig.WriteConfig();
         }
 
         public void Send(MistNetMessageType type, byte[] data, string targetId)

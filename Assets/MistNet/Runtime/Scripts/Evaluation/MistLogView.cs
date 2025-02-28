@@ -25,12 +25,12 @@ namespace MistNet
             text.text = "";
             if (useConfigFilter)
             {
-                if (!string.IsNullOrEmpty(MistConfig.LogFilter))
+                if (!string.IsNullOrEmpty(MistConfig.Data.LogFilter))
                 {
-                    filters = MistConfig.LogFilter;
+                    filters = MistConfig.Data.LogFilter;
                 }
 
-                maxLogLines = MistConfig.ShowLogLine;
+                maxLogLines = MistConfig.Data.ShowLogLine;
             }
             _filterFunctions = ParseFilters(filters);
             Application.logMessageReceived += OnLogMessageReceived;

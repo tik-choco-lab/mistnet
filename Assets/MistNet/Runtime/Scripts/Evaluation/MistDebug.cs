@@ -7,18 +7,19 @@ namespace MistNet
     {
         public static void Log(object message)
         {
-            if (!MistConfig.DebugLog) return;
+            if (!MistConfig.Data.LogDisplay) return;
             Debug.Log(message);
         }
         
         public static void LogWarning(object message)
         {
-            if (!MistConfig.DebugLog) return;
+            if (!MistConfig.Data.LogWarningDisplay) return;
             Debug.LogWarning(message);
         }
         
         public static void LogError(object message)
         {
+            if (!MistConfig.Data.LogErrorDisplay) return;
             Debug.LogError(message);
         }
     }
