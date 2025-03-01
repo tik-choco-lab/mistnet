@@ -16,7 +16,14 @@ namespace MistNet
         public void Init()
         {
             I = this;
-            SelfId = new NodeId(Guid.NewGuid().ToString("N"));
+            if (string.IsNullOrEmpty(MistConfig.Data.NodeId))
+            {
+                SelfId = new NodeId(Guid.NewGuid().ToString("N"));
+                MistConfig.Data.NodeId = SelfId;
+                MistConfig.WriteConfig();
+            }
+            else SelfId = MistConfig.Data.NodeId;
+
             MistDebug.Log($"[Self ID] {SelfId}");
             GetAllPeer.Clear();
         }

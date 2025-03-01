@@ -5,7 +5,8 @@ namespace MistNet
 {
     public abstract class IRouting : MonoBehaviour
     {
-        public readonly HashSet<NodeId> ConnectedNodes = new();
+        public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
+        public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
 
         public virtual void OnConnected(NodeId id)
         {
@@ -17,6 +18,18 @@ namespace MistNet
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             ConnectedNodes.Remove(id);
+        }
+
+        public virtual void AddMessageNode(NodeId id)
+        {
+            Debug.Log($"[ConnectionSelector] AddMessageNode: {id}");
+            MessageNodes.Add(id);
+        }
+
+        public virtual void RemoveMessageNode(NodeId id)
+        {
+            Debug.Log($"[ConnectionSelector] RemoveMessageNode: {id}");
+            MessageNodes.Remove(id);
         }
 
         public virtual void Add(NodeId sourceId, NodeId fromId)

@@ -4,6 +4,7 @@ namespace MistNet
 {
     public class MistConfigData
     {
+        [JsonProperty("nodeId")] public NodeId NodeId = new("");
         [JsonProperty("bootstraps")] public string[] Bootstraps = { "ws://localhost:8080/signaling" };
         [JsonProperty("globalNode")] public GlobalNodeData GlobalNode = new();
         [JsonProperty("roomId")] public string RoomId = "MistNet";

@@ -19,7 +19,6 @@ namespace MistNet
         // timeout時間
         private const float PingTimeoutSeconds = 5f;
         private const int BucketBase = 4;
-        private const int BucketSize = 20;
         private const int NodeUpdateIntervalSeconds = 5;
         private const int RequestObjectIntervalSeconds = 1;
 
@@ -27,9 +26,6 @@ namespace MistNet
 
         private Dictionary<string, Action<string, NodeId>> _onMessageReceived;
         private readonly Dictionary<string, bool> _pongWaitList = new();
-
-        // Objectとして表示しているNodeのリスト
-        private readonly HashSet<NodeId> _visibleNodes = new();
 
         [Serializable]
         private class ConnectionSelectorMessage
@@ -294,31 +290,31 @@ namespace MistNet
                     .ToHashSet();
 
                 // 現在表示中のノードと比較し、表示する必要があるノードを追加
-                var nodesToShow = visibleNodes.Except(_visibleNodes).ToList();
+                var nodesToShow = visibleNodes.Except(routing.MessageNodes).ToList();
                 foreach (var nodeId in nodesToShow)
                 {
                     MistDebug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
                     if (string.IsNullOrEmpty(nodeId)) MistDebug.LogError("[ConnectionSelector] Node id is empty");
                     RequestObject(nodeId); // Objectを表示するRequestを出す
-                    _visibleNodes.Add(nodeId);
+                    routing.AddMessageNode(nodeId);
                 }
 
                 // 現在表示中のノードのうち、非表示にする必要があるノードを削除
-                var nodesToHide = _visibleNodes.Except(visibleNodes).ToList();
+                var nodesToHide = routing.MessageNodes.Except(visibleNodes).ToList();
                 foreach (var nodeId in nodesToHide)
                 {
                     MistDebug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
                     RemoveObject(nodeId); // Objectを非表示にする
-                    _visibleNodes.Remove(nodeId);
+                    routing.RemoveMessageNode(nodeId);
                 }
 
                 // Debug用に表示
                 var outputStr = "";
-                foreach (var nodeId in _visibleNodes)
+                foreach (var nodeId in routing.MessageNodes)
                 {
                     outputStr += $"{nodeId}, ";
                 }
-                MistDebug.Log($"[ConnectionSelector] VisibleNodes: {_visibleNodes.Count} {outputStr}");
+                MistDebug.Log($"[ConnectionSelector] VisibleNodes: {routing.MessageNodes.Count} {outputStr}");
             }
         }
 
@@ -370,13 +366,13 @@ namespace MistNet
         public override void OnSpawned(NodeId id)
         {
             base.OnSpawned(id);
-            _visibleNodes.Add(id);
+            routing.AddMessageNode(id);
         }
 
         public override void OnDestroyed(NodeId id)
         {
             base.OnDestroyed(id);
-            _visibleNodes.Remove(id);
+            routing.RemoveMessageNode(id);
         }
     }
 }

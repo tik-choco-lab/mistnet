@@ -178,7 +178,7 @@ namespace MistNet
             OwnerIdAndObjIdDict.Remove(syncObject.OwnerId);
             
             UnregisterSyncAnimator(syncObject);
-            MistManager.I.OnDespawned(syncObject.OwnerId);
+            MistManager.I.OnDestroyed(syncObject.OwnerId);
         }
 
         public MistSyncObject GetSyncObject(string id)

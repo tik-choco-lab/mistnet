@@ -87,7 +87,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in routing.ConnectedNodes)
+            foreach (var peerId in routing.MessageNodes)
             {
                 MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -272,9 +272,9 @@ namespace MistNet
             connectionSelector.OnSpawned(id);
         }
 
-        public void OnDespawned(NodeId id)
+        public void OnDestroyed(NodeId id)
         {
-            MistDebug.Log($"[Despawned] {id}");
+            MistDebug.Log($"[Destroyed] {id}");
             connectionSelector.OnDestroyed(id);
         }
 
