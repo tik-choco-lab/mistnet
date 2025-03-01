@@ -12,7 +12,7 @@ namespace MistNet
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
 
-        private void Start()
+        private async void Start()
         {
             _mistSignalingHandler = new MistSignalingHandler();
             _mistSignalingHandler.Send += Send;
@@ -20,17 +20,34 @@ namespace MistNet
             // Functionの登録
             _functions = new()
             {
+                { SignalingType.Request , _mistSignalingHandler.RequestOffer },
                 { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
                 { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
                 { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Candidates, _mistSignalingHandler.ReceiveCandidates },
             };
             
             // 接続
+            await UniTask.Yield(); // SignalingServerが立ち上がるのを待つ
             ConnectToSignalingServer();
+            SendRequest();
+        }
+
+        private void SendRequest()
+        {
+            var sendData = new SignalingData
+            {
+                Type = SignalingType.Request,
+                SenderId = MistPeerData.I.SelfId,
+                RoomId = MistConfig.Data.RoomId,
+            };
+
+            Send(sendData, null);
         }
 
         private void OnDestroy()
         {
+            _mistSignalingHandler.Dispose();
             _ws?.Dispose();
         }
 
@@ -82,9 +99,15 @@ namespace MistNet
             var response = JsonConvert.DeserializeObject<SignalingData>(message);
             var type = response.Type;
             _functions[type](response);
+
+            // if (type == SignalingType.Request && response.Data == "Disconnect")
+            // {
+            //     _ws.Close();
+            //     _ws.Dispose();
+            // }
         }
 
-        private void Send(SignalingData sendData, string _)
+        private void Send(SignalingData sendData, NodeId _)
         {
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);

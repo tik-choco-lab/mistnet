@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -9,8 +9,6 @@ namespace MistNet
     [Serializable]
     public struct Position
     {
-        private const int ChunkSize = 16;
-        private const float ChunkSizeDivide = 1f / ChunkSize;
         public float x;
         public float y;
         public float z;
@@ -29,68 +27,21 @@ namespace MistNet
             z = vector3.z;
         }
 
-        public Chunk ToChunk => new
-        (
-            Mathf.FloorToInt(x * ChunkSizeDivide),
-            Mathf.FloorToInt(y * ChunkSizeDivide),
-            Mathf.FloorToInt(z * ChunkSizeDivide)
-        );
-
         public Vector3 ToVector3()
         {
             return new Vector3(x, y, z);
         }
     }
 
-    [Serializable]
-    public struct Chunk
+    public class Node
     {
-        public int x;
-        public int y;
-        public int z;
-
-        public Chunk(int x, int y, int z)
-        {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-
-            var other = (Chunk)obj;
-            return x == other.x && y == other.y && z == other.z;
-        }
-
-        public bool Equals(Chunk other)
-        {
-            return x == other.x && y == other.y && z == other.z;
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(x, y, z);
-        }
-    }
-
-    public struct Node
-    {
-        public Chunk Chunk; // 1,2,-1 のような形式
         public NodeId Id;
         public Position Position;
-        public DateTime LastUpdate;
 
         public Node(NodeId nodeId, Position position)
         {
             Id = nodeId;
             Position = position;
-            Chunk = position.ToChunk;
-            LastUpdate = DateTime.Now;
         }
 
         public override bool Equals(object obj)
@@ -104,11 +55,6 @@ namespace MistNet
             return Id == other.Id;
         }
 
-        public bool Equals(Node other)
-        {
-            return Id == other.Id;
-        }
-
         public override int GetHashCode()
         {
             return Id.GetHashCode();
@@ -116,49 +62,19 @@ namespace MistNet
     }
 
     [JsonConverter(typeof(NodeIdConverter))]
-    public readonly struct NodeId
+    [TypeConverter(typeof(NodeIdTypeConverter))]
+    public record NodeId(string Id)
     {
-        private readonly string _nodeId;
+        public string Id { get; } = Id;
+        public override string ToString() => Id;
+        public static implicit operator string(NodeId nodeId) => nodeId.Id;
+    }
 
-        public NodeId(string nodeId)
-        {
-            _nodeId = nodeId;
-        }
-
-        public override string ToString()
-        {
-            return _nodeId;
-        }
-
-        public static implicit operator string(NodeId nodeId)
-        {
-            return nodeId.ToString();
-        }
-
-        public static implicit operator NodeId(string nodeId)
-        {
-            return new NodeId(nodeId);
-        }
-
-        public static bool operator ==(NodeId a, NodeId b)
-        {
-            return a._nodeId == b._nodeId;
-        }
-
-        public static bool operator !=(NodeId a, NodeId b)
-        {
-            return a._nodeId != b._nodeId;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is NodeId other && _nodeId == other._nodeId;
-        }
-
-        public override int GetHashCode()
-        {
-            return _nodeId.GetHashCode();
-        }
+    public record ObjectId(string Id)
+    {
+        public string Id { get; } = Id;
+        public override string ToString() => Id;
+        public static implicit operator string(ObjectId objectId) => objectId.Id;
     }
 
     public class NodeIdConverter : JsonConverter<NodeId>
@@ -175,18 +91,18 @@ namespace MistNet
         }
     }
 
-    [Serializable]
-    public class CheckAllNodes
+    public class NodeIdTypeConverter : TypeConverter
     {
-        public string type;
-        public string id;
-        public Dictionary<string, Node> nodes;
-
-        public CheckAllNodes(string type, string id, Dictionary<string, Node> nodes)
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            this.type = type;
-            this.id = id;
-            this.nodes = nodes;
+            if (sourceType == typeof(string)) return true;
+            return base.CanConvertFrom(context, sourceType);
+        }
+
+        public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
+        {
+            if (value is string str) return new NodeId(str); // Convert string to NodeId
+            return base.ConvertFrom(context, culture, value);
         }
     }
 }

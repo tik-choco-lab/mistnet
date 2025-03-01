@@ -25,7 +25,7 @@ namespace MistNet
 
         [SerializeField] private DhtRouting routing;
 
-        private Dictionary<string, Action<string, string>> _onMessageReceived;
+        private Dictionary<string, Action<string, NodeId>> _onMessageReceived;
         private readonly Dictionary<string, bool> _pongWaitList = new();
 
         // Objectとして表示しているNodeのリスト
@@ -43,7 +43,7 @@ namespace MistNet
             base.Start();
             MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
 
-            _onMessageReceived = new Dictionary<string, Action<string, string>>
+            _onMessageReceived = new Dictionary<string, Action<string, NodeId>>
             {
                 { NodeMessageType, OnNodeReceived },
                 { NodesMessageType, OnNodesReceived },
@@ -57,20 +57,20 @@ namespace MistNet
             UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        protected override void OnMessage(string data, string senderId)
+        protected override void OnMessage(string data, NodeId senderId)
         {
             MistDebug.Log($"[ConnectionSelector] OnMessage: {data}");
             var message = JsonConvert.DeserializeObject<ConnectionSelectorMessage>(data);
             _onMessageReceived[message.type](message.data, senderId);
         }
 
-        private void OnNodeReceived(string data, string senderId)
+        private void OnNodeReceived(string data, NodeId senderId)
         {
             var node = JsonConvert.DeserializeObject<Node>(data);
             OnNodeReceived(node, senderId);
         }
 
-        private void OnNodeReceived(Node node, string senderId)
+        private void OnNodeReceived(Node node, NodeId senderId)
         {
             var nodeId = node.Id;
             routing.Add(nodeId, senderId);
@@ -79,42 +79,28 @@ namespace MistNet
 
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
-
             MistDebug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
 
-            var oldIndex = routing.NodeIdToBucketIndex.GetValueOrDefault(nodeId, -1);
-            var needUpdate = oldIndex != index;
-            if (oldIndex != -1 && needUpdate)
+            var currentIndex = routing.GetBucketIndex(nodeId);
+            if (currentIndex == -1)
             {
-                // 前回と値が異なる場合
-                var oldNode = routing.Buckets[oldIndex].First(n => n.Id == nodeId);
-                routing.Buckets[oldIndex].Remove(oldNode);
-            }
-
-            if (index >= routing.Buckets.Count)
-            {
-                // 初期化
-                while (routing.Buckets.Count <= index)
+                var result = routing.AddBucket(index, node);
+                if (result == DhtRouting.Result.Fail)
                 {
-                    routing.Buckets.Add(new HashSet<Node>());
+                    // bucketがいっぱい
+                    SendPingAndAddNode(index, node).Forget();
                 }
 
-                // 新規追加
-                AddNode(index, node);
                 return;
             }
 
-            if (routing.Buckets[index].Count >= BucketSize)
+            if (index != currentIndex)
             {
-                SendPingAndAddNode(index, node).Forget();
-            }
-            else
-            {
-                AddNode(index, node);
+                routing.ReplaceBucket(node, index);
             }
         }
 
-        private void OnNodesReceived(string data, string senderId)
+        private void OnNodesReceived(string data, NodeId senderId)
         {
             var nodes = JsonConvert.DeserializeObject<List<Node>>(data);
             foreach (var node in nodes)
@@ -123,20 +109,7 @@ namespace MistNet
             }
         }
 
-        private void AddNode(int index, Node node)
-        {
-            routing.Buckets[index] ??= new HashSet<Node>();
-            routing.Buckets[index].Add(node);
-            routing.NodeIdToBucketIndex[node.Id] = index;
-        }
-
-        private void DeleteNode(int index, Node oldNode)
-        {
-            routing.Buckets[index].Remove(oldNode);
-            routing.NodeIdToBucketIndex.Remove(oldNode.Id);
-        }
-
-        private void OnPingReceived(string data, string senderId)
+        private void OnPingReceived(string data, NodeId senderId)
         {
             var message = new ConnectionSelectorMessage
             {
@@ -146,7 +119,7 @@ namespace MistNet
             Send(JsonConvert.SerializeObject(message), senderId);
         }
 
-        private void OnPongReceived(string data, string senderId)
+        private void OnPongReceived(string data, NodeId senderId)
         {
             if (_pongWaitList.ContainsKey(senderId))
             {
@@ -180,8 +153,8 @@ namespace MistNet
 
             if (!_pongWaitList[oldNode.Id])
             {
-                routing.Buckets[index].Add(newNode);
-                DeleteNode(index, oldNode);
+                routing.RemoveBucket(index, oldNode);
+                routing.AddBucket(index, newNode);
             }
 
             _pongWaitList.Remove(oldNode.Id);
@@ -394,13 +367,13 @@ namespace MistNet
             }
         }
 
-        public override void OnSpawned(string id)
+        public override void OnSpawned(NodeId id)
         {
             base.OnSpawned(id);
             _visibleNodes.Add(id);
         }
 
-        public override void OnDestroyed(string id)
+        public override void OnDestroyed(NodeId id)
         {
             base.OnDestroyed(id);
             _visibleNodes.Remove(id);

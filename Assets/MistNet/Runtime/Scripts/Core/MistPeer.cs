@@ -16,18 +16,18 @@ namespace MistNet
         public RTCPeerConnection Connection;
         public MistSignalingState SignalingState;
 
-        public string Id;
+        public NodeId Id;
         private RTCDataChannel _dataChannel;
 
-        public readonly Action<byte[], string> OnMessage;
+        public readonly Action<byte[], NodeId> OnMessage;
         public Action<Ice> OnCandidate;
-        public readonly Action<string> OnConnected;
-        public readonly Action<string> OnDisconnected;
+        public readonly Action<NodeId> OnConnected;
+        public readonly Action<NodeId> OnDisconnected;
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
 
-        public MistPeer(string id)
+        public MistPeer(NodeId id)
         {
             Id = id;
             OnMessage += MistManager.I.OnMessage;
@@ -45,11 +45,10 @@ namespace MistNet
 
             // ----------------------------
             // Candidate
-            MistDebug.Log($"[Debug][Signaling][OnIceCandidate][A] -> {Id}");
             Connection.OnIceCandidate = OnIceCandidate;
             Connection.OnIceConnectionChange += OnIceConnectionChange;
-            Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[Signaling][OnIceGatheringStateChange] {state}");
-            Connection.OnNegotiationNeeded += () => MistDebug.Log($"[Signaling][OnNegotiationNeeded] -> {Id}");
+            Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[MistPeer][OnIceGatheringStateChange] {state}");
+            Connection.OnNegotiationNeeded += () => MistDebug.Log($"[MistPeer][OnNegotiationNeeded] {Id}");
             Connection.OnTrack += OnTrack;
             // ----------------------------
             // DataChannels
@@ -154,7 +153,6 @@ namespace MistNet
 
         private void SetDataChannel()
         {
-            MistDebug.Log($"[Signaling][SetDataChannel] -> {Id}");
             Connection.OnDataChannel = channel =>
             {
                 MistDebug.Log("OnDataChannel");
@@ -168,8 +166,6 @@ namespace MistNet
 
         public async UniTaskVoid SetRemoteDescription(RTCSessionDescription remoteDescription)
         {
-            MistDebug.Log($"[Signaling][SetRemoteDescription] -> {Id}");
-
             var remoteDescriptionOperation = Connection.SetRemoteDescription(ref remoteDescription);
             await remoteDescriptionOperation;
             if (remoteDescriptionOperation.IsError)
@@ -190,7 +186,7 @@ namespace MistNet
         {
             if (_dataChannel == null)
             {
-                Debug.LogError($"[Signaling][Send] DataChannel is null -> {Id}");
+                Debug.LogError($"[Send] DataChannel is null -> {Id}");
                 return;
             }
 
@@ -213,7 +209,6 @@ namespace MistNet
 
         public void Close()
         {
-            MistDebug.Log($"[Debug] Close {Id}");
             if (_sender != null) Connection.RemoveTrack(_sender);
             Connection.Close();
             SignalingState = MistSignalingState.InitialStable;
@@ -222,8 +217,6 @@ namespace MistNet
 
         private void OnIceConnectionChange(RTCIceConnectionState state)
         {
-            MistDebug.Log($"[Debug][Signaling][OnIceConnectionChange] {state} -> {Id}");
-
             switch (state)
             {
                 case RTCIceConnectionState.Connected:
@@ -249,13 +242,11 @@ namespace MistNet
 
         private void OnOpenDataChannel()
         {
-            MistDebug.Log($"[Signaling][DataChannel] Open -> {Id}");
             OnConnected?.Invoke(Id); // DataChannelが開いていないと、例えばInstantiateができないため、ここで呼ぶ
         }
 
         private void OnCloseDataChannel()
         {
-            MistDebug.Log($"[Signaling][DataChannel] Finalize -> {Id}");
         }
 
         private void OnMessageDataChannel(byte[] data)
@@ -266,7 +257,6 @@ namespace MistNet
 
         private void OnIceCandidate(RTCIceCandidate candidate)
         {
-            MistDebug.Log($"[Signaling][OnIceCandidate] -> {Id}");
             OnCandidate?.Invoke(new Ice(candidate));
         }
 

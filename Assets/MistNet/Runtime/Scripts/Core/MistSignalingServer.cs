@@ -1,7 +1,6 @@
 using UnityEngine;
 using WebSocketSharp;
 using WebSocketSharp.Server;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
@@ -23,6 +22,7 @@ namespace MistNet
             _webSocketServer = new WebSocketServer(port);
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
+
             MistDebug.Log($"[MistSignalingServer] Start {port}");
         }
 
@@ -35,67 +35,94 @@ namespace MistNet
 
         private class MistWebSocketBehavior : WebSocketBehavior
         {
-            private static readonly Dictionary<string, string> SessionIdToClientId = new();
-            private static ConcurrentQueue<string> _signalingRequestIds = new();
+            private static readonly Dictionary<string, NodeId> NodeIdBySessionId = new();
+            private static readonly Dictionary<NodeId, string> SessionIdByNodeId = new();
+
+            private static readonly Queue<(NodeId, SignalingData)> RequestQueue = new();
 
             protected override void OnOpen()
             {
                 MistDebug.Log($"[SERVER][OPEN] {ID}");
-                _signalingRequestIds.Enqueue(ID);
             }
 
-            protected override void OnClose(CloseEventArgs e)
+            private void RequestOffer()
             {
-                MistDebug.Log($"[SERVER][CLOSE] {ID}");
-                SessionIdToClientId.Remove(ID);
-
-                var newList = _signalingRequestIds.Where(x => x != ID).ToList();
-                _signalingRequestIds = new ConcurrentQueue<string>(newList);
+                Debug.Log($"[Server] RequestOffer {ID}");
+                var sendData = new SignalingData
+                {
+                    Type = SignalingType.Request
+                };
+                var message = JsonConvert.SerializeObject(sendData);
+                Sessions.SendTo(message, ID);
             }
 
             protected override void OnMessage(MessageEventArgs e)
             {
                 MistDebug.Log($"[SERVER][RECV] {e.Data}");
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(e.Data);
-                var messageType = data["type"].ToString();
-                if (!SessionIdToClientId.ContainsKey(ID))
+                var data = JsonConvert.DeserializeObject<SignalingData>(e.Data);
+                if (data.RoomId != MistConfig.Data.RoomId) return;
+
+                SessionIdByNodeId[data.SenderId] = ID;
+                NodeIdBySessionId[ID] = data.SenderId;
+
+                if (data.Type == SignalingType.Request)
                 {
-                    var id = data["id"].ToString();
-                    SessionIdToClientId.TryAdd(ID, id);
+                    RequestQueue.Enqueue((data.SenderId, data));
+                    if (RequestQueue.Count < 2) return;
+                    SendRequest();
+                    return;
                 }
 
-                if (messageType == "signaling_request")
-                {
-                    HandleSignalingRequest();
-                }
-                else
-                {
-                    var targetId = data["target_id"].ToString();
-                    var targetSessionId = SessionIdToClientId.FirstOrDefault(x => x.Value == targetId).Key;
-                    if (!string.IsNullOrEmpty(targetSessionId))
-                    {
-                        Sessions.SendTo(e.Data, targetSessionId);
-                    }
-                }
+                Send(data.ReceiverId, e.Data);
             }
 
-            private void HandleSignalingRequest()
+            private void SendRequest()
             {
-                var availableSessionIds = _signalingRequestIds.Where(id => id != ID).ToList();
-                if (availableSessionIds.Count <= 0) return;
-                var random = new System.Random();
-                var targetSessionId = availableSessionIds[random.Next(availableSessionIds.Count)];
+                var nodeA = RequestQueue.Dequeue();
+                var nodeB = RequestQueue.Dequeue();
 
-                if (!SessionIdToClientId.TryGetValue(targetSessionId, out var targetClientId)) return;
-                var response = new
+                var nodeAData = new SignalingData
                 {
-                    type = "signaling_response",
-                    target_id = targetClientId,
-                    request = "offer"
+                    Type = SignalingType.Request,
+                    ReceiverId = nodeA.Item1,
+                    SenderId = nodeB.Item1,
+                    RoomId = nodeB.Item2.RoomId
                 };
-                var sendData = JsonConvert.SerializeObject(response);
-                Sessions.SendTo(sendData, ID);
+
+                var nodeBData = new SignalingData
+                {
+                    Type = SignalingType.Request,
+                    Data = "Disconnect",
+                    ReceiverId = nodeB.Item1,
+                    SenderId = nodeA.Item1,
+                    RoomId = nodeA.Item2.RoomId
+                };
+
+                Send(nodeA.Item1, JsonConvert.SerializeObject(nodeAData));
+                Send(nodeB.Item1, JsonConvert.SerializeObject(nodeBData));
+                RequestQueue.Enqueue(nodeA);
+            }
+
+            private void Send(NodeId receiverId, string data)
+            {
+                Debug.Log($"[SERVER][SEND] {receiverId} {data}");
+                var targetSessionId = SessionIdByNodeId.GetValueOrDefault(receiverId);
+                if (string.IsNullOrEmpty(targetSessionId))
+                {
+                    MistDebug.LogError($"[SERVER][ERROR] {receiverId} is not found.");
+                    return;
+                }
+
+                Sessions.SendTo(data, targetSessionId);
+            }
+
+            protected override void OnClose(CloseEventArgs e)
+            {
+                MistDebug.Log($"[SERVER][CLOSE] {ID}");
+
+                SessionIdByNodeId.Remove(NodeIdBySessionId[ID]);
+                NodeIdBySessionId.Remove(ID);
             }
         }
     }

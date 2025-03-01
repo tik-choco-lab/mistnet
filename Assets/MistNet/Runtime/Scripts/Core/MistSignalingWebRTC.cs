@@ -27,6 +27,12 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
             MistManager.I.ConnectAction += Connect;
         }
+
+        private void OnDestroy()
+        {
+            MistManager.I.ConnectAction -= Connect;
+            _mistSignalingHandler.Dispose();
+        }
         
         /// <summary>
         /// 送信
@@ -34,7 +40,7 @@ namespace MistNet
         /// </summary>
         /// <param name="sendData"></param>
         /// <param name="targetId"></param>
-        private void SendSignalingMessage(SignalingData sendData, string targetId)
+        private void SendSignalingMessage(SignalingData sendData, NodeId targetId)
         {
             var message = new P_Signaling
             {
@@ -47,7 +53,7 @@ namespace MistNet
         /// <summary>
         /// 受信
         /// </summary>
-        private void ReceiveSignalingMessage(byte[] bytes, string sourceId)
+        private void ReceiveSignalingMessage(byte[] bytes, NodeId sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
             var response = JsonConvert.DeserializeObject<SignalingData>(receiveData.Data);
@@ -56,7 +62,7 @@ namespace MistNet
             _functions[type](response);
         }
 
-        private void Connect(string id)
+        private void Connect(NodeId id)
         {
             MistDebug.Log($"[MistSignalingWebRTC] Connect: {id}");
             _mistSignalingHandler.SendOffer(id).Forget();

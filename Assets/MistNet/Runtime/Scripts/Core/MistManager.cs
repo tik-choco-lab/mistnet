@@ -16,15 +16,15 @@ namespace MistNet
     {
         public static MistManager I;
         public MistPeerData MistPeerData;
-        public Action<string> ConnectAction;
-        private Action<string> _onConnectedAction;
-        private Action<string> _onDisconnectedAction;
+        public Action<NodeId> ConnectAction;
+        private Action<NodeId> _onConnectedAction;
+        private Action<NodeId> _onDisconnectedAction;
 
         [SerializeField] private IConnectionSelector connectionSelector;
         [SerializeField] public IRouting routing;
 
         private readonly MistConfig _config = new();
-        private readonly Dictionary<MistNetMessageType, Action<byte[], string>> _onMessageDict = new();
+        private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _functionDict = new();
         private readonly Dictionary<string, int> _functionArgsLengthDict = new();
         private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
@@ -48,7 +48,7 @@ namespace MistNet
             MistConfig.WriteConfig();
         }
 
-        public void Send(MistNetMessageType type, byte[] data, string targetId)
+        public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
         {
             MistDebug.Log($"[SEND][{type.ToString()}] -> {targetId}");
 
@@ -75,7 +75,7 @@ namespace MistNet
                 return;
             }
 
-            routing.Remove(targetId);
+            // routing.Remove(targetId);
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
@@ -100,7 +100,7 @@ namespace MistNet
             }
         }
 
-        public void AddRPC(MistNetMessageType messageType, Action<byte[], string> function)
+        public void AddRPC(MistNetMessageType messageType, Action<byte[], NodeId> function)
         {
             _onMessageDict.Add(messageType, function);
         }
@@ -120,7 +120,7 @@ namespace MistNet
             _functionArgsTypeDict.Remove(key);
         }
 
-        public void RPC(string targetId, string key, params object[] args)
+        public void RPC(NodeId targetId, string key, params object[] args)
         {
             var argsString = string.Join(",", args);
             var sendData = new P_RPC
@@ -150,7 +150,7 @@ namespace MistNet
             _functionDict[key].DynamicInvoke(args);
         }
 
-        private void OnRPC(byte[] data, string sourceId)
+        private void OnRPC(byte[] data, NodeId sourceId)
         {
             var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
             if (!_functionDict.ContainsKey(message.Method))
@@ -190,7 +190,7 @@ namespace MistNet
             return objects;
         }
 
-        public void OnMessage(byte[] data, string senderId)
+        public void OnMessage(byte[] data, NodeId senderId)
         {
             var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
             MistDebug.Log($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
@@ -203,10 +203,10 @@ namespace MistNet
             }
 
             // 他のPeer宛のメッセージの場合
-            var targetId = message.TargetId;
-            if (!MistPeerData.IsConnected(message.TargetId))
+            var targetId = new NodeId(message.TargetId);
+            if (!MistPeerData.IsConnected(targetId))
             {
-                targetId = routing.Get(message.TargetId);
+                targetId = routing.Get(targetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -224,13 +224,13 @@ namespace MistNet
             return message.TargetId == MistPeerData.SelfId;
         }
 
-        private void ProcessMessageForSelf(MistMessage message, string senderId)
+        private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            routing.Add(message.Id, senderId);
-            _onMessageDict[message.Type].DynamicInvoke(message.Payload, message.Id);
+            routing.Add(new NodeId(message.Id), senderId);
+            _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 
-        public void Connect(string id)
+        public void Connect(NodeId id)
         {
             if (id == MistPeerData.I.SelfId) return;
 
@@ -244,7 +244,7 @@ namespace MistNet
             }
         }
 
-        public void OnConnected(string id)
+        public void OnConnected(NodeId id)
         {
             MistDebug.Log($"[Connected] {id}");
 
@@ -256,7 +256,7 @@ namespace MistNet
             routing.OnConnected(id);
         }
 
-        public void OnDisconnected(string id)
+        public void OnDisconnected(NodeId id)
         {
             MistDebug.Log($"[Disconnected] {id}");
             MistSyncManager.I.DestroyBySenderId(id);
@@ -266,13 +266,13 @@ namespace MistNet
             routing.OnDisconnected(id);
         }
 
-        public void OnSpawned(string id)
+        public void OnSpawned(NodeId id)
         {
             MistDebug.Log($"[Spawned] {id}");
             connectionSelector.OnSpawned(id);
         }
 
-        public void OnDespawned(string id)
+        public void OnDespawned(NodeId id)
         {
             MistDebug.Log($"[Despawned] {id}");
             connectionSelector.OnDestroyed(id);
@@ -280,12 +280,12 @@ namespace MistNet
 
         public void AddJoinedCallback(Delegate callback)
         {
-            _onConnectedAction += (Action<string>)callback;
+            _onConnectedAction += (Action<NodeId>)callback;
         }
 
         public void AddLeftCallback(Delegate callback)
         {
-            _onDisconnectedAction += (Action<string>)callback;
+            _onDisconnectedAction += (Action<NodeId>)callback;
         }
 
         public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation)
@@ -299,7 +299,7 @@ namespace MistNet
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             var objId = Guid.NewGuid().ToString("N");
-            syncObject.SetData(objId, true, prefabAddress, MistPeerData.SelfId);
+            syncObject.SetData(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
 
             MistSyncManager.I.RegisterSyncObject(syncObject);
 

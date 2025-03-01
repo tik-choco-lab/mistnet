@@ -11,18 +11,18 @@ namespace MistNet
 {
     public class MistSyncObject : MonoBehaviour
     {
-        public string Id { get; private set; }
+        public ObjectId Id { get; private set; } = new ObjectId("");
         public string PrefabAddress { get; private set; }
-        public string OwnerId { get; private set; }
-        [SerializeField] private bool _isOwner = true; // 表示用
+        public NodeId OwnerId { get; private set; }
+        [SerializeField] private bool isOwner = true; // 表示用
 
         public bool IsOwner
         {
             // TODO: Test
-            get => _isOwner;
+            get => isOwner;
             private set
             {
-                _isOwner = value;
+                isOwner = value;
 
                 if (IsOwner)
                 {
@@ -72,7 +72,7 @@ namespace MistNet
         {
             // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
             var instanceId = _instanceIdCount++.ToString();
-            Id = instanceId;
+            Id = new ObjectId(instanceId);
             IsOwner = false;
             IsGlobalObject = true;
             // OwnerId = MistPeerData.I.SelfId; // 自身のIDをOwnerとして設定しておく
@@ -93,7 +93,7 @@ namespace MistNet
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
-        public void SetData(string id, bool isOwner, string prefabAddress, string ownerId)
+        public void SetData(ObjectId id, bool isOwner, string prefabAddress, NodeId ownerId)
         {
             Id = id;
             IsOwner = isOwner;
@@ -126,7 +126,7 @@ namespace MistNet
         // TODO: 要検証
         // TODO: 後から入出する人はRPCが実行されない
         [MistRpc]
-        private void RequestOwner(string id, int ownerRequestCount)
+        private void RequestOwner(NodeId id, int ownerRequestCount)
         {
             Debug.Log($"[Debug][0] RequestOwner {id}, {ownerRequestCount}");
             const int threshold = 100;
@@ -148,7 +148,7 @@ namespace MistNet
         }
 
         [MistRpc]
-        public void OnReceiveOwnerRequestCount(int count, string ownerId)
+        public void OnReceiveOwnerRequestCount(int count, NodeId ownerId)
         {
             Debug.Log($"[Debug][0] OnReceiveOwnerRequestCount {count}");
             _ownerRequestCount = count;
@@ -161,14 +161,14 @@ namespace MistNet
         private void OnChangedOwner()
         {
             Debug.Log($"[Debug][0] OnChangedOwner {OwnerId}");
-            OwnerId = Id;
+            OwnerId = MistPeerData.I.SelfId;
             IsOwner = true;
             _receiveAnswer = true;
         }
 
         // -------------------
 
-        public void RPC(string targetId, string key, params object[] args)
+        public void RPC(NodeId targetId, string key, params object[] args)
         {
             MistManager.I.RPC(targetId, GetRPCName(key), args);
         }
@@ -190,7 +190,7 @@ namespace MistNet
 
         // -------------------
 
-        public void SendAllProperties(string id)
+        public void SendAllProperties(NodeId id)
         {
             foreach (var (component, property) in _propertyList)
             {

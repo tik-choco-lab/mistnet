@@ -6,10 +6,10 @@ namespace MistNet
     public class SignalingData
     {
         [JsonProperty("senderId")]
-        public string SenderId;
+        public NodeId SenderId;
 
         [JsonProperty("receiverId")]
-        public string ReceiverId;
+        public NodeId ReceiverId;
 
         [JsonProperty("roomId")]
         public string RoomId;
@@ -22,10 +22,20 @@ namespace MistNet
         public SignalingType Type;
     }
 
+    // public record NodeId(string Id)
+    // {
+    //     public override string ToString()
+    //     {
+    //         return base.ToString();
+    //     }
+    // }
+
     public enum SignalingType
     {
         Offer,
         Answer,
         Candidate,
+        Candidates,
+        Request,
     }
 }

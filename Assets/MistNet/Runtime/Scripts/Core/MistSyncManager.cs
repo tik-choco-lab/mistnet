@@ -39,7 +39,7 @@ namespace MistNet
             // UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        private void SendObjectInstantiateInfo(string id)
+        private void SendObjectInstantiateInfo(NodeId id)
         {
             var sendData = new P_ObjectInstantiate();
             foreach (var obj in _mySyncObjects.Values)
@@ -55,7 +55,7 @@ namespace MistNet
             MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
-        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
+        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
             if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
@@ -70,7 +70,7 @@ namespace MistNet
 
             // -----------------
             var syncObject = obj.GetComponent<MistSyncObject>();
-            syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
+            syncObject.SetData(new ObjectId(instantiateData.ObjId), false, instantiateData.PrefabAddress, sourceId);
 
             RegisterSyncObject(syncObject);
             MistManager.I.OnSpawned(sourceId);
@@ -81,7 +81,7 @@ namespace MistNet
         /// 相手はRequestを出して，自身は出さないことがある
         /// </summary>
         /// <param name="id"></param>
-        public void RequestObjectInstantiateInfo(string id)
+        public void RequestObjectInstantiateInfo(NodeId id)
         {
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
@@ -94,19 +94,19 @@ namespace MistNet
         /// </summary>
         /// <param name="data"></param>
         /// <param name="sourceId"></param>
-        private void ReceiveObjectInstantiateInfoRequest(byte[] data, string sourceId)
+        private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
             MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
-        public void RemoveObject(string targetId)
+        public void RemoveObject(NodeId targetId)
         {
             MistDebug.Log($"[Debug] RemoveObject: {targetId}");
             DestroyBySenderId(targetId);
         }
 
-        private void ReceiveLocation(byte[] data, string sourceId)
+        private void ReceiveLocation(byte[] data, NodeId sourceId)
         {
             var location = MemoryPackSerializer.Deserialize<P_Location>(data);
             var syncObject = GetSyncObject(location.ObjId);
@@ -153,7 +153,7 @@ namespace MistNet
             RegisterSyncAnimator(syncObject);
         }
 
-        private void SendAllProperties(string id)
+        private void SendAllProperties(NodeId id)
         {
             foreach (var obj in _mySyncObjects.Values)
             {
@@ -196,7 +196,7 @@ namespace MistNet
         {
             if (!OwnerIdAndObjIdDict.ContainsKey(senderId))
             {
-                MistDebug.LogError("Already destroyed");
+                MistDebug.LogWarning("Already destroyed");
                 return;
             }
 
@@ -233,7 +233,7 @@ namespace MistNet
             _syncAnimators.Remove(syncObject.Id);
         }
         
-        private void ReceiveAnimation(byte[] data, string sourceId)
+        private void ReceiveAnimation(byte[] data, NodeId sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
             if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;

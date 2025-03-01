@@ -8,15 +8,15 @@ namespace MistNet
     public class MistPeerData
     {
         public static MistPeerData I { get; private set; } = new();
-        public string SelfId { get; private set; }
-        public Dictionary<string, MistPeerDataElement> GetAllPeer { get; } = new();
+        public NodeId SelfId { get; private set; }
+        public Dictionary<NodeId, MistPeerDataElement> GetAllPeer { get; } = new();
 
         private AudioSource _selfAudioSource;
 
         public void Init()
         {
             I = this;
-            SelfId = Guid.NewGuid().ToString("N");
+            SelfId = new NodeId(Guid.NewGuid().ToString("N"));
             MistDebug.Log($"[Self ID] {SelfId}");
             GetAllPeer.Clear();
         }
@@ -34,12 +34,12 @@ namespace MistNet
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public bool IsConnected(string id)
+        public bool IsConnected(NodeId id)
         {
             return GetAllPeer.TryGetValue(id, out var data) && data.IsConnected;
         }
 
-        public MistPeer GetPeer(string id)
+        public MistPeer GetPeer(NodeId id)
         {
             if (GetAllPeer.TryGetValue(id, out var peerData))
             {
@@ -59,7 +59,7 @@ namespace MistNet
             return GetAllPeer[id].Peer;
         }
 
-        public MistPeerDataElement GetPeerData(string id)
+        public MistPeerDataElement GetPeerData(NodeId id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -70,7 +70,7 @@ namespace MistNet
             return GetAllPeer.GetValueOrDefault(id);
         }
 
-        public void SetState(string id, MistPeerState state)
+        public void SetState(NodeId id, MistPeerState state)
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
@@ -82,7 +82,7 @@ namespace MistNet
             }
         }
 
-        public void OnDisconnected(string id)
+        public void OnDisconnected(NodeId id)
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
@@ -106,7 +106,7 @@ namespace MistNet
         /// </summary>
         public MistPeerState State = MistPeerState.Disconnected;
 
-        public MistPeerDataElement(string id)
+        public MistPeerDataElement(NodeId id)
         {
             Peer = new(id);
         }

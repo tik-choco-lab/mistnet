@@ -17,7 +17,7 @@ namespace MistNet
 
     public class GlobalNodeData
     {
-        [JsonProperty("enable")] public bool Enable;
+        [JsonProperty("enable")] public bool Enable = false;
         [JsonProperty("port")] public int Port = 8080;
     }
 }

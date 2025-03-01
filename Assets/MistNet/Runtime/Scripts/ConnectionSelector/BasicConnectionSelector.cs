@@ -13,7 +13,7 @@ namespace MistNet
             Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
         }
 
-        public override void OnConnected(string id)
+        public override void OnConnected(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
@@ -22,19 +22,20 @@ namespace MistNet
             RequestObject(id);
         }
 
-        public override void OnDisconnected(string id)
+        public override void OnDisconnected(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
         }
 
-        protected override void OnMessage(string data, string id)
+        protected override void OnMessage(string data, NodeId id)
         {
             var nodes = data.Split(',');
             Debug.Log($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
-            foreach (var nodeId in nodes)
+            foreach (var nodeIdStr in nodes)
             {
+                var nodeId = new NodeId(nodeIdStr);
                 if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
 
