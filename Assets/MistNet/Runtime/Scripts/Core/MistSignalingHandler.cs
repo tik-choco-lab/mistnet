@@ -11,7 +11,6 @@ namespace MistNet
     public class MistSignalingHandler : IDisposable
     {
         public Action<SignalingData, NodeId> Send;
-        private readonly HashSet<string> _candidateData = new();
         private readonly CancellationTokenSource _cts = new();
 
         public void RequestOffer(SignalingData response)
@@ -101,30 +100,30 @@ namespace MistNet
             sendData.ReceiverId = targetId;
             Send(sendData, targetId);
 
-            if (_candidateData.Count == 0) return;
-            foreach (var candidate in _candidateData)
-            {
-                var value = JsonUtility.FromJson<Ice>(candidate);
-                peer.AddIceCandidate(value);
-            }
+            // if (_candidateData.Count == 0) return;
+            // foreach (var candidate in _candidateData)
+            // {
+            //     var value = JsonUtility.FromJson<Ice>(candidate);
+            //     peer.AddIceCandidate(value);
+            // }
         }
 
         private void SendCandidate(Ice candidate, NodeId targetId)
         {
             MistDebug.Log($"[MistSignaling] SendCandidate: {targetId}");
             var candidateString = JsonUtility.ToJson(candidate);
-            if (_candidateData.Contains(candidateString))
-            {
-                MistDebug.Log($"[MistSignaling] Candidate already sent: {candidateString}");
-                return;
-            }
+            // if (_candidateData.Contains(candidateString))
+            // {
+            //     MistDebug.Log($"[MistSignaling] Candidate already sent: {candidateString}");
+            //     return;
+            // }
 
             var sendData = CreateSendData();
             sendData.Type = SignalingType.Candidate;
             sendData.ReceiverId = targetId;
             sendData.Data = candidateString;
             Send(sendData, targetId);
-            _candidateData.Add(candidateString);
+            // _candidateData.Add(candidateString);
             
             // 接続が完了したら、関連するICE候補を削除
             var peer = MistManager.I.MistPeerData.GetPeer(targetId).Connection;
@@ -219,7 +218,7 @@ namespace MistNet
             {
                 if (state == RTCIceConnectionState.Connected || state == RTCIceConnectionState.Completed)
                 {
-                    _candidateData.RemoveWhere(c => c.Contains($"\"receiverId\":\"{targetId}\""));
+                    // _candidateData.RemoveWhere(c => c.Contains($"\"receiverId\":\"{targetId}\""));
                 }
 
                 if (state == RTCIceConnectionState.Closed || state == RTCIceConnectionState.Failed || state == RTCIceConnectionState.Disconnected)

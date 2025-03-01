@@ -51,6 +51,7 @@ namespace MistNet
                     if (node == null)
                     {
                         MistDebug.LogError($"[RoutingTable] node {bucketIndex} is null");
+                        return null;
                     }
 
                     if (!string.IsNullOrEmpty(node.Id)) // デフォルト値もしくは条件不一致でない場合

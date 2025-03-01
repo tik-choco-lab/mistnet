@@ -284,6 +284,7 @@ namespace MistNet
                 var visibleNodes = routing.Buckets
                     .Where(bucket => bucket.Count != 0)
                     .SelectMany(bucket => bucket)
+                    .Where(node => routing.ConnectedNodes.Contains(node.Id))
                     .OrderBy(node => Vector3.Distance(selfPosition, node.Position.ToVector3()))
                     .Take(MaxVisibleNodes)
                     .Select(node => node.Id)

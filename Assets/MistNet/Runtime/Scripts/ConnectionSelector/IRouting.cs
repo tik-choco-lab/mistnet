@@ -18,6 +18,7 @@ namespace MistNet
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             ConnectedNodes.Remove(id);
+            if (MessageNodes.Contains(id)) MessageNodes.Remove(id);
         }
 
         public virtual void AddMessageNode(NodeId id)
