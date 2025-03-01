@@ -75,8 +75,7 @@ namespace MistNet
             var targetId = response.SenderId;
 
             var peer = MistPeerData.I.GetPeer(targetId);
-            if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
-            
+
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
 
             var sdpJson = response.Data;

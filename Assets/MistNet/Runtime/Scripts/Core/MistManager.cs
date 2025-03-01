@@ -90,10 +90,7 @@ namespace MistNet
                 message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
                 var peerData = MistPeerData.GetPeer(peerId);
-                if (MistPeerData.GetPeerData(peerId).State is MistPeerState.Connected)
-                {
-                    peerData.Send(sendData);
-                }
+                peerData.Send(sendData);
             }
         }
 
@@ -155,6 +152,7 @@ namespace MistNet
                 MistDebug.LogError($"[Error][RPC] {message.Method} is not found");
                 return;
             }
+
             var args = ConvertStringToObjects(message.Method, message.Args);
             var argsLength = _functionArgsLengthDict[message.Method];
 
@@ -232,22 +230,11 @@ namespace MistNet
             if (id == MistPeerData.I.SelfId) return;
 
             ConnectAction.Invoke(id);
-            MistPeerData.GetPeerData(id).State = MistPeerState.Connecting;
-
-            if (MistPeerData.GetPeerData(id).State == MistPeerState.Connecting)
-            {
-                MistDebug.Log($"[Connect] {id} is not connected");
-                MistPeerData.GetPeerData(id).State = MistPeerState.Disconnected;
-            }
         }
 
         public void OnConnected(NodeId id)
         {
             MistDebug.Log($"[Connected] {id}");
-
-            // InstantiateしたObject情報の送信
-            MistPeerData.I.GetPeerData(id).State = MistPeerState.Connected;
-            // MistSyncManager.I.SendObjectInstantiateInfo(id);
             connectionSelector.OnConnected(id);
             _onConnectedAction?.Invoke(id);
             routing.OnConnected(id);

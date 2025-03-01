@@ -16,6 +16,14 @@ namespace MistNet
         public void Init()
         {
             I = this;
+            InitSelfId();
+
+            MistDebug.Log($"[Self ID] {SelfId}");
+            GetAllPeer.Clear();
+        }
+
+        private void InitSelfId()
+        {
             if (string.IsNullOrEmpty(MistConfig.Data.NodeId))
             {
                 SelfId = new NodeId(Guid.NewGuid().ToString("N"));
@@ -23,9 +31,6 @@ namespace MistNet
                 MistConfig.WriteConfig();
             }
             else SelfId = MistConfig.Data.NodeId;
-
-            MistDebug.Log($"[Self ID] {SelfId}");
-            GetAllPeer.Clear();
         }
 
         public void AllForceClose()
@@ -81,7 +86,6 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
-            peerData.State = state;
             if (state == MistPeerState.Disconnected && peerData.Peer != null)
             {
                 peerData.Peer.Dispose();
@@ -93,7 +97,6 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
-            peerData.State = MistPeerState.Disconnected;
             peerData.Peer?.Dispose();
             peerData.Peer = null;
             GetAllPeer.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
@@ -108,11 +111,6 @@ namespace MistNet
     public class MistPeerDataElement
     {
         public MistPeer Peer;
-        /// <summary>
-        /// TODO: ↓ 正しい値になっていないことがある
-        /// </summary>
-        public MistPeerState State = MistPeerState.Disconnected;
-
         public MistPeerDataElement(NodeId id)
         {
             Peer = new(id);

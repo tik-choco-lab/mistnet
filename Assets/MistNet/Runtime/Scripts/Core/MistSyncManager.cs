@@ -31,8 +31,6 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
-
-            // UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         private void SendObjectInstantiateInfo(NodeId id)
