@@ -72,10 +72,7 @@ namespace MistNet
             {
                 var peerData = MistPeerData.GetAllPeer[targetId];
                 peerData.Peer.Send(sendData);
-                return;
             }
-
-            // routing.Remove(targetId);
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
@@ -269,13 +266,11 @@ namespace MistNet
         public void OnSpawned(NodeId id)
         {
             MistDebug.Log($"[Spawned] {id}");
-            connectionSelector.OnSpawned(id);
         }
 
         public void OnDestroyed(NodeId id)
         {
             MistDebug.Log($"[Destroyed] {id}");
-            connectionSelector.OnDestroyed(id);
         }
 
         public void AddJoinedCallback(Delegate callback)

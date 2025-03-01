@@ -38,14 +38,6 @@ namespace MistNet
             MistSyncManager.I.RemoveObject(targetId);
         }
 
-        public virtual void OnSpawned(NodeId id)
-        {
-        }
-
-        public virtual void OnDestroyed(NodeId id)
-        {
-        }
-
         protected void SendAll(string data)
         {
             MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));

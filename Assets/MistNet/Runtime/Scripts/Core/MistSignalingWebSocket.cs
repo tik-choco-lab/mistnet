@@ -64,11 +64,7 @@ namespace MistNet
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
-            _ws.OnOpen += () =>
-            {
-                MistDebug.Log("[WebSocket] Opened");
-            };
-
+            _ws.OnOpen += () => MistDebug.Log("[WebSocket] Opened");
             _ws.OnClose += message =>
             {
                 MistDebug.Log($"[WebSocket] Closed {message}");

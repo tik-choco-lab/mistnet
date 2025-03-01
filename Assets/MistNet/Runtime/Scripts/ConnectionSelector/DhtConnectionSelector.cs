@@ -362,17 +362,5 @@ namespace MistNet
                 }
             }
         }
-
-        public override void OnSpawned(NodeId id)
-        {
-            base.OnSpawned(id);
-            routing.AddMessageNode(id);
-        }
-
-        public override void OnDestroyed(NodeId id)
-        {
-            base.OnDestroyed(id);
-            routing.RemoveMessageNode(id);
-        }
     }
 }
