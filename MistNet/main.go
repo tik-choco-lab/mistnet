@@ -249,9 +249,27 @@ func (s *MistServer) handleClose(conn *websocket.Conn, sessionID string) {
 	if exists {
 		delete(s.nodeToSession, nodeID)
 		delete(s.nodeToConn, nodeID)
+
+		s.removeFromRequestQueue(nodeID)
 	}
 	delete(s.sessionToNode, sessionID)
 	delete(s.clients, conn)
+}
+
+func (s *MistServer) removeFromRequestQueue(nodeID NodeId) {
+	s.requestQueueMu.Lock()
+	defer s.requestQueueMu.Unlock()
+
+	newQueue := make([]NodeIdWithData, 0, len(s.requestQueue))
+	for _, item := range s.requestQueue {
+		if item.NodeId != nodeID {
+			newQueue = append(newQueue, item)
+		} else {
+			MistDebug("[SERVER][QUEUE] Removed disconnected node %s from request queue", nodeID)
+		}
+	}
+
+	s.requestQueue = newQueue
 }
 
 func main() {
