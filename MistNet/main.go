@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -28,6 +29,8 @@ type MistConfig struct {
 	}
 }
 
+const configFile = "config.json"
+
 type SignalingData struct {
 	Type       SignalingType `json:"Type"`
 	Data       string        `json:"Data,omitempty"`
@@ -50,6 +53,54 @@ type MistServer struct {
 type NodeIdWithData struct {
 	NodeId NodeId
 	Data   SignalingData
+}
+
+func loadConfig() (*MistConfig, error) {
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		return createDefaultConfig()
+	}
+
+	file, err := os.Open(configFile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var config MistConfig
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		return nil, err
+	}
+
+	fmt.Println(config)
+	return &config, nil
+}
+
+func createDefaultConfig() (*MistConfig, error) {
+	config := MistConfig{
+		RoomId: "MistNet",
+		GlobalNode: struct {
+			Enable bool
+			Port   int
+		}{
+			Enable: true,
+			Port:   8080,
+		},
+	}
+
+	json, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	err = os.WriteFile(configFile, json, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(config)
+
+	return &config, nil
 }
 
 func MistDebug(format string, v ...interface{}) {
@@ -204,12 +255,11 @@ func (s *MistServer) handleClose(conn *websocket.Conn, sessionID string) {
 }
 
 func main() {
-	config := MistConfig{
-		RoomId: "MistNet",
+	config, err := loadConfig()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-	config.GlobalNode.Enable = true
-	config.GlobalNode.Port = 8080
-
-	server := NewMistServer(config)
+	server := NewMistServer(*config)
 	server.Start()
 }
