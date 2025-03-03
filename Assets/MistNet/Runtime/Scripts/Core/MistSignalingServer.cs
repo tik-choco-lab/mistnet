@@ -2,7 +2,6 @@ using UnityEngine;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
 
 namespace MistNet
