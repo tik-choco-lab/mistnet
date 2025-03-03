@@ -8,37 +8,46 @@ namespace MistNet
 {
     public class MistSignalingWebSocket : MonoBehaviour
     {
-        public static MistSignalingWebSocket I;
-
-        private Dictionary<string, Action<Dictionary<string, object>>> _functions;
+        private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
 
         private async void Start()
         {
-            I = this;
             _mistSignalingHandler = new MistSignalingHandler();
             _mistSignalingHandler.Send += Send;
 
             // Functionの登録
             _functions = new()
             {
-                { "signaling_response", _mistSignalingHandler.ReceiveSignalingResponse},
-                { "offer", _mistSignalingHandler.ReceiveOffer },
-                { "answer", _mistSignalingHandler.ReceiveAnswer },
-                { "candidate_add", _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Request , _mistSignalingHandler.RequestOffer },
+                { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
+                { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
+                { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Candidates, _mistSignalingHandler.ReceiveCandidates },
             };
             
             // 接続
+            await UniTask.Yield(); // SignalingServerが立ち上がるのを待つ
             ConnectToSignalingServer();
+            SendRequest();
+        }
 
-            // try to connect to other nodes
-            await UniTask.Yield(); // VCの初期化でAudioSourceをあらかじめMistPeerDataに登録する必要があるため
-            _mistSignalingHandler.SendSignalingRequest();
+        private void SendRequest()
+        {
+            var sendData = new SignalingData
+            {
+                Type = SignalingType.Request,
+                SenderId = MistPeerData.I.SelfId,
+                RoomId = MistConfig.Data.RoomId,
+            };
+
+            Send(sendData, null);
         }
 
         private void OnDestroy()
         {
+            _mistSignalingHandler.Dispose();
             _ws?.Dispose();
         }
 
@@ -48,21 +57,17 @@ namespace MistNet
         {
             if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
             {
-                MistDebug.LogError("[WebSocket] All signaling server addresses failed.");
+                MistDebug.LogError("[MistSignaling][WebSocket] All signaling server addresses failed.");
                 return;
             }
 
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
-            _ws.OnOpen += () =>
-            {
-                MistDebug.Log("[WebSocket] Opened");
-            };
-
+            _ws.OnOpen += () => MistDebug.Log("[MistSignaling][WebSocket] Opened");
             _ws.OnClose += message =>
             {
-                MistDebug.Log($"[WebSocket] Closed {message}");
+                MistDebug.Log($"[MistSignaling][WebSocket] Closed {message}");
                 // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
                 TryNextAddress();
             };
@@ -71,7 +76,7 @@ namespace MistNet
 
             _ws.OnError += message =>
             {
-                MistDebug.LogError($"[WebSocket] Error {message}");
+                MistDebug.LogError($"[MistSignaling][WebSocket] Error {message}");
                 // エラーが発生した場合も再接続を試みる
                 TryNextAddress();
             };
@@ -87,12 +92,18 @@ namespace MistNet
 
         private void OnMessage(string message)
         {
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
-            var type = response["type"].ToString();
+            var response = JsonConvert.DeserializeObject<SignalingData>(message);
+            var type = response.Type;
             _functions[type](response);
+
+            // if (type == SignalingType.Request && response.Data == "Disconnect")
+            // {
+            //     _ws.Close();
+            //     _ws.Dispose();
+            // }
         }
 
-        private void Send(Dictionary<string, object> sendData, string _)
+        private void Send(SignalingData sendData, NodeId _)
         {
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);

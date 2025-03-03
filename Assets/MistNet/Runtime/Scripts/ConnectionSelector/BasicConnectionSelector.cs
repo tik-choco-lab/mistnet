@@ -6,35 +6,39 @@ namespace MistNet
     public class BasicConnectionSelector : IConnectionSelector
     {
         private readonly HashSet<string> _connectedNodes = new();
-
+        [SerializeField] private IRouting routing;
         protected override void Start()
         {
             base.Start();
             Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
         }
 
-        public override void OnConnected(string id)
+        public override void OnConnected(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
+            routing.AddMessageNode(id);
+
             var dataStr = string.Join(",", _connectedNodes);
             SendAll(dataStr);
             RequestObject(id);
         }
 
-        public override void OnDisconnected(string id)
+        public override void OnDisconnected(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
+            routing.AddMessageNode(id);
         }
 
-        protected override void OnMessage(string data, string id)
+        protected override void OnMessage(string data, NodeId id)
         {
             var nodes = data.Split(',');
             Debug.Log($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
-            foreach (var nodeId in nodes)
+            foreach (var nodeIdStr in nodes)
             {
+                var nodeId = new NodeId(nodeIdStr);
                 if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
 

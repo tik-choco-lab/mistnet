@@ -33,7 +33,7 @@ namespace MistNet
             _cancellationToken.Cancel();
         }
 
-        private void ReceivePing(byte[] data, string sourceId)
+        private void ReceivePing(byte[] data, NodeId sourceId)
         {
             var ping = MemoryPackSerializer.Deserialize<P_Ping>(data);
             var pong = new P_Pong
@@ -44,7 +44,7 @@ namespace MistNet
             MistManager.I.Send(MistNetMessageType.Pong, sendData ,sourceId);
         }
         
-        private void ReceivePong(byte[] data, string sourceId)
+        private void ReceivePong(byte[] data, NodeId sourceId)
         {
             var pong = MemoryPackSerializer.Deserialize<P_Pong>(data);
             var time = DateTime.Now.Ticks - pong.Time;
