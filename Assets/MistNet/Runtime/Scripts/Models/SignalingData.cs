@@ -22,14 +22,6 @@ namespace MistNet
         public SignalingType Type;
     }
 
-    // public record NodeId(string Id)
-    // {
-    //     public override string ToString()
-    //     {
-    //         return base.ToString();
-    //     }
-    // }
-
     public enum SignalingType
     {
         Offer,
