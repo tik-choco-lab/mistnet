@@ -24,11 +24,10 @@ namespace MistNet
 
         private void InitSelfId()
         {
-            if (string.IsNullOrEmpty(MistConfig.Data.NodeId))
+            if (MistConfig.Data.RandomId || string.IsNullOrEmpty(MistConfig.Data.NodeId))
             {
                 SelfId = new NodeId(Guid.NewGuid().ToString("N"));
                 MistConfig.Data.NodeId = SelfId;
-                MistConfig.WriteConfig();
             }
             else SelfId = MistConfig.Data.NodeId;
         }
