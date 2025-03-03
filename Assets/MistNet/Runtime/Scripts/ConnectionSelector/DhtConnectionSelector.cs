@@ -353,7 +353,8 @@ namespace MistNet
 
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
-                    if (MistPeerData.I.IsConnected(node.Id)) continue;
+                    if (MistPeerData.I.IsConnectingOrConnected(node.Id)) continue;
+
                     MistDebug.Log($"[ConnectionSelector] Connect: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {

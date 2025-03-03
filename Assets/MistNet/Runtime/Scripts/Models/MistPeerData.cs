@@ -51,6 +51,12 @@ namespace MistNet
             return GetAllPeer.TryGetValue(id, out var data) && data.IsConnected;
         }
 
+        public bool IsConnectingOrConnected(NodeId id)
+        {
+            if (!GetAllPeer.TryGetValue(id, out var data)) return false;
+            return data.Peer.Connection.ConnectionState is RTCPeerConnectionState.Connected or RTCPeerConnectionState.Connecting;
+        }
+
         public MistPeer GetPeer(NodeId id)
         {
             if (GetAllPeer.TryGetValue(id, out var peerData))
@@ -82,24 +88,14 @@ namespace MistNet
             return GetAllPeer.GetValueOrDefault(id);
         }
 
-        public void SetState(NodeId id, MistPeerState state)
-        {
-            if (string.IsNullOrEmpty(id)) return;
-            if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
-            if (state == MistPeerState.Disconnected && peerData.Peer != null)
-            {
-                peerData.Peer.Dispose();
-                peerData.Peer = null;
-            }
-        }
-
         public void OnDisconnected(NodeId id)
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
+            MistDebug.Log($"[MistPeerData] Delete {id}");
             peerData.Peer?.Dispose();
             peerData.Peer = null;
-            GetAllPeer.Remove(id); // これを書くかどうかはCacheに関わりそう　Cacheは別で用意した方がいいかも
+            GetAllPeer.Remove(id);
         }
 
         public void AddInputAudioSource(AudioSource audioSource)
@@ -111,6 +107,7 @@ namespace MistNet
     public class MistPeerDataElement
     {
         public MistPeer Peer;
+
         public MistPeerDataElement(NodeId id)
         {
             Peer = new(id);

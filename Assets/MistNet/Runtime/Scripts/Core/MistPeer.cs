@@ -25,7 +25,6 @@ namespace MistNet
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
-        public MistPeerState State { get; set; }
 
         public MistPeer(NodeId id)
         {
@@ -47,6 +46,7 @@ namespace MistNet
             // Candidate
             Connection.OnIceCandidate = OnIceCandidate;
             Connection.OnIceConnectionChange += OnIceConnectionChange;
+            Connection.OnConnectionStateChange += state => MistDebug.Log($"[MistPeer][OnConnectionStateChange] {state}");
             Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[MistPeer][OnIceGatheringStateChange] {state}");
             Connection.OnNegotiationNeeded += () => MistDebug.Log($"[MistPeer][OnNegotiationNeeded] {Id}");
             Connection.OnTrack += OnTrack;
@@ -68,7 +68,6 @@ namespace MistNet
             if (offerOperation.IsError)
             {
                 MistDebug.LogError($"[Signaling][{Id}][Error][OfferOperation]");
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 return default;
             }
 
@@ -79,7 +78,6 @@ namespace MistNet
             if (localDescriptionOperation.IsError)
             {
                 MistDebug.LogError($"[Signaling][{Id}][Error][SetLocalDescription]");
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 return default;
             }
 
@@ -96,7 +94,6 @@ namespace MistNet
             await remoteDescriptionOperation.ToUniTask();
             if (remoteDescriptionOperation.IsError)
             {
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
                 MistDebug.LogError(
                     $"[Error][Signaling][SetRemoteDescription] {Id} {remoteDescriptionOperation.Error.message}");
@@ -109,7 +106,6 @@ namespace MistNet
             await answerOperation.ToUniTask();;
             if (answerOperation.IsError)
             {
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
                 MistDebug.LogError($"[Error][Signaling][CreateAnswer] -> {Id} {answerOperation.Error.message} {Connection.SignalingState}");
                 return default;
@@ -121,7 +117,6 @@ namespace MistNet
             var localDescriptionOperation = Connection.SetLocalDescription(ref desc);
             if (localDescriptionOperation.IsError)
             {
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
                 MistDebug.LogError(
                     $"[Error][Signaling][SetLocalDescription] -> {Id} {localDescriptionOperation.Error.message}");
@@ -161,7 +156,6 @@ namespace MistNet
             {
                 MistDebug.LogError(
                     $"[Error][Signaling][SetRemoteDescription] 接続要求が同時に発生している可能性があります\n-> {Id} {remoteDescriptionOperation.Error.message}");
-                MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
             }
         }
 
@@ -215,9 +209,7 @@ namespace MistNet
                     OnDisconnected?.Invoke(Id);
                     break;
                 case RTCIceConnectionState.New:
-                    break;
                 case RTCIceConnectionState.Checking:
-                    break;
                 case RTCIceConnectionState.Completed:
                     break;
                 default:
@@ -273,7 +265,6 @@ namespace MistNet
         {
             await UniTask.Delay(TimeSpan.FromSeconds(WaitReconnectTimeSec));
             CreateOffer().Forget();
-            MistPeerData.I.SetState(Id, MistPeerState.Connecting);
         }
 
         public void Dispose()

@@ -1,6 +1,5 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Newtonsoft.Json;
 using Unity.WebRTC;
@@ -28,9 +27,14 @@ namespace MistNet
         {
             MistDebug.Log($"[MistSignaling] SendOffer: {receiverId}");
             var peer = MistManager.I.MistPeerData.GetPeer(receiverId);
+            if (peer.Connection.ConnectionState == RTCPeerConnectionState.Connecting)
+            {
+                MistDebug.LogWarning($"[Warning][MistSignaling] Peer is connecting: {receiverId}");
+                return;
+            }
             if (peer.Connection.SignalingState != RTCSignalingState.Stable)
             {
-                MistDebug.LogError($"[Error][MistSignaling] SignalingState is not stable: {peer.Connection.SignalingState}");
+                MistDebug.LogWarning($"[Warning][MistSignaling] SignalingState is not stable: {peer.Connection.SignalingState}");
                 return;
             }
 
@@ -178,14 +182,15 @@ namespace MistNet
             try
             {
                 // UniTask.WhenAnyで待機。SignalingStateが条件を満たすか、タイムアウトを待つ
-
                 await UniTask.WhenAny(
-                    UniTask.WaitUntil(() => peer?.Connection?.SignalingState is RTCSignalingState.HaveRemoteOffer
+                    UniTask.WaitUntil(() => peer.Connection?.SignalingState is RTCSignalingState.HaveRemoteOffer
                         or RTCSignalingState.HaveRemotePrAnswer, cancellationToken: cts.Token),
-                    UniTask.WaitUntil(() => peer.Connection == null, cancellationToken: cts.Token)
+                    UniTask.WaitUntil(() => peer.Connection == null, cancellationToken: cts.Token),
+                    UniTask.WaitUntil(()=> peer.Connection?.IceConnectionState is RTCIceConnectionState.Closed or RTCIceConnectionState.Connected, cancellationToken: cts.Token)
                 );
 
                 if (peer.Connection == null) return false;
+                if (peer.Connection.IceConnectionState is RTCIceConnectionState.Closed or RTCIceConnectionState.Connected) return false;
 
                 return peer.Connection.SignalingState is RTCSignalingState.HaveRemoteOffer or RTCSignalingState.HaveRemotePrAnswer;
             }
