@@ -173,7 +173,7 @@ namespace MistNet
         {
             if (_dataChannel == null)
             {
-                Debug.LogError($"[Send] DataChannel is null -> {Id}");
+                Debug.LogError($"[Send] DataChannel is null {Id}");
                 return;
             }
 
