@@ -25,6 +25,7 @@ namespace MistNet
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
+        public MistPeerState State { get; set; }
 
         public MistPeer(NodeId id)
         {
@@ -56,7 +57,7 @@ namespace MistNet
 
         public async UniTask<RTCSessionDescription> CreateOffer()
         {
-            MistDebug.Log($"[Signaling][CreateOffer] -> {Id}");
+            MistDebug.Log($"[Signaling][CreateOffer] {Id}");
 
             CreateDataChannel(); // DataChannelを作成
 
@@ -87,30 +88,30 @@ namespace MistNet
 
         public async UniTask<RTCSessionDescription> CreateAnswer(RTCSessionDescription remoteDescription)
         {
-            MistDebug.Log($"[Signaling][CreateAnswer] -> {Id}");
+            MistDebug.Log($"[Signaling][CreateAnswer] {Id}");
 
             // ----------------------------
             // RemoteDescription
             var remoteDescriptionOperation = Connection.SetRemoteDescription(ref remoteDescription);
-            await remoteDescriptionOperation;
+            await remoteDescriptionOperation.ToUniTask();
             if (remoteDescriptionOperation.IsError)
             {
                 MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
                 MistDebug.LogError(
-                    $"[Signaling][Error][SetRemoteDescription] -> {Id} {remoteDescriptionOperation.Error.message}");
+                    $"[Error][Signaling][SetRemoteDescription] {Id} {remoteDescriptionOperation.Error.message}");
                 return default;
             }
 
             // ----------------------------
             // CreateAnswer
             var answerOperation = Connection.CreateAnswer();
-            await answerOperation;
+            await answerOperation.ToUniTask();;
             if (answerOperation.IsError)
             {
                 MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
-                MistDebug.LogError($"[Signaling][Error][CreateAnswer] -> {Id} {answerOperation.Error.message}");
+                MistDebug.LogError($"[Error][Signaling][CreateAnswer] -> {Id} {answerOperation.Error.message} {Connection.SignalingState}");
                 return default;
             }
 
@@ -123,7 +124,7 @@ namespace MistNet
                 MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
                 Reconnect().Forget();
                 MistDebug.LogError(
-                    $"[Signaling][Error][SetLocalDescription] -> {Id} {localDescriptionOperation.Error.message}");
+                    $"[Error][Signaling][SetLocalDescription] -> {Id} {localDescriptionOperation.Error.message}");
                 return default;
             }
 
@@ -159,7 +160,7 @@ namespace MistNet
             if (remoteDescriptionOperation.IsError)
             {
                 MistDebug.LogError(
-                    $"[Signaling][Error][SetRemoteDescription] 接続要求が同時に発生している可能性があります\n-> {Id} {remoteDescriptionOperation.Error.message}");
+                    $"[Error][Signaling][SetRemoteDescription] 接続要求が同時に発生している可能性があります\n-> {Id} {remoteDescriptionOperation.Error.message}");
                 MistPeerData.I.SetState(Id, MistPeerState.Disconnected);
             }
         }
@@ -173,7 +174,7 @@ namespace MistNet
         {
             if (_dataChannel == null)
             {
-                Debug.LogError($"[Send] DataChannel is null {Id}");
+                MistDebug.LogWarning($"[Send] DataChannel is null {Id}");
                 return;
             }
 
@@ -308,10 +309,5 @@ namespace MistNet
             });
             return data;
         }
-    }
-    
-    public enum MistSignalingState
-    {
-        InitialStable, NegotiationInProgress, NegotiationCompleted
     }
 }

@@ -50,8 +50,6 @@ namespace MistNet
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
         {
-            MistDebug.Log($"[SEND][{type.ToString()}] -> {targetId}");
-
             var message = new MistMessage
             {
                 Id = MistPeerData.SelfId,
@@ -65,11 +63,11 @@ namespace MistNet
             {
                 targetId = routing.Get(targetId);
                 if (targetId == null) return; // メッセージの破棄
-                MistDebug.Log($"[SEND][FORWARD] {targetId} -> {message.TargetId}");
+                MistDebug.Log($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
-
             if (MistPeerData.IsConnected(targetId))
             {
+                MistDebug.Log($"[SEND][{type.ToString()}] {type} {targetId}");
                 var peerData = MistPeerData.GetAllPeer[targetId];
                 peerData.Peer.Send(sendData);
             }

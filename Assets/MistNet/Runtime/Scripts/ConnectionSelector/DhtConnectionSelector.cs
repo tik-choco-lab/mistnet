@@ -348,6 +348,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
+                MistDebug.Log("[ConnectionSelector] UpdateFindNextConnect");
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
 
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
