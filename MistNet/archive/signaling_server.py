@@ -47,9 +47,7 @@ class WebSocketServer:
             self.add_client(websocket, client_id)
 
         message_type = data["type"]
-        if message_type == "evaluation":
-            await self.handle_evaluation(data)
-        elif message_type == "signaling_request":
+        if message_type == "Request":
             await self.handle_signaling_request(data)            
         else:
             target_id = data["target_id"]
