@@ -10,17 +10,13 @@ namespace MistNet
 {
     public class DhtConnectionSelector : IConnectionSelector
     {
-        private const int MaxVisibleNodes = 5;
         private const string NodeMessageType = "node";
         private const string NodesMessageType = "nodes";
         private const string PingMessageType = "ping";
         private const string PongMessageType = "pong";
 
         // timeout時間
-        private const float PingTimeoutSeconds = 5f;
-        private const int BucketBase = 4;
-        private const int NodeUpdateIntervalSeconds = 5;
-        private const int RequestObjectIntervalSeconds = 1;
+        private MistOptConfig Data => OptConfigLoader.Data;
 
         [SerializeField] private DhtRouting routing;
 
@@ -36,6 +32,7 @@ namespace MistNet
 
         protected override void Start()
         {
+            OptConfigLoader.ReadConfig();
             base.Start();
             MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
 
@@ -51,6 +48,11 @@ namespace MistNet
             UpdateNodeInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateDebugShowBucketInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private void OnDestroy()
+        {
+            OptConfigLoader.WriteConfig();
         }
 
         protected override void OnMessage(string data, NodeId senderId)
@@ -144,7 +146,7 @@ namespace MistNet
 
             // Timeoutになるか、pongが返ってくるまで待機
             var pongReceivedTask = UniTask.WaitUntil(() => _pongWaitList[oldNode.Id]);
-            var timeoutTask = UniTask.Delay(TimeSpan.FromSeconds(PingTimeoutSeconds));
+            var timeoutTask = UniTask.Delay(TimeSpan.FromSeconds(Data.PingTimeoutSeconds));
             await UniTask.WhenAny(pongReceivedTask, timeoutTask);
 
             if (!_pongWaitList[oldNode.Id])
@@ -205,9 +207,9 @@ namespace MistNet
             var intDistance = Mathf.FloorToInt(distance);
 
             // 基数 baseN で割り続ける
-            while (intDistance >= BucketBase)
+            while (intDistance >= Data.BucketBase)
             {
-                intDistance /= BucketBase; // baseNで割る
+                intDistance /= Data.BucketBase; // baseNで割る
                 bucketIndex++;
             }
 
@@ -255,7 +257,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(NodeUpdateIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSeconds), cancellationToken: token);
 
                 var message = CreateNodesInfo();
                 foreach (var id in routing.ConnectedNodes)
@@ -275,7 +277,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(RequestObjectIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(Data.RequestObjectIntervalSeconds), cancellationToken: token);
 
                 // 現在の位置を取得
                 var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
@@ -286,7 +288,7 @@ namespace MistNet
                     .SelectMany(bucket => bucket)
                     .Where(node => routing.ConnectedNodes.Contains(node.Id))
                     .OrderBy(node => Vector3.Distance(selfPosition, node.Position.ToVector3()))
-                    .Take(MaxVisibleNodes)
+                    .Take(Data.VisibleCount)
                     .Select(node => node.Id)
                     .ToHashSet();
 
