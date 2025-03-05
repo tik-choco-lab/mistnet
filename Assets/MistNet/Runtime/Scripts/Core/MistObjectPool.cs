@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MistNet
 {
-    public class MistObjectPool
+    public class MistObjectPool: IDisposable
     {
         private readonly Dictionary<ObjectId, GameObject> _objectPool = new();
 
@@ -26,6 +27,16 @@ namespace MistNet
         public void Destroy(GameObject obj)
         {
             obj.SetActive(false);
+        }
+
+        public void Dispose()
+        {
+            foreach (var obj in _objectPool.Values)
+            {
+                Destroy(obj);
+            }
+
+            _objectPool.Clear();
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
@@ -18,7 +19,7 @@ namespace MistNet
         public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
         private readonly Dictionary<ObjectId, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
 
-        private MistObjectPool _objectPool = new();
+        private readonly MistObjectPool _objectPool = new();
 
         private void Awake()
         {
@@ -33,6 +34,11 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
+        }
+
+        private void OnDestroy()
+        {
+            _objectPool.Dispose();
         }
 
         private void SendObjectInstantiateInfo(NodeId id)
