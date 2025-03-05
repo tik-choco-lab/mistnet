@@ -5,9 +5,9 @@ namespace MistNet
 {
     public class BasicRouting : IRouting
     {
-        private readonly Dictionary<string, string> _routingTable = new();
+        private readonly Dictionary<NodeId, NodeId> _routingTable = new();
 
-        public override void Add(string sourceId, string fromId)
+        public override void Add(NodeId sourceId, NodeId fromId)
         {
             if (sourceId == MistManager.I.MistPeerData.SelfId) return;
             if (sourceId == fromId) return;
@@ -21,7 +21,7 @@ namespace MistNet
             _routingTable[sourceId] = fromId;
         }
 
-        public override string Get(string targetId)
+        public override NodeId Get(NodeId targetId)
         {
             MistDebug.Log($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))

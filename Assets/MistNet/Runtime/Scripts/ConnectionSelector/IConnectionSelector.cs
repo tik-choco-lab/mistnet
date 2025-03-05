@@ -10,40 +10,32 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.ConnectionSelector, OnMessageReceived);
         }
 
-        public virtual void OnConnected(string id)
+        public virtual void OnConnected(NodeId id)
         {
         }
 
-        public virtual void OnDisconnected(string id)
+        public virtual void OnDisconnected(NodeId id)
         {
         }
 
-        private void OnMessageReceived(byte[] data, string id)
+        private void OnMessageReceived(byte[] data, NodeId id)
         {
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
             OnMessage(message.Data, id);
         }
 
-        protected virtual void OnMessage(string data, string id)
+        protected virtual void OnMessage(string data, NodeId id)
         {
         }
 
-        protected virtual void RequestObject(string targetId)
+        protected virtual void RequestObject(NodeId targetId)
         {
             MistSyncManager.I.RequestObjectInstantiateInfo(targetId);
         }
 
-        protected virtual void RemoveObject(string targetId)
+        protected virtual void RemoveObject(NodeId targetId)
         {
             MistSyncManager.I.RemoveObject(targetId);
-        }
-
-        public virtual void OnSpawned(string id)
-        {
-        }
-
-        public virtual void OnDestroyed(string id)
-        {
         }
 
         protected void SendAll(string data)
@@ -51,7 +43,7 @@ namespace MistNet
             MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
         }
 
-        protected void Send(string data, string targetId)
+        protected void Send(string data, NodeId targetId)
         {
             MistManager.I.Send(MistNetMessageType.ConnectionSelector, CreateData(data), targetId);
         }

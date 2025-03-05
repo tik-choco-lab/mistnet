@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
@@ -11,16 +8,15 @@ namespace MistNet
 {
     public class MistSyncManager : MonoBehaviour
     {
-        private const float CheckExistObjectIntervalSeconds = 5f;
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }                           // 自身のSyncObject
 
-        private readonly Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
-        private readonly Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
+        private readonly Dictionary<ObjectId, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
+        private readonly Dictionary<ObjectId, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
 
         // ユーザーが退出した際のGameObjectの削除に使用している Instantiateで生成されたObjectに限る
-        public readonly Dictionary<string, List<string>> OwnerIdAndObjIdDict = new();  // ownerId, objId　
-        private readonly Dictionary<string, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
+        public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
+        private readonly Dictionary<ObjectId, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
 
         private void Awake()
         {
@@ -35,11 +31,9 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
-
-            // UpdateCheckExistObject(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        private void SendObjectInstantiateInfo(string id)
+        private void SendObjectInstantiateInfo(NodeId id)
         {
             var sendData = new P_ObjectInstantiate();
             foreach (var obj in _mySyncObjects.Values)
@@ -55,10 +49,10 @@ namespace MistNet
             MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
-        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
+        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
-            if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
+            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId))) return;
 
             // -----------------
             // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
@@ -70,7 +64,7 @@ namespace MistNet
 
             // -----------------
             var syncObject = obj.GetComponent<MistSyncObject>();
-            syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
+            syncObject.SetData(new ObjectId(instantiateData.ObjId), false, instantiateData.PrefabAddress, sourceId);
 
             RegisterSyncObject(syncObject);
             MistManager.I.OnSpawned(sourceId);
@@ -81,7 +75,7 @@ namespace MistNet
         /// 相手はRequestを出して，自身は出さないことがある
         /// </summary>
         /// <param name="id"></param>
-        public void RequestObjectInstantiateInfo(string id)
+        public void RequestObjectInstantiateInfo(NodeId id)
         {
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
@@ -94,22 +88,22 @@ namespace MistNet
         /// </summary>
         /// <param name="data"></param>
         /// <param name="sourceId"></param>
-        private void ReceiveObjectInstantiateInfoRequest(byte[] data, string sourceId)
+        private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
             MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
-        public void RemoveObject(string targetId)
+        public void RemoveObject(NodeId targetId)
         {
             MistDebug.Log($"[Debug] RemoveObject: {targetId}");
             DestroyBySenderId(targetId);
         }
 
-        private void ReceiveLocation(byte[] data, string sourceId)
+        private void ReceiveLocation(byte[] data, NodeId sourceId)
         {
             var location = MemoryPackSerializer.Deserialize<P_Location>(data);
-            var syncObject = GetSyncObject(location.ObjId);
+            var syncObject = GetSyncObject(new ObjectId(location.ObjId));
             if (syncObject == null) return;
             syncObject.MistTransform.ReceiveLocation(location);
         }
@@ -144,16 +138,16 @@ namespace MistNet
             }
 
             // OwnerIdAndObjIdDictに登録 自動削除で使用する
-            if (!OwnerIdAndObjIdDict.ContainsKey(syncObject.OwnerId))
+            if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
             {
-                OwnerIdAndObjIdDict[syncObject.OwnerId] = new List<string>();
+                ObjectIdsByOwnerId[syncObject.OwnerId] = new List<ObjectId>();
             }
-            OwnerIdAndObjIdDict[syncObject.OwnerId].Add(syncObject.Id);
+            ObjectIdsByOwnerId[syncObject.OwnerId].Add(syncObject.Id);
 
             RegisterSyncAnimator(syncObject);
         }
 
-        private void SendAllProperties(string id)
+        private void SendAllProperties(NodeId id)
         {
             foreach (var obj in _mySyncObjects.Values)
             {
@@ -175,13 +169,13 @@ namespace MistNet
                 _mySyncObjects.Remove(syncObject.Id);
             }
 
-            OwnerIdAndObjIdDict.Remove(syncObject.OwnerId);
+            ObjectIdsByOwnerId.Remove(syncObject.OwnerId);
             
             UnregisterSyncAnimator(syncObject);
-            MistManager.I.OnDespawned(syncObject.OwnerId);
+            MistManager.I.OnDestroyed(syncObject.OwnerId);
         }
 
-        public MistSyncObject GetSyncObject(string id)
+        public MistSyncObject GetSyncObject(ObjectId id)
         {
             if (!_syncObjects.ContainsKey(id))
             {
@@ -192,22 +186,22 @@ namespace MistNet
             return _syncObjects[id];
         }
 
-        public void DestroyBySenderId(string senderId)
+        public void DestroyBySenderId(NodeId senderId)
         {
-            if (!OwnerIdAndObjIdDict.ContainsKey(senderId))
+            if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {
-                MistDebug.LogError("Already destroyed");
+                MistDebug.LogWarning("Already destroyed");
                 return;
             }
 
-            var objIds = OwnerIdAndObjIdDict[senderId];
+            var objIds = ObjectIdsByOwnerId[senderId];
             foreach (var id in objIds)
             {
                 Destroy(_syncObjects[id].gameObject);
                 _syncObjects.Remove(id);
             }
 
-            OwnerIdAndObjIdDict.Remove(senderId);
+            ObjectIdsByOwnerId.Remove(senderId);
         }
 
         private void RegisterSyncAnimator(MistSyncObject syncObject)
@@ -233,32 +227,11 @@ namespace MistNet
             _syncAnimators.Remove(syncObject.Id);
         }
         
-        private void ReceiveAnimation(byte[] data, string sourceId)
+        private void ReceiveAnimation(byte[] data, NodeId sourceId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
-            if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;
+            if (!_syncAnimators.TryGetValue(new ObjectId(receiveData.ObjId), out var syncAnimator)) return;
             syncAnimator.ReceiveAnimState(receiveData);
-        }
-
-        /// <summary>
-        /// 定期的に生成に失敗したObjectがないかチェックし、あれば再生成要求を送る
-        /// </summary>
-        /// <param name="token"></param>
-        private async UniTask UpdateCheckExistObject(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(CheckExistObjectIntervalSeconds), cancellationToken: token);
-
-                // PeerがあるのにまだObjectが生成されていないものを探す
-                var missingObjectIds = MistPeerData.I.GetAllPeer.Keys
-                    .Where(x => !OwnerIdAndObjIdDict.ContainsKey(x));
-
-                foreach (var id in missingObjectIds)
-                {
-                    RequestObjectInstantiateInfo(id);
-                }
-            }
         }
     }
 }
