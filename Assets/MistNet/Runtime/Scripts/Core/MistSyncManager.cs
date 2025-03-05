@@ -18,6 +18,8 @@ namespace MistNet
         public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
         private readonly Dictionary<ObjectId, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
 
+        private MistObjectPool _objectPool = new();
+
         private void Awake()
         {
             I = this;
@@ -57,8 +59,13 @@ namespace MistNet
             // -----------------
             // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
             await UniTask.Yield();
+            var objId = new ObjectId(instantiateData.ObjId);
+            if (!_objectPool.TryGetObject(objId, out var obj))
+            {
+                obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
+                _objectPool.AddObject(objId, obj);
+            }
 
-            var obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
             obj.transform.position = instantiateData.Position;
             obj.transform.rotation = Quaternion.Euler(instantiateData.Rotation);
 
@@ -77,6 +84,7 @@ namespace MistNet
         /// <param name="id"></param>
         public void RequestObjectInstantiateInfo(NodeId id)
         {
+            // TODO: ObjectPoolにデータがあるかどうかを調べる
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
@@ -197,7 +205,7 @@ namespace MistNet
             var objIds = ObjectIdsByOwnerId[senderId];
             foreach (var id in objIds)
             {
-                Destroy(_syncObjects[id].gameObject);
+                _objectPool.Destroy(_syncObjects[id].gameObject);
                 _syncObjects.Remove(id);
             }
 
