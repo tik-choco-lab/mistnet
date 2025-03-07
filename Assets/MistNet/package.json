@@ -6,7 +6,8 @@
     "description": "分散ネットワークライブラリ",
     "unity": "2022.3", 
     "dependencies": {        
-        "com.unity.webrtc": "3.0.0-pre.7"
+        "com.unity.webrtc": "3.0.0-pre.7",
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
     },
     "samples": [
         {
