@@ -268,17 +268,17 @@ namespace MistNet
             _onDisconnectedAction += (Action<NodeId>)callback;
         }
 
-        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation)
+        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiateObject(prefabAddress, position, rotation, obj);
+            InstantiateObject(prefabAddress, position, rotation, obj, objId);
             return obj;
         }
 
-        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj)
+        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
-            var objId = Guid.NewGuid().ToString("N");
+            objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
             syncObject.SetData(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
 
             MistSyncManager.I.RegisterSyncObject(syncObject);
