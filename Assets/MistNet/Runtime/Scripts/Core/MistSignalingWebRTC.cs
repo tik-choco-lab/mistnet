@@ -64,7 +64,7 @@ namespace MistNet
 
         private void Connect(NodeId id)
         {
-            MistDebug.Log($"[MistSignaling][WebRTC] Connect: {id}");
+            MistDebug.Log($"[MistSignaling][WebRTC] Connecting: {id}");
             _mistSignalingHandler.SendOffer(id).Forget();
         }
     }
