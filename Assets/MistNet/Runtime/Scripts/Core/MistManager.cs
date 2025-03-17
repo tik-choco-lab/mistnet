@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using Cysharp.Threading.Tasks;
+using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -205,14 +206,18 @@ namespace MistNet
             if (!string.IsNullOrEmpty(targetId))
             {
                 var peer = MistPeerData.GetPeer(targetId);
-                if (peer == null)
+                if (peer == null
+                    || peer.Connection.ConnectionState != RTCPeerConnectionState.Connected
+                    || peer.Id == MistPeerData.I.SelfId
+                    || peer.Id == senderId)
                 {
-                    MistDebug.LogError($"[Error] Peer is null {targetId}");
+                    MistDebug.LogWarning($"[Error] Peer is null {targetId}");
                     return;
                 }
+
                 peer.Send(data);
                 MistDebug.Log(
-                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
+                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {peer.Id}");
             }
         }
 

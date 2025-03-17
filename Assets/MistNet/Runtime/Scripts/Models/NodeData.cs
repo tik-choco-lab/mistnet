@@ -67,7 +67,7 @@ namespace MistNet
     {
         public string Id { get; } = Id;
         public override string ToString() => Id;
-        public static implicit operator string(NodeId nodeId) => nodeId.Id;
+        public static implicit operator string(NodeId nodeId) => nodeId?.Id;
     }
 
     public record ObjectId(string Id)

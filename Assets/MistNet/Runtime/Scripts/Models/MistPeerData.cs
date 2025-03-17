@@ -56,24 +56,24 @@ namespace MistNet
             return data.Peer.Connection.ConnectionState is RTCPeerConnectionState.Connected or RTCPeerConnectionState.Connecting;
         }
 
-        public MistPeer GetPeer(NodeId id)
+        public MistPeer CreatePeer(NodeId id)
         {
             if (GetAllPeer.TryGetValue(id, out var peerData))
             {
-                if (peerData.Peer == null)
-                {
-                    peerData.Peer = new MistPeer(id);
-                    peerData.Peer.AddInputAudioSource(_selfAudioSource);
-                }
-                else peerData.Peer.Id = id;
-
-                return peerData.Peer;
+                peerData.Peer?.Dispose();
+                GetAllPeer.Remove(id);
             }
 
+            MistDebug.Log($"[MistPeerData] Add {id}");
             GetAllPeer.Add(id, new MistPeerDataElement(id));
             GetAllPeer[id].Peer.AddInputAudioSource(_selfAudioSource);
 
             return GetAllPeer[id].Peer;
+        }
+
+        public MistPeer GetPeer(NodeId id)
+        {
+            return GetAllPeer.TryGetValue(id, out var peerData) ? peerData.Peer : null;
         }
 
         public MistPeerDataElement GetPeerData(NodeId id)
@@ -110,6 +110,7 @@ namespace MistNet
         public MistPeerDataElement(NodeId id)
         {
             Peer = new(id);
+            MistDebug.Log($"[MistPeerData] Create Peer {id}");
         }
 
         public bool IsConnected => Peer.Connection.ConnectionState == RTCPeerConnectionState.Connected;

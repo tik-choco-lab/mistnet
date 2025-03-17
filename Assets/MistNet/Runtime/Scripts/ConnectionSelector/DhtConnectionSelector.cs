@@ -142,7 +142,7 @@ namespace MistNet
             };
 
             Send(JsonConvert.SerializeObject(octreeMessage), oldNode.Id);
-            _pongWaitList.Add(oldNode.Id, false);
+            _pongWaitList.TryAdd(oldNode.Id, false);
 
             // Timeoutになるか、pongが返ってくるまで待機
             var pongReceivedTask = UniTask.WaitUntil(() => _pongWaitList[oldNode.Id]);
