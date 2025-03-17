@@ -90,7 +90,6 @@ namespace MistNet
         /// <param name="id"></param>
         public void RequestObjectInstantiateInfo(NodeId id)
         {
-            // TODO: ObjectPoolにデータがあるかどうかを調べる
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
