@@ -205,7 +205,11 @@ namespace MistNet
             if (!string.IsNullOrEmpty(targetId))
             {
                 var peer = MistPeerData.GetPeer(targetId);
-                if (peer == null) return;
+                if (peer == null)
+                {
+                    MistDebug.LogError($"[Error] Peer is null {targetId}");
+                    return;
+                }
                 peer.Send(data);
                 MistDebug.Log(
                     $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");

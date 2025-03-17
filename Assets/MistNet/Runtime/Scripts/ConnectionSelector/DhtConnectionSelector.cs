@@ -357,7 +357,7 @@ namespace MistNet
                 {
                     if (MistPeerData.I.IsConnectingOrConnected(node.Id)) continue;
 
-                    MistDebug.Log($"[ConnectionSelector] Connect: {node.Id}");
+                    MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {
                         MistManager.I.Connect(node.Id);

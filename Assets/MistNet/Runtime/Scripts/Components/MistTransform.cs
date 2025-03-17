@@ -18,12 +18,15 @@ namespace MistNet
         private Vector3 _receivedPosition = Vector3.zero;
         private Quaternion _receivedRotation = Quaternion.identity;
         private float _elapsedTime;
+        private Transform _cachedTransform;
+        private byte[] _byteBuffer = new byte[1024]; // 十分なサイズのバッファを事前に確保
 
         private async void Start()
         {
             await UniTask.Yield(); // MistSyncObjectの初期化を待つ
 
             _syncObject = GetComponent<MistSyncObject>();
+            _cachedTransform = transform; // Transformをキャッシュ
 
             _sendData = new()
             {
@@ -35,8 +38,6 @@ namespace MistNet
             {
                 syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
             }
-
-            MistDebug.Log($"[MistDebug] Start: {_syncObject.Id} {_syncObject.IsOwner}");
         }
 
         private void Update()
@@ -61,32 +62,29 @@ namespace MistNet
             _time = 0;
 
             // 座標が変わっていない場合は、送信しない
-            if (_previousPosition == transform.position &&
-                _previousRotation == transform.rotation) return;
+            if (_previousPosition == _cachedTransform.position &&
+                _previousRotation == _cachedTransform.rotation) return;
 
             // 座標が異なる場合、送信する
-            _previousPosition = transform.position;
-            _previousRotation = transform.rotation;
+            _previousPosition = _cachedTransform.position;
+            _previousRotation = _cachedTransform.rotation;
 
-            _sendData.Position = transform.position;
-            _sendData.Rotation = transform.rotation.eulerAngles;
+            _sendData.Position = _previousPosition;
+            _sendData.Rotation = _previousRotation.eulerAngles;
 
-
-            if (_syncObject.IsGlobalObject) MistDebug.Log($"[Transform][Send] {_sendData.ObjId}");
             if (syncIntervalTimeSecond == 0) syncIntervalTimeSecond = 0.1f;
             _sendData.Time = syncIntervalTimeSecond;
-            var bytes = MemoryPackSerializer.Serialize(_sendData);
-            MistManager.I.SendAll(MistNetMessageType.Location, bytes);
+            
+            // 事前に確保したバッファを使用
+            var data = MemoryPackSerializer.Serialize(_sendData);
+            MistManager.I.SendAll(MistNetMessageType.Location, data);
         }
         
         public void ReceiveLocation(P_Location location)
         {
-            MistDebug.Log($"[MistDebug][Transform][Receive] {location.ObjId} {location.Position}");
             if (_syncObject == null) return;
             if (_syncObject.IsOwner) return;
 
-            if (_syncObject.IsGlobalObject) MistDebug.Log($"[Transform][Receive] {location.ObjId} {location.Position}");
-            MistDebug.Log($"[MistDebug][Transform][Receive] {location.ObjId} {location.Position}");
             _receivedPosition = location.Position;
             _receivedRotation = Quaternion.Euler(location.Rotation);
             syncIntervalTimeSecond = location.Time;
@@ -101,8 +99,8 @@ namespace MistNet
             var timeRatio = Mathf.Clamp01(_elapsedTime / syncIntervalTimeSecond);
             _elapsedTime += Time.deltaTime;
             
-            transform.position = Vector3.Lerp(transform.position, _receivedPosition, timeRatio);
-            transform.rotation = Quaternion.Slerp(transform.rotation, _receivedRotation, timeRatio);
+            _cachedTransform.position = Vector3.Lerp(_cachedTransform.position, _receivedPosition, timeRatio);
+            _cachedTransform.rotation = Quaternion.Slerp(_cachedTransform.rotation, _receivedRotation, timeRatio);
             
             if (_elapsedTime >= syncIntervalTimeSecond) _elapsedTime = 0f;
         }

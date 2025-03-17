@@ -10,12 +10,12 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            Debug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
+            MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
         }
 
         public override void OnConnected(NodeId id)
         {
-            Debug.Log($"[ConnectionSelector] OnConnected: {id}");
+            MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
             routing.AddMessageNode(id);
 
@@ -34,7 +34,7 @@ namespace MistNet
         protected override void OnMessage(string data, NodeId id)
         {
             var nodes = data.Split(',');
-            Debug.Log($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
+            MistDebug.Log($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
             foreach (var nodeIdStr in nodes)
             {
@@ -42,7 +42,7 @@ namespace MistNet
                 if (nodeId == MistPeerData.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
 
-                Debug.Log($"[ConnectionSelector] Connect: {nodeId}");
+                MistDebug.Log($"[ConnectionSelector] Connecting: {nodeId}");
 
                 // idの大きさを比較
                 if (MistManager.I.CompareId(nodeId))
