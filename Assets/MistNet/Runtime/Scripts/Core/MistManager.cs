@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using Cysharp.Threading.Tasks;
+using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -205,10 +206,18 @@ namespace MistNet
             if (!string.IsNullOrEmpty(targetId))
             {
                 var peer = MistPeerData.GetPeer(targetId);
-                if (peer == null) return;
+                if (peer == null
+                    || peer.Connection.ConnectionState != RTCPeerConnectionState.Connected
+                    || peer.Id == MistPeerData.I.SelfId
+                    || peer.Id == senderId)
+                {
+                    MistDebug.LogWarning($"[Error] Peer is null {targetId}");
+                    return;
+                }
+
                 peer.Send(data);
                 MistDebug.Log(
-                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {message.TargetId}");
+                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {peer.Id}");
             }
         }
 
@@ -268,17 +277,17 @@ namespace MistNet
             _onDisconnectedAction += (Action<NodeId>)callback;
         }
 
-        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation)
+        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiateObject(prefabAddress, position, rotation, obj);
+            InstantiateObject(prefabAddress, position, rotation, obj, objId);
             return obj;
         }
 
-        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj)
+        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
-            var objId = Guid.NewGuid().ToString("N");
+            objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
             syncObject.SetData(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
 
             MistSyncManager.I.RegisterSyncObject(syncObject);

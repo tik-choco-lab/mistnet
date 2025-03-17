@@ -26,7 +26,7 @@ namespace MistNet
         public async UniTask SendOffer(NodeId receiverId)
         {
             MistDebug.Log($"[MistSignaling] SendOffer: {receiverId}");
-            var peer = MistManager.I.MistPeerData.GetPeer(receiverId);
+            var peer = MistManager.I.MistPeerData.CreatePeer(receiverId);
             if (peer.Connection.ConnectionState == RTCPeerConnectionState.Connecting)
             {
                 MistDebug.LogWarning($"[Warning][MistSignaling] Peer is connecting: {receiverId}");
@@ -89,11 +89,11 @@ namespace MistNet
             MistDebug.Log($"[MistSignaling] ReceiveOffer: {response.SenderId}");
             var targetId = response.SenderId;
 
-            var peer = MistPeerData.I.GetPeer(targetId);
+            var peer = MistPeerData.I.CreatePeer(targetId);
 
             if (peer.Connection.SignalingState != RTCSignalingState.Stable)
             {
-                MistDebug.LogError($"[Error][MistSignaling] SignalingState is not stable: {peer.Connection.SignalingState}");
+                MistDebug.LogWarning($"[Error][MistSignaling] SignalingState is not stable: {peer.Connection.SignalingState}");
                 return;
             }
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);

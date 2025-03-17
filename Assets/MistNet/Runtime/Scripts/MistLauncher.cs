@@ -22,7 +22,10 @@ namespace MistNet
                 var z = Random.Range(-MaxRange, MaxRange);
                 position = new Vector3(x, y, z);
             }
-            MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
+
+            var selfId = MistConfig.Data.NodeId;
+            var objId = new ObjectId(selfId);
+            MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity, objId).Forget();
         }
     }
 }

@@ -50,7 +50,7 @@ namespace MistNet
                     var node = bucket.FirstOrDefault(n => ConnectedNodes.Contains(n.Id));
                     if (node == null)
                     {
-                        MistDebug.LogError($"[RoutingTable] node {bucketIndex} is null");
+                        MistDebug.LogWarning($"[RoutingTable] node {bucketIndex} is null");
                         return null;
                     }
 
@@ -73,6 +73,7 @@ namespace MistNet
 
         public Result AddBucket(int index, Node node)
         {
+            if (node.Id == MistManager.I.MistPeerData.SelfId) return Result.Success;
             InitBucket(index);
             _buckets[index] ??= new HashSet<Node>();
             if (_buckets[index].Count >= BucketSize) return Result.Fail;
@@ -120,8 +121,15 @@ namespace MistNet
 
             MistDebug.Log($"[RoutingTable] Remove {id}");
             _routingTable.Remove(id);
-            _buckets[_bucketIndexByNodeId[id]].RemoveWhere(n => n.Id == id);
-            _bucketIndexByNodeId.Remove(id);
+            // _buckets[_bucketIndexByNodeId[id]].RemoveWhere(n => n.Id == id);
+            // _bucketIndexByNodeId.Remove(id);
+        }
+
+        public override void OnDisconnected(NodeId id)
+        {
+            base.OnDisconnected(id);
+            MistDebug.Log($"[RoutingTable] Remove {id}");
+            _routingTable.Remove(id);
         }
     }
 }

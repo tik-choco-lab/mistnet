@@ -142,7 +142,7 @@ namespace MistNet
             };
 
             Send(JsonConvert.SerializeObject(octreeMessage), oldNode.Id);
-            _pongWaitList.Add(oldNode.Id, false);
+            _pongWaitList.TryAdd(oldNode.Id, false);
 
             // Timeoutになるか、pongが返ってくるまで待機
             var pongReceivedTask = UniTask.WaitUntil(() => _pongWaitList[oldNode.Id]);
@@ -357,7 +357,7 @@ namespace MistNet
                 {
                     if (MistPeerData.I.IsConnectingOrConnected(node.Id)) continue;
 
-                    MistDebug.Log($"[ConnectionSelector] Connect: {node.Id}");
+                    MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {
                         MistManager.I.Connect(node.Id);

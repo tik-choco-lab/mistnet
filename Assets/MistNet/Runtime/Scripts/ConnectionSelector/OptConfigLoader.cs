@@ -13,12 +13,11 @@ namespace MistNet
             {
                 var json = System.IO.File.ReadAllText(ConfigPath);
                 Data = Newtonsoft.Json.JsonConvert.DeserializeObject<MistOptConfig>(json);
+                if (Data != null) return;
             }
-            else
-            {
-                Data = new MistOptConfig();
-                WriteConfig();
-            }
+
+            Data = new MistOptConfig();
+            WriteConfig();
         }
 
         public static void WriteConfig()

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
@@ -18,6 +19,8 @@ namespace MistNet
         public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
         private readonly Dictionary<ObjectId, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
 
+        private readonly MistObjectPool _objectPool = new();
+
         private void Awake()
         {
             I = this;
@@ -31,6 +34,11 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
+        }
+
+        private void OnDestroy()
+        {
+            _objectPool.Dispose();
         }
 
         private void SendObjectInstantiateInfo(NodeId id)
@@ -57,8 +65,13 @@ namespace MistNet
             // -----------------
             // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
             await UniTask.Yield();
+            var objId = new ObjectId(instantiateData.ObjId);
+            if (!_objectPool.TryGetObject(objId, out var obj))
+            {
+                obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
+                _objectPool.AddObject(objId, obj);
+            }
 
-            var obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
             obj.transform.position = instantiateData.Position;
             obj.transform.rotation = Quaternion.Euler(instantiateData.Rotation);
 
@@ -197,7 +210,7 @@ namespace MistNet
             var objIds = ObjectIdsByOwnerId[senderId];
             foreach (var id in objIds)
             {
-                Destroy(_syncObjects[id].gameObject);
+                _objectPool.Destroy(_syncObjects[id].gameObject);
                 _syncObjects.Remove(id);
             }
 
