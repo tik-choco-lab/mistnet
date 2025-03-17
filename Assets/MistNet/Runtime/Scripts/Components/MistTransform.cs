@@ -19,7 +19,6 @@ namespace MistNet
         private Quaternion _receivedRotation = Quaternion.identity;
         private float _elapsedTime;
         private Transform _cachedTransform;
-        private byte[] _byteBuffer = new byte[1024]; // 十分なサイズのバッファを事前に確保
 
         private async void Start()
         {
@@ -75,7 +74,6 @@ namespace MistNet
             if (syncIntervalTimeSecond == 0) syncIntervalTimeSecond = 0.1f;
             _sendData.Time = syncIntervalTimeSecond;
             
-            // 事前に確保したバッファを使用
             var data = MemoryPackSerializer.Serialize(_sendData);
             MistManager.I.SendAll(MistNetMessageType.Location, data);
         }
