@@ -7,6 +7,8 @@ using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace MistNet
 {
@@ -29,6 +31,7 @@ namespace MistNet
         private readonly Dictionary<string, Delegate> _functionDict = new();
         private readonly Dictionary<string, int> _functionArgsLengthDict = new();
         private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
+        private JsonSerializerSettings _jsonSettings;
 
         public void Awake()
         {
@@ -36,6 +39,15 @@ namespace MistNet
             MistPeerData = new();
             MistPeerData.Init();
             I = this;
+            
+            // JsonSerializerSettingsの初期化
+            _jsonSettings = new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter>
+                {
+                    new NodeIdConverter()
+                }
+            };
         }
 
         private void Start()
@@ -311,6 +323,17 @@ namespace MistNet
         {
             var selfId = MistManager.I.MistPeerData.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
+        }
+
+        // JsonSerializerSettingsを使用するヘルパーメソッド
+        private string SerializeJson<T>(T obj)
+        {
+            return JsonConvert.SerializeObject(obj, _jsonSettings);
+        }
+
+        private T DeserializeJson<T>(string json)
+        {
+            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
         }
     }
 }

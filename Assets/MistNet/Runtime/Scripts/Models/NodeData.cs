@@ -79,6 +79,8 @@ namespace MistNet
 
     public class NodeIdConverter : JsonConverter<NodeId>
     {
+        public NodeIdConverter() { }
+
         public override void WriteJson(JsonWriter writer, NodeId value, JsonSerializer serializer)
         {
             writer.WriteValue(value.ToString());
