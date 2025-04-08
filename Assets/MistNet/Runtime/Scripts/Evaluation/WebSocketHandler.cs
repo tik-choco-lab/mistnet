@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using WebSocketSharp;
 
@@ -23,40 +24,41 @@ namespace MistNet.Evaluation
 
         private void OnClose(object sender, CloseEventArgs e)
         {
-            Debug.Log($"[WebSocket] Closed: {e.Reason}");
+            MistDebug.Log($"[WebSocket] Closed: {e.Reason}");
         }
 
         private void OnOpen(object sender, EventArgs e)
         {
-            Debug.Log("[WebSocket] Opened");
+            MistDebug.Log("[WebSocket] Opened");
         }
 
         private void OnError(object sender, ErrorEventArgs e)
         {
-            Debug.LogError($"[WebSocket] Error: {e.Message}");
+            MistDebug.LogError($"[WebSocket] Error: {e.Message}");
         }
 
         private void OnMessage(object sender, MessageEventArgs e)
         {
-            Debug.Log($"[WebSocket] Received: {e.Data}");
+            MistDebug.Log($"[WebSocket] Received: {e.Data}");
             _syncContext.Post(_ => OnMessageReceived?.Invoke(e.Data), null);
         }
 
-        public void Connect()
+        public async UniTask ConnectAsync()
         {
-            _webSocket.Connect();
+            _webSocket.ConnectAsync();
+            await UniTask.WaitUntil(() => _webSocket.ReadyState == WebSocketState.Open);
         }
 
         public void Send(string message)
         {
             if (_webSocket.ReadyState == WebSocketState.Open)
             {
-                Debug.Log($"[WebSocket] Sending: {message}");
+                MistDebug.Log($"[WebSocket] Sending: {message}");
                 _webSocket.Send(message);
             }
             else
             {
-                Debug.LogWarning("WebSocket is not open.");
+                MistDebug.LogWarning("WebSocket is not open.");
             }
         }
 
