@@ -11,5 +11,24 @@ namespace MistNet.Utils
             );
             return node;
         }
+
+        public static Node[] GetAllNodeData()
+        {
+            var objects = MistSyncManager.I.ObjectIdsByOwnerId;
+            var nodes = new Node[objects.Count];
+
+            var i = 0;
+            foreach (var (nodeId, objectList) in objects)
+            {
+                var firstObjectId = objectList[0];
+                var firstObject = MistSyncManager.I.GetSyncObject(firstObjectId);
+                nodes[i] = new Node(
+                    nodeId: nodeId,
+                    position: new Position(firstObject.transform.position)
+                );
+                i++;
+            }
+            return nodes;
+        }
     }
 }

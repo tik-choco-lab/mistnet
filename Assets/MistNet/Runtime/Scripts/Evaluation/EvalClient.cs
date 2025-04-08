@@ -51,8 +51,8 @@ namespace MistNet.Evaluation
 
         private void SendNodeState()
         {
-            var node = NodeUtils.GetSelfNodeData();
-            Send(EvalMessageType.NodeState, node);
+            var nodes = NodeUtils.GetAllNodeData();
+            Send(EvalMessageType.AllNodeStates, nodes);
         }
 
         private void OnDestroy()
