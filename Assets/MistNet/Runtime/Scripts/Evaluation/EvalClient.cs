@@ -34,7 +34,7 @@ namespace MistNet.Evaluation
             var sendData = new EvalMessage
             {
                 Type = type,
-                Payload = JsonConvert.SerializeObject(payload)
+                Payload = payload
             };
 
             _webSocketHandler.Send(JsonConvert.SerializeObject(sendData));

@@ -7,7 +7,7 @@ namespace MistNet
     public class EvalMessage
     {
         [JsonProperty("type")] public EvalMessageType Type;
-        [JsonProperty("payload")] public string Payload;
+        [JsonProperty("payload")] public object Payload;
     }
 
     [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
