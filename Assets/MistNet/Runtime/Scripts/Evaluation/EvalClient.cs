@@ -10,8 +10,7 @@ namespace MistNet.Evaluation
     public class EvalClient : MonoBehaviour
     {
         private WebSocketHandler _webSocketHandler;
-        private MistEvalConfigData Data => EvalConfig.Data;
-        [SerializeField] private IRouting routing;
+        private static MistEvalConfigData Data => EvalConfig.Data;
 
         private async void Start()
         {
