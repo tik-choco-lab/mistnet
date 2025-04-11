@@ -115,3 +115,4 @@ mistnet_opt_config.json
 
 # Go workspace file
 go.work
+mistnet_eval_config.json

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -218,7 +219,7 @@ namespace MistNet
 
         private static string CreateNodeInfo()
         {
-            var node = CreateSelfNodeData();
+            var node = NodeUtils.GetSelfNodeData();
             var octreeMessage = new ConnectionSelectorMessage
             {
                 type = NodeMessageType,
@@ -227,20 +228,10 @@ namespace MistNet
             return JsonConvert.SerializeObject(octreeMessage);
         }
 
-        private static Node CreateSelfNodeData()
-        {
-            var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
-            var node = new Node(
-                nodeId: new NodeId(MistPeerData.I.SelfId),
-                position: new Position(selfPosition)
-            );
-            return node;
-        }
-
         private string CreateNodesInfo()
         {
             var nodes = routing.Buckets.SelectMany(b => b).ToList();
-            nodes.Add(CreateSelfNodeData());
+            nodes.Add(NodeUtils.GetSelfNodeData());
             var octreeMessage = new ConnectionSelectorMessage
             {
                 type = NodesMessageType,
