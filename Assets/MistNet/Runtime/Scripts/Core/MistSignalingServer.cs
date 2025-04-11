@@ -2,6 +2,7 @@ using UnityEngine;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using System.Collections.Generic;
+using System.Net;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -18,7 +19,7 @@ namespace MistNet
             if (!MistConfig.Data.GlobalNode.Enable) return;
 
             var port = MistConfig.Data.GlobalNode.Port;
-            _webSocketServer = new WebSocketServer(port);
+            _webSocketServer = new WebSocketServer(IPAddress.Any, port);
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
 
@@ -92,7 +93,6 @@ namespace MistNet
                 var nodeBData = new SignalingData
                 {
                     Type = SignalingType.Request,
-                    Data = "Disconnect",
                     ReceiverId = nodeB.Item1,
                     SenderId = nodeA.Item1,
                     RoomId = nodeA.Item2.RoomId

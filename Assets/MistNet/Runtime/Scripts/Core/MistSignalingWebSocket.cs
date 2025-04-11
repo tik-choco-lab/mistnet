@@ -95,12 +95,6 @@ namespace MistNet
             var response = JsonConvert.DeserializeObject<SignalingData>(message);
             var type = response.Type;
             _functions[type](response);
-
-            // if (type == SignalingType.Request && response.Data == "Disconnect")
-            // {
-            //     _ws.Close();
-            //     _ws.Dispose();
-            // }
         }
 
         private void Send(SignalingData sendData, NodeId _)
