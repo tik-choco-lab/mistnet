@@ -58,6 +58,7 @@ namespace MistNet.Evaluation
         {
             _webSocketHandler.OnMessageReceived -= OnMessage;
             _webSocketHandler?.Dispose();
+            EvalConfig.WriteConfig();
         }
 
         private void OnMessage(string message)

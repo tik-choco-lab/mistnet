@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+
 namespace MistNet.Evaluation
 {
     public class EvalConfig
