@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using MistNet.Evaluation;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -6,7 +7,6 @@ namespace MistNet
 {
     public class MistLauncher : MonoBehaviour
     {
-        private static readonly int MaxRange = 1000;
         [SerializeField] private string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
         [SerializeField] private bool randomSpawn;
         [SerializeField] private bool yFixed;
@@ -15,11 +15,12 @@ namespace MistNet
         {
             // 座標をランダムで取得する
             var position = Vector3.zero;
+            var maxRange = EvalConfig.Data.MaxAreaSize;
             if (randomSpawn)
             {
-                var x = Random.Range(-MaxRange, MaxRange);
-                var y = yFixed ? 0 : Random.Range(-MaxRange, MaxRange);
-                var z = Random.Range(-MaxRange, MaxRange);
+                var x = Random.Range(-maxRange, maxRange);
+                var y = yFixed ? 0 : Random.Range(-maxRange, maxRange);
+                var z = Random.Range(-maxRange, maxRange);
                 position = new Vector3(x, y, z);
             }
 
