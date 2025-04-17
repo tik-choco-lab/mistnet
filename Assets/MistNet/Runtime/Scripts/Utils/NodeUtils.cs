@@ -30,5 +30,27 @@ namespace MistNet.Utils
             }
             return nodes;
         }
+
+        public static Node[] GetOtherNodeData()
+        {
+            var objects = MistSyncManager.I.ObjectIdsByOwnerId;
+            var nodes = new Node[objects.Count - 1];
+
+            var i = 0;
+            foreach (var (nodeId, objectList) in objects)
+            {
+                if (nodeId == MistPeerData.I.SelfId) continue;
+                var firstObjectId = objectList[0];
+                var firstObject = MistSyncManager.I.GetSyncObject(firstObjectId);
+                nodes[i] = new Node(
+                    nodeId: nodeId,
+                    position: new Position(firstObject.transform.position),
+                    state: EvalNodeState.Visible
+                );
+                i++;
+            }
+
+            return nodes;
+        }
     }
 }

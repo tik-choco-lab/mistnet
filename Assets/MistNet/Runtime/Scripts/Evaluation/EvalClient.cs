@@ -10,6 +10,7 @@ namespace MistNet.Evaluation
     public class EvalClient : MonoBehaviour
     {
         private WebSocketHandler _webSocketHandler;
+        private NodeState _nodeStateData;
         private static MistEvalConfigData Data => EvalConfig.Data;
 
         private async void Start()
@@ -24,8 +25,18 @@ namespace MistNet.Evaluation
                 NodeId = MistConfig.Data.NodeId,
                 Config = OptConfigLoader.Data,
             };
+
             Send(EvalMessageType.NodeSettings, nodeSettings);
             UpdateSendNodeState(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private NodeState GetNodeStateData()
+        {
+            return new NodeState
+            {
+                Node = NodeUtils.GetSelfNodeData(),
+                Nodes = NodeUtils.GetOtherNodeData()
+            };
         }
 
         private void Send(EvalMessageType type, object payload)
@@ -50,8 +61,9 @@ namespace MistNet.Evaluation
 
         private void SendNodeState()
         {
-            var nodes = NodeUtils.GetAllNodeData();
-            Send(EvalMessageType.AllNodeStates, nodes);
+            _nodeStateData ??= GetNodeStateData();
+            _nodeStateData.Nodes = NodeUtils.GetOtherNodeData();
+            Send(EvalMessageType.NodeState, _nodeStateData);
         }
 
         private void OnDestroy()
