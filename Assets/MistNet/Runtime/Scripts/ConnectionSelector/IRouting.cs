@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using MistNet.Utils;
 using UnityEngine;
 
 namespace MistNet
@@ -45,6 +47,16 @@ namespace MistNet
 
         public virtual void Remove(NodeId id)
         {
+        }
+
+        /// <summary>
+        /// TODO: 現状、DhtRoutingの方はBucketで取得しているがBasicRoutingはTableを持たないため、取得ができない状態である
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public virtual Node GetNode(NodeId id)
+        {
+            return null;
         }
     }
 }

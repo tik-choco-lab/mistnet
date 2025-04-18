@@ -42,7 +42,8 @@ namespace MistNet.Utils
             foreach (var nodeId in connectedNodes)
             {
                 if (nodeId == MistPeerData.I.SelfId) continue;
-                var position = new Position(0, 0, 0);
+                var node = MistManager.I.routing.GetNode(nodeId);
+                var position = node?.Position ?? new Position(0, 0, 0);
                 var state = EvalNodeState.Connected;
                 if (objects.TryGetValue(nodeId, out var obj))
                 {

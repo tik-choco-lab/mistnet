@@ -62,6 +62,7 @@ namespace MistNet.Evaluation
         private void SendNodeState()
         {
             _nodeStateData ??= GetNodeStateData();
+            _nodeStateData.Node = NodeUtils.GetSelfNodeData();
             _nodeStateData.Nodes = NodeUtils.GetOtherNodeData();
             Send(EvalMessageType.NodeState, _nodeStateData);
         }
