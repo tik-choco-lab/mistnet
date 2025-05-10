@@ -15,7 +15,6 @@ namespace MistNet
     {
         NodeSettings,
         NodeState,
-        AllNodeStates,
         NodeLocation,
         NodeRequest,
     }
@@ -26,16 +25,10 @@ namespace MistNet
         [JsonProperty("config")] public MistOptConfig Config;
     }
 
-    public class EvalNode
-    {
-        [JsonProperty("nodeId")] public NodeId NodeId;
-        [JsonProperty("state")] public EvalNodeState State;
-        [JsonProperty("position")] public EvalPosition Position;
-    }
-
     [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
     public enum EvalNodeState
     {
+        Visible,
         Connected,
         Disconnected,
     }
@@ -45,5 +38,11 @@ namespace MistNet
         [JsonProperty("x")] public float X;
         [JsonProperty("y")] public float Y;
         [JsonProperty("z")] public float Z;
+    }
+
+    public class NodeState
+    {
+        [JsonProperty("node")] public Node Node;
+        [JsonProperty("nodes")] public Node[] Nodes;
     }
 }

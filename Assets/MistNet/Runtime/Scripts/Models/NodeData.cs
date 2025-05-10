@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace MistNet
 {
-
     [Serializable]
     public struct Position
     {
@@ -35,13 +34,23 @@ namespace MistNet
 
     public class Node
     {
-        public NodeId Id;
-        public Position Position;
+        [JsonProperty("id")] public NodeId Id;
+        [JsonProperty("position")] public Position Position;
+        [JsonProperty("state")] public EvalNodeState State;
+
+        public Node() { }
 
         public Node(NodeId nodeId, Position position)
         {
             Id = nodeId;
             Position = position;
+        }
+
+        public Node(NodeId nodeId, Position position, EvalNodeState state)
+        {
+            Id = nodeId;
+            Position = position;
+            State = state;
         }
 
         public override bool Equals(object obj)
@@ -79,14 +88,17 @@ namespace MistNet
 
     public class NodeIdConverter : JsonConverter<NodeId>
     {
-        public NodeIdConverter() { }
+        public NodeIdConverter()
+        {
+        }
 
         public override void WriteJson(JsonWriter writer, NodeId value, JsonSerializer serializer)
         {
             writer.WriteValue(value.ToString());
         }
 
-        public override NodeId ReadJson(JsonReader reader, Type objectType, NodeId existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override NodeId ReadJson(JsonReader reader, Type objectType, NodeId existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
         {
             var nodeId = (string)reader.Value;
             return new NodeId(nodeId);
@@ -101,7 +113,8 @@ namespace MistNet
             return base.CanConvertFrom(context, sourceType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
+        public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture,
+            object value)
         {
             if (value is string str) return new NodeId(str); // Convert string to NodeId
             return base.ConvertFrom(context, culture, value);
