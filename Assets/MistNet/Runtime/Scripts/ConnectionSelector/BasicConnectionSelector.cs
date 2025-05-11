@@ -28,7 +28,7 @@ namespace MistNet
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
-            routing.AddMessageNode(id);
+            routing.AddMessageNode(id); // TODO: これはRemoveMessageNodeではないか？
         }
 
         protected override void OnMessage(string data, NodeId id)

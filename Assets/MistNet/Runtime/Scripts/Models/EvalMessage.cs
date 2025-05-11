@@ -45,4 +45,17 @@ namespace MistNet
         [JsonProperty("node")] public Node Node;
         [JsonProperty("nodes")] public Node[] Nodes;
     }
+
+    public class NodeRequest
+    {
+        [JsonProperty("nodeId")] public NodeId NodeId;
+        [JsonProperty("state")] public RequestType Request;
+    }
+
+    public enum RequestType
+    {
+        Connect,
+        Disconnect,
+        SendNodeInfo,
+    }
 }

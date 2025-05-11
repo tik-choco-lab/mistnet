@@ -25,6 +25,7 @@ namespace MistNet
         private readonly Dictionary<string, bool> _pongWaitList = new();
 
         [Serializable]
+        [Obsolete("Please use OptMessage instead.")]
         private class ConnectionSelectorMessage
         {
             public string type;

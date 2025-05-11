@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
@@ -12,6 +13,7 @@ namespace MistNet.Evaluation
         private WebSocketHandler _webSocketHandler;
         private NodeState _nodeStateData;
         private static MistEvalConfigData Data => EvalConfig.Data;
+        private readonly Dictionary<EvalMessageType, Action<string>> _onMessageFunc = new();
 
         private async void Start()
         {
@@ -28,6 +30,12 @@ namespace MistNet.Evaluation
 
             Send(EvalMessageType.NodeSettings, nodeSettings);
             UpdateSendNodeState(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        public void RegisterMessageHandler(EvalMessageType type, Action<string> func)
+        {
+            if (_onMessageFunc.TryAdd(type, func)) return;
+            MistDebug.LogWarning($"[EvalClient] Message handler already registered for type: {type}");
         }
 
         private NodeState GetNodeStateData()
@@ -77,6 +85,15 @@ namespace MistNet.Evaluation
         private void OnMessage(string message)
         {
             Debug.Log($"Received message: {message}");
+            var data = JsonConvert.DeserializeObject<EvalMessage>(message);
+            _onMessageFunc.TryGetValue(data.Type, out var func);
+            if (func == null)
+            {
+                MistDebug.LogWarning($"No handler for message type: {data.Type}");
+                return;
+            }
+
+            func.Invoke(data.Payload.ToString());
         }
     }
 }
