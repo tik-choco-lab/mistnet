@@ -15,6 +15,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
+            OptConfigLoader.ReadConfig();
             MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
             evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
         }
