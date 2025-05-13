@@ -59,6 +59,7 @@ namespace MistNet
             MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
             routing.AddAoiNode(id);
+            RequestObject(id);
         }
 
         public override void OnDisconnected(NodeId id)
