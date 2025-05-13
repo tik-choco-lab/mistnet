@@ -131,12 +131,5 @@ namespace MistNet
             MistDebug.Log($"[RoutingTable] Remove {id}");
             _routingTable.Remove(id);
         }
-
-        public override Node GetNode(NodeId id)
-        {
-            if (!_bucketIndexByNodeId.TryGetValue(id, out var bucketIndex)) return null;
-            var bucket = Buckets[bucketIndex];
-            return bucket.FirstOrDefault(n => n.Id == id);
-        }
     }
 }
