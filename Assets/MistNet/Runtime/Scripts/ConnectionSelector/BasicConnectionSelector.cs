@@ -17,7 +17,7 @@ namespace MistNet
         {
             MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
-            routing.AddMessageNode(id);
+            routing.AddAoiNode(id);
 
             var dataStr = string.Join(",", _connectedNodes);
             SendAll(dataStr);
@@ -28,7 +28,7 @@ namespace MistNet
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
-            routing.AddMessageNode(id); // TODO: これはRemoveMessageNodeではないか？
+            routing.RemoveAoiNode(id);
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -40,6 +40,7 @@ namespace MistNet
             {
                 var nodeId = new NodeId(nodeIdStr);
                 if (nodeId == MistPeerData.I.SelfId) continue;
+
                 if (!_connectedNodes.Add(nodeId)) continue;
 
                 MistDebug.Log($"[ConnectionSelector] Connecting: {nodeId}");

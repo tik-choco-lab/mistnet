@@ -68,6 +68,7 @@ namespace MistNet
         {
             var node = JsonConvert.DeserializeObject<Node>(data);
             OnNodeReceived(node, senderId);
+            routing.AddNode(node.Id, node);
         }
 
         private void OnNodeReceived(Node node, NodeId senderId)
@@ -106,6 +107,7 @@ namespace MistNet
             foreach (var node in nodes)
             {
                 OnNodeReceived(node, senderId);
+                routing.AddNode(node.Id, node);
             }
         }
 
@@ -169,6 +171,7 @@ namespace MistNet
         }
 
         #region CalculateBucketIndex base N
+
         private int CalculateBucketIndexUsingBitShift(float distance)
         {
             // 初期バケツインデックス
@@ -192,6 +195,7 @@ namespace MistNet
 
             return bucketIndex;
         }
+
         #endregion
 
         private int CalculateBucketIndexUsingBaseN(float distance)
@@ -285,31 +289,32 @@ namespace MistNet
                     .ToHashSet();
 
                 // 現在表示中のノードと比較し、表示する必要があるノードを追加
-                var nodesToShow = visibleNodes.Except(routing.MessageNodes).ToList();
+                var nodesToShow = visibleNodes.Except(routing.AoiNodes).ToList();
                 foreach (var nodeId in nodesToShow)
                 {
                     MistDebug.Log($"[ConnectionSelector] RequestObject: {nodeId}");
                     if (string.IsNullOrEmpty(nodeId)) MistDebug.LogError("[ConnectionSelector] Node id is empty");
                     RequestObject(nodeId); // Objectを表示するRequestを出す
-                    routing.AddMessageNode(nodeId);
+                    routing.AddAoiNode(nodeId);
                 }
 
                 // 現在表示中のノードのうち、非表示にする必要があるノードを削除
-                var nodesToHide = routing.MessageNodes.Except(visibleNodes).ToList();
+                var nodesToHide = routing.AoiNodes.Except(visibleNodes).ToList();
                 foreach (var nodeId in nodesToHide)
                 {
                     MistDebug.Log($"[ConnectionSelector] RemoveObject: {nodeId}");
                     RemoveObject(nodeId); // Objectを非表示にする
-                    routing.RemoveMessageNode(nodeId);
+                    routing.RemoveAoiNode(nodeId);
                 }
 
                 // Debug用に表示
                 var outputStr = "";
-                foreach (var nodeId in routing.MessageNodes)
+                foreach (var nodeId in routing.AoiNodes)
                 {
                     outputStr += $"{nodeId}, ";
                 }
-                MistDebug.Log($"[ConnectionSelector] VisibleNodes: {routing.MessageNodes.Count} {outputStr}");
+
+                MistDebug.Log($"[ConnectionSelector] VisibleNodes: {routing.AoiNodes.Count} {outputStr}");
             }
         }
 
@@ -329,6 +334,7 @@ namespace MistNet
                     {
                         outputStr += $"{node.Id}, ";
                     }
+
                     MistDebug.Log($"[ConnectionSelector] Bucket {i}: {routing.Buckets[i].Count} {outputStr}");
                 }
             }

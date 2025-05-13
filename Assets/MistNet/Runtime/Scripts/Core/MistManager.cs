@@ -95,7 +95,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in routing.MessageNodes)
+            foreach (var peerId in routing.AoiNodes)
             {
                 MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -255,7 +255,7 @@ namespace MistNet
         {
             if (id == MistPeerData.I.SelfId) return;
 
-            routing.RemoveMessageNode(id);
+            routing.RemoveAoiNode(id);
             routing.Remove(id);
             OnDisconnected(id);
         }

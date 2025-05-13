@@ -71,7 +71,7 @@ namespace MistNet.Evaluation
         {
             _nodeStateData ??= GetNodeStateData();
             _nodeStateData.Node = NodeUtils.GetSelfNodeData();
-            _nodeStateData.Nodes = NodeUtils.GetOtherNodeData();
+            _nodeStateData.Nodes = NodeUtils.GetOtherNodeData(); // TODO: ここが問題
             Send(EvalMessageType.NodeState, _nodeStateData);
         }
 

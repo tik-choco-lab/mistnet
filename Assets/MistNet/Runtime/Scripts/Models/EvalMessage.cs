@@ -49,10 +49,12 @@ namespace MistNet
     public class NodeRequest
     {
         [JsonProperty("nodeId")] public NodeId NodeId;
-        [JsonProperty("state")] public RequestType Request;
+        [JsonProperty("targetNodeId")] public NodeId TargetNodeId;
+        [JsonProperty("action")] public RequestActionType Action;
     }
 
-    public enum RequestType
+    [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
+    public enum RequestActionType
     {
         Connect,
         Disconnect,

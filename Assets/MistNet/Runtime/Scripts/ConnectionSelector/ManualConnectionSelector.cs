@@ -22,21 +22,21 @@ namespace MistNet
         private void OnRequest(string payload)
         {
             var nodeRequest = JsonConvert.DeserializeObject<NodeRequest>(payload);
-            var nodeId = new NodeId(nodeRequest.NodeId);
+            var nodeId = new NodeId(nodeRequest.TargetNodeId);
 
-            switch (nodeRequest.Request)
+            switch (nodeRequest.Action)
             {
-                case RequestType.Connect:
+                case RequestActionType.Connect:
                     if (nodeId == MistPeerData.I.SelfId) return;
                     if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
                     MistManager.I.Connect(nodeId);
                     break;
-                case RequestType.Disconnect:
+                case RequestActionType.Disconnect:
                     if (nodeId == MistPeerData.I.SelfId) return;
                     if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
                     MistManager.I.Disconnect(nodeId);
                     break;
-                case RequestType.SendNodeInfo:
+                case RequestActionType.SendNodeInfo:
                     var selfNode = NodeUtils.GetSelfNodeData();
                     var allNodes = NodeUtils.GetOtherNodeData();
                     var nodeState = new NodeState
@@ -58,14 +58,14 @@ namespace MistNet
         {
             MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
-            routing.AddMessageNode(id);
+            routing.AddAoiNode(id);
         }
 
         public override void OnDisconnected(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
-            routing.RemoveMessageNode(id);
+            routing.RemoveAoiNode(id);
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -82,6 +82,7 @@ namespace MistNet
             foreach (var node in nodeState.Nodes)
             {
                 routing.Add(node.Id, nodeState.Node.Id);
+                routing.AddNode(node.Id, node);
             }
         }
     }

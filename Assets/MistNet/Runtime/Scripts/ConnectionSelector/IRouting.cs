@@ -1,14 +1,13 @@
 using System.Collections.Generic;
-using System.Linq;
-using MistNet.Utils;
 using UnityEngine;
 
 namespace MistNet
 {
     public abstract class IRouting : MonoBehaviour
     {
+        public readonly Dictionary<NodeId, Node> Nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
         public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
-        public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
+        public readonly HashSet<NodeId> AoiNodes = new(); // メッセージのやり取りを行うノードのリスト
 
         public virtual void OnConnected(NodeId id)
         {
@@ -20,19 +19,31 @@ namespace MistNet
         {
             Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             ConnectedNodes.Remove(id);
-            if (MessageNodes.Contains(id)) MessageNodes.Remove(id);
+            if (AoiNodes.Contains(id)) AoiNodes.Remove(id);
         }
 
-        public virtual void AddMessageNode(NodeId id)
+        public virtual void AddAoiNode(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] AddMessageNode: {id}");
-            MessageNodes.Add(id);
+            AoiNodes.Add(id);
         }
 
-        public virtual void RemoveMessageNode(NodeId id)
+        public virtual void RemoveAoiNode(NodeId id)
         {
             Debug.Log($"[ConnectionSelector] RemoveMessageNode: {id}");
-            MessageNodes.Remove(id);
+            AoiNodes.Remove(id);
+        }
+
+        public virtual void AddNode(NodeId id, Node node)
+        {
+            Debug.Log($"[ConnectionSelector] AddNode: {id}");
+            Nodes[id] = node;
+        }
+
+        public virtual void RemoveNode(NodeId id)
+        {
+            Debug.Log($"[ConnectionSelector] RemoveNode: {id}");
+            Nodes.Remove(id);
         }
 
         public virtual void Add(NodeId sourceId, NodeId fromId)
