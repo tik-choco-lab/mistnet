@@ -1,6 +1,6 @@
 bcrypt==4.2.1
 cffi==1.17.1
-cryptography==44.0.0
+cryptography==45.0.3
 paramiko==3.5.0
 pycparser==2.22
 pycryptodomex==3.21.0
