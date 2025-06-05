@@ -118,7 +118,7 @@ namespace MistNet
             _ownerRequestCount++;
             do
             {
-                RPCOther(nameof(RequestOwner), MistPeerData.I.SelfId, _ownerRequestCount);
+                RPCOther(nameof(RPCRequestOwner), MistPeerData.I.SelfId, _ownerRequestCount);
                 await UniTask.Delay(TimeSpan.FromSeconds(1));
             } while (!_receiveAnswer);
         }
@@ -126,7 +126,7 @@ namespace MistNet
         // TODO: 要検証
         // TODO: 後から入出する人はRPCが実行されない
         [MistRpc]
-        private void RequestOwner(NodeId id, int ownerRequestCount)
+        private void RPCRequestOwner(NodeId id, int ownerRequestCount)
         {
             Debug.Log($"[Debug][0] RequestOwner {id}, {ownerRequestCount}");
             const int threshold = 100;
