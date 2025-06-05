@@ -160,8 +160,6 @@ namespace MistNet
             MistDebug.Log($"[MistSignaling] ReceiveCandidate: {response.SenderId}");
             var senderId = response.SenderId;
             var peer = await GetPeer(senderId, _cts.Token);
-            // setRemoteDescriptionが完了するまで待つ
-            // if (!await WaitForRemoteOfferOrPrAnswerWithTimeout(peer)) return;
 
             var candidateStr = response.Data;
             var candidate = JsonUtility.FromJson<Ice>(candidateStr);
@@ -199,7 +197,6 @@ namespace MistNet
                 return false;
             }
         }
-
 
         private static async UniTask<MistPeer> GetPeer(NodeId targetId, CancellationToken token)
         {
