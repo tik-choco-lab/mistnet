@@ -25,7 +25,6 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(NodeId receiverId)
         {
-            MistDebug.Log($"[MistSignaling] SendOffer: {receiverId}");
             var peer = MistManager.I.MistPeerData.CreatePeer(receiverId);
             if (peer.Connection.ConnectionState == RTCPeerConnectionState.Connecting)
             {
@@ -47,6 +46,7 @@ namespace MistNet
             sendData.ReceiverId = receiverId;
 
             Send(sendData, receiverId);
+            MistDebug.Log($"[MistSignaling] SendOffer: {receiverId}");
         }
 
         /// <summary>
@@ -112,25 +112,18 @@ namespace MistNet
         /// <returns></returns>
         private async UniTask SendAnswer(MistPeer peer, RTCSessionDescription sdp, NodeId targetId)
         {
-            MistDebug.Log($"[MistSignaling] SendAnswer: {targetId}");
             var desc = await peer.CreateAnswer(sdp);
-
-            // if (peer.Connection.SignalingState != RTCSignalingState.HaveRemoteOffer)
-            // {
-            //     MistDebug.LogError($"[Error][MistSignaling] SignalingState is not have remote offer: {peer.Connection.SignalingState}");
-            //     return;
-            // }
 
             var sendData = CreateSendData();
             sendData.Type = SignalingType.Answer;
             sendData.Data = JsonConvert.SerializeObject(desc);
             sendData.ReceiverId = targetId;
             Send(sendData, targetId);
+            MistDebug.Log($"[MistSignaling] SendAnswer: {targetId}");
         }
 
         private void SendCandidate(Ice candidate, NodeId targetId)
         {
-            MistDebug.Log($"[MistSignaling] SendCandidate: {targetId}");
             var candidateString = JsonUtility.ToJson(candidate);
 
             var sendData = CreateSendData();
@@ -142,10 +135,12 @@ namespace MistNet
             // 接続が完了したら、関連するICE候補を削除
             var peer = MistManager.I.MistPeerData.GetPeer(targetId).Connection;
             RegisterIceConnectionChangeHandler(targetId, peer);
+            MistDebug.Log($"[MistSignaling] SendCandidate: {targetId}");
         }
 
         public async void ReceiveCandidates(SignalingData response)
         {
+            MistDebug.Log($"[MistSignaling] ReceiveCandidates: {response.SenderId}");
             var senderId = response.SenderId;
             var candidatesStr = response.Data;
             var candidatesArray = JsonConvert.DeserializeObject<string[]>(candidatesStr);
@@ -162,11 +157,10 @@ namespace MistNet
 
         public async void ReceiveCandidate(SignalingData response)
         {
+            MistDebug.Log($"[MistSignaling] ReceiveCandidate: {response.SenderId}");
             var senderId = response.SenderId;
             var peer = await GetPeer(senderId, _cts.Token);
-            // setRemoteDescriptionが完了するまで待つ
-            if (!await WaitForRemoteOfferOrPrAnswerWithTimeout(peer)) return;
-            MistDebug.Log($"[MistSignaling] ReceiveCandidate: {response.SenderId}");
+
             var candidateStr = response.Data;
             var candidate = JsonUtility.FromJson<Ice>(candidateStr);
             peer.AddIceCandidate(candidate);
@@ -203,7 +197,6 @@ namespace MistNet
                 return false;
             }
         }
-
 
         private static async UniTask<MistPeer> GetPeer(NodeId targetId, CancellationToken token)
         {
