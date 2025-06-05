@@ -1,6 +1,6 @@
 {
     "name": "com.tik-choco.mistnet",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "displayName": "MistNet",
     "author": { "name": "fog", "url": "https://github.com/DecentralizedMetaverse" },
     "description": "分散ネットワークライブラリ",
