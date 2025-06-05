@@ -15,7 +15,7 @@ namespace MistNet
         public string PrefabAddress { get; private set; }
         public NodeId OwnerId { get; private set; }
         [SerializeField] private bool isOwner = true; // 表示用
-        public bool manualSetId; // 手動でIdを設定するかどうか
+        public bool autoSetId; // 手動でIdを設定するかどうか
 
         public bool IsOwner
         {
@@ -58,9 +58,7 @@ namespace MistNet
 
         private void Start()
         {
-            if (manualSetId) return;
-
-            Init();
+            if (autoSetId) Init();
         }
 
         public void Init()
