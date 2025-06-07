@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
@@ -136,12 +135,6 @@ namespace MistNet
                 if(_mySyncObjects.Count == 0) syncObject.IsPlayerObject = true;
                 
                 _mySyncObjects.Add(syncObject.Id, syncObject);
-            }
-            else if (syncObject.IsGlobalObject)
-            {
-                // 誰のものでもないGlobalObjectの場合
-                RegisterSyncAnimator(syncObject);
-                return; // OwnerIdAndObjIdDictに登録する必要がないのでここで中断
             }
             else
             {

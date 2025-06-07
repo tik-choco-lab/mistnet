@@ -41,7 +41,6 @@ namespace MistNet
         }
 
         public bool IsPlayerObject { get; set; }
-        public bool IsGlobalObject { get; private set; } //合意Objectかどうか (全員が扱うことができるObjectかどうか)
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
@@ -71,8 +70,6 @@ namespace MistNet
 
             RegisterPropertyAndRPC();
 
-            if (IsGlobalObject) RequestOwner().Forget();
-
             if (MistTransform != null)
             {
                 MistTransform.Init();
@@ -85,8 +82,6 @@ namespace MistNet
             var instanceId = _instanceIdCount++.ToString();
             Id = new ObjectId(instanceId);
             IsOwner = false;
-            IsGlobalObject = true;
-            // OwnerId = MistPeerData.I.SelfId; // 自身のIDをOwnerとして設定しておく
             MistSyncManager.I.RegisterSyncObject(this);
         }
 
@@ -100,7 +95,6 @@ namespace MistNet
             }
 
             if (IsOwner) return;
-            if (IsGlobalObject) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
@@ -115,70 +109,7 @@ namespace MistNet
             if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
         }
 
-        private int _ownerRequestCount;
-        private bool _receiveAnswer = false;
-
-        /// <summary>
-        /// 既にSceneにあるObject用である
-        /// TODO: Ownerが切断された場合、次に誰がOwnerになるかを決定する必要がある
-        /// </summary>
-        public async UniTask RequestOwner()
-        {
-            if (IsOwner) return;
-            _receiveAnswer = false;
-            _ownerRequestCount++;
-            do
-            {
-                RPCOther(nameof(RPCRequestOwner), MistPeerData.I.SelfId, _ownerRequestCount);
-                await UniTask.Delay(TimeSpan.FromSeconds(1));
-            } while (!_receiveAnswer);
-        }
-
-        // TODO: 要検証
-        // TODO: 後から入出する人はRPCが実行されない
-        [MistRpc]
-        private void RPCRequestOwner(NodeId id, int ownerRequestCount)
-        {
-            Debug.Log($"[Debug][0] RequestOwner {id}, {ownerRequestCount}");
-            const int threshold = 100;
-            if (ownerRequestCount == int.MinValue && _ownerRequestCount > int.MaxValue - threshold)
-            {
-                // オーバーフローを考慮
-            }
-            else if (ownerRequestCount < _ownerRequestCount)
-            {
-                // 新しいリクエストカウントが現在のカウントより小さい場合は無視 つまり誰かがOwnerになっているということ
-                RPC(id, nameof(OnReceiveOwnerRequestCount), _ownerRequestCount, OwnerId);
-                return;
-            }
-
-            OwnerId = id;
-            IsOwner = false;
-            _ownerRequestCount = ownerRequestCount;
-            RPC(id, nameof(OnChangedOwner));
-        }
-
-        [MistRpc]
-        public void OnReceiveOwnerRequestCount(int count, NodeId ownerId)
-        {
-            Debug.Log($"[Debug][0] OnReceiveOwnerRequestCount {count}");
-            _ownerRequestCount = count;
-            OwnerId = ownerId;
-            IsOwner = false;
-            _receiveAnswer = true;
-        }
-
-        [MistRpc]
-        private void OnChangedOwner()
-        {
-            Debug.Log($"[Debug][0] OnChangedOwner {OwnerId}");
-            OwnerId = MistPeerData.I.SelfId;
-            IsOwner = true;
-            _receiveAnswer = true;
-        }
-
         // -------------------
-
         public void RPC(NodeId targetId, string key, params object[] args)
         {
             MistManager.I.RPC(targetId, GetRPCName(key), args);
