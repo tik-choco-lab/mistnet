@@ -62,27 +62,12 @@ namespace MistNet
 
         public void Init()
         {
-            // 既にScene上に配置されたObjectである場合
-            if (string.IsNullOrEmpty(Id))
-            {
-                SetGlobalObject();
-            }
-
             RegisterPropertyAndRPC();
 
             if (MistTransform != null)
             {
                 MistTransform.Init();
             }
-        }
-
-        private void SetGlobalObject()
-        {
-            // 自動合意Objectに設定する　どのNodeが変更しても、自動で合意をとって同期する
-            var instanceId = _instanceIdCount++.ToString();
-            Id = new ObjectId(instanceId);
-            IsOwner = false;
-            MistSyncManager.I.RegisterSyncObject(this);
         }
 
         private void OnDestroy()
