@@ -72,6 +72,11 @@ namespace MistNet
             RegisterPropertyAndRPC();
 
             if (IsGlobalObject) RequestOwner().Forget();
+
+            if (MistTransform != null)
+            {
+                MistTransform.Init();
+            }
         }
 
         private void SetGlobalObject()
@@ -99,15 +104,15 @@ namespace MistNet
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
-        public void SetData(ObjectId id, bool isOwner, string prefabAddress, NodeId ownerId)
+        public void SetData(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
         {
             Id = id;
-            IsOwner = isOwner;
+            IsOwner = MistPeerData.I.SelfId == ownerId;
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
             gameObject.TryGetComponent(out MistTransform);
 
-            if (IsOwner) MistSyncManager.I.SelfSyncObject = this;
+            if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
         }
 
         private int _ownerRequestCount;

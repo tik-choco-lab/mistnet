@@ -1,4 +1,3 @@
-using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
 
@@ -20,10 +19,8 @@ namespace MistNet
         private float _elapsedTime;
         private Transform _cachedTransform;
 
-        private async void Start()
+        public void Init()
         {
-            await UniTask.Yield(); // MistSyncObjectの初期化を待つ
-
             _syncObject = GetComponent<MistSyncObject>();
             _cachedTransform = transform; // Transformをキャッシュ
 
