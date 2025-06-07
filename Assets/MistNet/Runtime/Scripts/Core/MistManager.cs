@@ -57,6 +57,11 @@ namespace MistNet
 
         public void OnDestroy()
         {
+            _onMessageDict.Clear();
+            _functionDict.Clear();
+            _functionArgsLengthDict.Clear();
+            _functionArgsTypeDict.Clear();
+
             MistPeerData.AllForceClose();
             MistConfig.WriteConfig();
         }
