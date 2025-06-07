@@ -72,6 +72,11 @@ namespace MistNet
             RegisterPropertyAndRPC();
 
             if (IsGlobalObject) RequestOwner().Forget();
+
+            if (MistTransform != null)
+            {
+                MistTransform.Init();
+            }
         }
 
         private void SetGlobalObject()
