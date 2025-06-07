@@ -45,6 +45,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiate();
             foreach (var obj in _mySyncObjects.Values)
             {
+                if (!obj.IsPlayerObject) continue;
                 sendData.ObjId = obj.Id;
                 var objTransform = obj.transform;
                 sendData.Position = objTransform.position;
