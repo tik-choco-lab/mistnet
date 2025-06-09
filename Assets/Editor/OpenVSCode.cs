@@ -3,34 +3,47 @@ using UnityEditor;
 
 public class OpenVSCode
 {
-    // Start is called before the first frame update
     [MenuItem("Assets/Open Visual Studio Code", priority = 19)]
-    static void Execute()
+    private static void Execute()
     {
         // get select GO full path
-        int instanceID = Selection.activeInstanceID;
-        string path = AssetDatabase.GetAssetPath(instanceID);
-        string fullPath = System.IO.Path.GetFullPath(path);
+        var instanceID = Selection.activeInstanceID;
+        var path = AssetDatabase.GetAssetPath(instanceID);
+        var fullPath = System.IO.Path.GetFullPath(path);
 
-        var psInfo = new ProcessStartInfo();
-        psInfo.FileName = "code";
-        psInfo.Arguments = fullPath;
-        Process.Start(psInfo);
+        Open(fullPath);
     }
 
     [MenuItem("Tools/Open Visual Studio Code")]
-    static void Execute2()
+    private static void Execute2()
     {
-        Process.Start("code", ".");
+        Open(".");
     }
 
     [MenuItem("Tools/Open Config")]
-    static void OpenConfig()
+    private static void OpenConfig()
+    {
+        Open("mistnet_config.json");
+    }
+
+    [MenuItem("Tools/Open OPT Config")]
+    private static void OpenOptConfig()
+    {
+        Open("mistnet_opt_config.json");
+    }
+
+    [MenuItem("Tools/Open Eval Config")]
+    private static void OpenEvalConfig()
+    {
+        Open("mistnet_eval_config.json");
+    }
+
+    private static void Open(string arguments)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = "code",
-            Arguments = "mistnet_config.json",
+            Arguments = arguments,
             CreateNoWindow = true,
         };
 
