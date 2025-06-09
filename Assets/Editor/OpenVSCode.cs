@@ -23,4 +23,17 @@ public class OpenVSCode
     {
         Process.Start("code", ".");
     }
+
+    [MenuItem("Tools/Open Config")]
+    static void OpenConfig()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "code",
+            Arguments = "mistnet_config.json",
+            CreateNoWindow = true,
+        };
+
+        Process.Start(startInfo);
+    }
 }
