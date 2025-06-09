@@ -248,7 +248,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSecondMultiplier), cancellationToken: token);
 
                 var message = CreateNodesInfo();
                 foreach (var id in routing.ConnectedNodes)
