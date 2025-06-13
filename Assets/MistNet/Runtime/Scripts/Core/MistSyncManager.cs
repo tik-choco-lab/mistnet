@@ -77,9 +77,8 @@ namespace MistNet
 
             // -----------------
             var syncObject = obj.GetComponent<MistSyncObject>();
-            syncObject.SetData(new ObjectId(instantiateData.ObjId), false, instantiateData.PrefabAddress, sourceId);
-            syncObject.Init();
-            
+            syncObject.Init(new ObjectId(instantiateData.ObjId), false, instantiateData.PrefabAddress, sourceId);
+
             RegisterSyncObject(syncObject);
             MistManager.I.OnSpawned(sourceId);
             MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");

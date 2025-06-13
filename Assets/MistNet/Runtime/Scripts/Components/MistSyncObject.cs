@@ -15,29 +15,11 @@ namespace MistNet
         public string PrefabAddress { get; private set; }
         public NodeId OwnerId { get; private set; }
         [SerializeField] private bool isOwner = true; // 表示用
-        public bool autoSetId; // 手動でIdを設定するかどうか
 
         public bool IsOwner
         {
-            // TODO: Test
             get => isOwner;
-            private set
-            {
-                isOwner = value;
-
-                if (IsOwner)
-                {
-                    // 後からOwnerになった際を考慮している
-                    if (_tokenSource != null) return;
-                    _tokenSource = new CancellationTokenSource();
-                    WatchPropertiesAsync(_tokenSource.Token).Forget();
-                }
-                else
-                {
-                    _tokenSource?.Cancel();
-                    _tokenSource = null;
-                }
-            }
+            private set => isOwner = value;
         }
 
         public bool IsPlayerObject { get; set; }
@@ -47,33 +29,33 @@ namespace MistNet
         private readonly List<string> _rpcList = new();
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
         private readonly Dictionary<string, object> _propertyValueDict = new();
-        private CancellationTokenSource _tokenSource;
         private static int _instanceIdCount;
 
-        private void Awake()
+        public void Init(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
         {
+            Id = id;
+            IsOwner = MistPeerData.I.SelfId == ownerId;
+            PrefabAddress = prefabAddress;
+            OwnerId = ownerId;
             gameObject.TryGetComponent(out MistTransform);
+            if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
+            InitSyncParameters();
         }
 
-        private void Start()
+        private void InitSyncParameters()
         {
-            if (autoSetId) Init();
-        }
-
-        public void Init()
-        {
-            RegisterPropertyAndRPC();
-
-            if (MistTransform != null)
+            if (IsOwner)
             {
-                MistTransform.Init();
+                RegisterPropertyAndRPC();
+                WatchPropertiesAsync(this.GetCancellationTokenOnDestroy()).Forget();
             }
+
+            gameObject.TryGetComponent(out MistTransform);
+            if (MistTransform != null) MistTransform.Init();
         }
 
         private void OnDestroy()
         {
-            _tokenSource?.Cancel();
-
             foreach (var rpc in _rpcList)
             {
                 MistManager.I.RemoveRPC(rpc);
@@ -81,17 +63,6 @@ namespace MistNet
 
             if (IsOwner) return;
             MistSyncManager.I.UnregisterSyncObject(this);
-        }
-
-        public void SetData(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
-        {
-            Id = id;
-            IsOwner = MistPeerData.I.SelfId == ownerId;
-            PrefabAddress = prefabAddress;
-            OwnerId = ownerId;
-            gameObject.TryGetComponent(out MistTransform);
-
-            if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
         }
 
         // -------------------
