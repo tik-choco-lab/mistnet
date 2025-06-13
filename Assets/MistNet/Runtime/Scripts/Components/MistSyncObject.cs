@@ -40,6 +40,7 @@ namespace MistNet
             gameObject.TryGetComponent(out MistTransform);
             if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
             InitSyncParameters();
+            MistSyncManager.I.RegisterSyncObject(this);
         }
 
         private void InitSyncParameters()

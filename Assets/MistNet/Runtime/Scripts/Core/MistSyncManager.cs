@@ -31,7 +31,7 @@ namespace MistNet
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
             MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
-            MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
+            MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
 
@@ -139,7 +139,10 @@ namespace MistNet
             else
             {
                 // 自身以外のSyncObjectの登録
-                var sendData = new P_PropertyRequest();
+                var sendData = new P_PropertyRequest
+                {
+                    ObjId = syncObject.Id,
+                };
                 var bytes = MemoryPackSerializer.Serialize(sendData);
                 MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
             }
@@ -152,14 +155,6 @@ namespace MistNet
             ObjectIdsByOwnerId[syncObject.OwnerId].Add(syncObject.Id);
 
             RegisterSyncAnimator(syncObject);
-        }
-
-        private void SendAllProperties(NodeId id)
-        {
-            foreach (var obj in _mySyncObjects.Values)
-            {
-                obj.SendAllProperties(id);
-            }
         }
 
         public void UnregisterSyncObject(MistSyncObject syncObject)
@@ -239,6 +234,13 @@ namespace MistNet
             var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
             if (!_syncAnimators.TryGetValue(new ObjectId(receiveData.ObjId), out var syncAnimator)) return;
             syncAnimator.ReceiveAnimState(receiveData);
+        }
+
+        private void ReceiveRequestProperty(byte[] data, NodeId sourceId)
+        {
+            var requestData = MemoryPackSerializer.Deserialize<P_PropertyRequest>(data);
+            if (!_syncObjects.TryGetValue(new ObjectId(requestData.ObjId), out var syncObject)) return;
+            syncObject.SendAllProperties(sourceId);
         }
     }
 }
