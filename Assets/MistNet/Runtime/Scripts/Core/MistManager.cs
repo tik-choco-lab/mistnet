@@ -307,8 +307,6 @@ namespace MistNet
             objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
             syncObject.Init(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
 
-            MistSyncManager.I.RegisterSyncObject(syncObject);
-
             var sendData = new P_ObjectInstantiate()
             {
                 ObjId = objId,
