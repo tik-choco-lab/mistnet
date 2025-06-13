@@ -44,9 +44,9 @@ namespace MistNet
 
         private void InitSyncParameters()
         {
+            RegisterPropertyAndRPC();
             if (IsOwner)
             {
-                RegisterPropertyAndRPC();
                 WatchPropertiesAsync(this.GetCancellationTokenOnDestroy()).Forget();
             }
 
