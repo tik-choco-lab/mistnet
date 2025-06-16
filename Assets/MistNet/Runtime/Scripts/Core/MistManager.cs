@@ -57,6 +57,11 @@ namespace MistNet
 
         public void OnDestroy()
         {
+            _onMessageDict.Clear();
+            _functionDict.Clear();
+            _functionArgsLengthDict.Clear();
+            _functionArgsTypeDict.Clear();
+
             MistPeerData.AllForceClose();
             MistConfig.WriteConfig();
         }
@@ -300,10 +305,7 @@ namespace MistNet
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
-            syncObject.SetData(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
-            syncObject.Init();
-
-            MistSyncManager.I.RegisterSyncObject(syncObject);
+            syncObject.Init(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
 
             var sendData = new P_ObjectInstantiate()
             {
