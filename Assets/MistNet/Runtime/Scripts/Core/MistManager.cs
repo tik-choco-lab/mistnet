@@ -62,7 +62,7 @@ namespace MistNet
             _functionArgsLengthDict.Clear();
             _functionArgsTypeDict.Clear();
 
-            MistPeerData.AllForceClose();
+            MistPeerData.Dispose();
             MistConfig.WriteConfig();
         }
 

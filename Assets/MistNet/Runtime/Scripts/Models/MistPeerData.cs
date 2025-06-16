@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class MistPeerData
+    public class MistPeerData : IDisposable
     {
         public static MistPeerData I { get; private set; } = new();
         public NodeId SelfId { get; private set; }
@@ -100,6 +100,19 @@ namespace MistNet
         public void AddInputAudioSource(AudioSource audioSource)
         {
             _selfAudioSource = audioSource;
+        }
+
+        public void Dispose()
+        {
+            MistDebug.Log("[MistPeerData] Dispose");
+            AllForceClose();
+            foreach (var peerData in GetAllPeer.Values)
+            {
+                peerData.Peer?.Dispose();
+            }
+            I = null;
+            SelfId = null;
+            _selfAudioSource = null;
         }
     }
 

@@ -59,11 +59,11 @@ namespace MistNet
             var targetId = response.SenderId;
             var peer = MistManager.I.MistPeerData.GetPeer(targetId);
 
-            if (peer.Connection.SignalingState != RTCSignalingState.HaveLocalOffer)
-            {
-                MistDebug.LogError($"[Error][MistSignaling] SignalingState is not have local offer: {peer.Connection.SignalingState}");
-                return;
-            }
+            // if (peer.Connection.SignalingState != RTCSignalingState.HaveLocalOffer)
+            // {
+            //     MistDebug.LogError($"[Error][MistSignaling] SignalingState is not have local offer: {peer.Connection.SignalingState}");
+            //     return;
+            // }
 
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
