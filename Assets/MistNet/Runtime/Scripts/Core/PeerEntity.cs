@@ -13,6 +13,8 @@ namespace MistNet
         private const float WaitReconnectTimeSec = 3f;
         private const string DataChannelLabel = "data";
 
+        [Obsolete("Use RtcPeer instead. This property will be removed in future versions.")]
+        public RTCPeerConnection Connection => RtcPeer;
         public RTCPeerConnection RtcPeer;
 
         public NodeId Id;
