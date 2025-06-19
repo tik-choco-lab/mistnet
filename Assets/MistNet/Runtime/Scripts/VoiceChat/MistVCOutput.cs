@@ -33,8 +33,8 @@ namespace MistNet.VC
                 peerData = MistPeerData.I.GetPeerData(_syncObject.OwnerId);
             }
 
-            MistDebug.Log($"[Debug][MistVC] {peerData.Peer.Id} add output audio source");
-            peerData.Peer.AddOutputAudioSource(audioSource);
+            MistDebug.Log($"[Debug][MistVC] {peerData.PeerEntity.Id} add output audio source");
+            peerData.PeerEntity.AddOutputAudioSource(audioSource);
         }
     }
 }

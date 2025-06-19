@@ -8,12 +8,12 @@ namespace MistNet
     /// <summary>
     /// TODO: 相手のPeerでDataChannelが開いていない？
     /// </summary>
-    public class MistPeer: IDisposable
+    public class PeerEntity : IDisposable
     {
         private const float WaitReconnectTimeSec = 3f;
         private const string DataChannelLabel = "data";
 
-        public RTCPeerConnection Connection;
+        public RTCPeerConnection RtcPeer;
 
         public NodeId Id;
         private RTCDataChannel _dataChannel;
@@ -26,7 +26,7 @@ namespace MistNet
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
 
-        public MistPeer(NodeId id)
+        public PeerEntity(NodeId id)
         {
             Id = id;
             OnMessage += MistManager.I.OnMessage;
@@ -40,19 +40,29 @@ namespace MistNet
             {
                 new() { urls = MistConfig.Data.StunUrls }
             };
-            Connection = new RTCPeerConnection(ref configuration);
+            RtcPeer = new RTCPeerConnection(ref configuration);
 
             // ----------------------------
             // Candidate
-            Connection.OnIceCandidate = OnIceCandidate;
-            Connection.OnIceConnectionChange += OnIceConnectionChange;
-            Connection.OnConnectionStateChange += state => MistDebug.Log($"[MistPeer][OnConnectionStateChange] {state}");
-            Connection.OnIceGatheringStateChange += state => MistDebug.Log($"[MistPeer][OnIceGatheringStateChange] {state}");
-            Connection.OnNegotiationNeeded += () => MistDebug.Log($"[MistPeer][OnNegotiationNeeded] {Id}");
-            Connection.OnTrack += OnTrack;
+            RtcPeer.OnIceCandidate = OnIceCandidate;
+            RtcPeer.OnIceConnectionChange += OnIceConnectionChange;
+            RtcPeer.OnConnectionStateChange +=
+                state => MistDebug.Log($"[MistPeer][OnConnectionStateChange] {state}");
+            RtcPeer.OnIceGatheringStateChange +=
+                state => MistDebug.Log($"[MistPeer][OnIceGatheringStateChange] {state}");
+            RtcPeer.OnNegotiationNeeded += () => MistDebug.Log($"[MistPeer][OnNegotiationNeeded] {Id}");
+            RtcPeer.OnTrack += OnTrack;
             // ----------------------------
             // DataChannels
             SetDataChannel();
+        }
+
+        public void Dispose()
+        {
+            RtcPeer?.Dispose();
+            _dataChannel?.Dispose();
+            _dataChannel = null;
+            RtcPeer = null;
         }
 
         public async UniTask<RTCSessionDescription> CreateOffer()
@@ -63,7 +73,7 @@ namespace MistNet
 
             // ----------------------------
             // CreateOffer
-            var offerOperation = Connection.CreateOffer();
+            var offerOperation = RtcPeer.CreateOffer();
             await offerOperation;
             if (offerOperation.IsError)
             {
@@ -74,7 +84,7 @@ namespace MistNet
             // ----------------------------
             // LocalDescription
             var desc = offerOperation.Desc;
-            var localDescriptionOperation = Connection.SetLocalDescription(ref desc);
+            var localDescriptionOperation = RtcPeer.SetLocalDescription(ref desc);
             if (localDescriptionOperation.IsError)
             {
                 MistDebug.LogError($"[Signaling][{Id}][Error][SetLocalDescription]");
@@ -90,7 +100,7 @@ namespace MistNet
 
             // ----------------------------
             // RemoteDescription
-            var remoteDescriptionOperation = Connection.SetRemoteDescription(ref remoteDescription);
+            var remoteDescriptionOperation = RtcPeer.SetRemoteDescription(ref remoteDescription);
             await remoteDescriptionOperation.ToUniTask();
             if (remoteDescriptionOperation.IsError)
             {
@@ -102,19 +112,21 @@ namespace MistNet
 
             // ----------------------------
             // CreateAnswer
-            var answerOperation = Connection.CreateAnswer();
-            await answerOperation.ToUniTask();;
+            var answerOperation = RtcPeer.CreateAnswer();
+            await answerOperation.ToUniTask();
+            ;
             if (answerOperation.IsError)
             {
                 Reconnect().Forget();
-                MistDebug.LogError($"[Error][Signaling][CreateAnswer] -> {Id} {answerOperation.Error.message} {Connection.SignalingState}");
+                MistDebug.LogError(
+                    $"[Error][Signaling][CreateAnswer] -> {Id} {answerOperation.Error.message} {RtcPeer.SignalingState}");
                 return default;
             }
 
             // ----------------------------
             // LocalDescription
             var desc = answerOperation.Desc;
-            var localDescriptionOperation = Connection.SetLocalDescription(ref desc);
+            var localDescriptionOperation = RtcPeer.SetLocalDescription(ref desc);
             if (localDescriptionOperation.IsError)
             {
                 Reconnect().Forget();
@@ -129,7 +141,7 @@ namespace MistNet
         private void CreateDataChannel()
         {
             var config = new RTCDataChannelInit();
-            _dataChannel = Connection.CreateDataChannel(DataChannelLabel, config);
+            _dataChannel = RtcPeer.CreateDataChannel(DataChannelLabel, config);
             _dataChannel.OnMessage = OnMessageDataChannel;
             _dataChannel.OnOpen = OnOpenDataChannel;
             _dataChannel.OnClose = OnCloseDataChannel;
@@ -137,7 +149,7 @@ namespace MistNet
 
         private void SetDataChannel()
         {
-            Connection.OnDataChannel = channel =>
+            RtcPeer.OnDataChannel = channel =>
             {
                 MistDebug.Log("OnDataChannel");
                 _dataChannel = channel;
@@ -150,7 +162,7 @@ namespace MistNet
 
         public async UniTaskVoid SetRemoteDescription(RTCSessionDescription remoteDescription)
         {
-            var remoteDescriptionOperation = Connection.SetRemoteDescription(ref remoteDescription);
+            var remoteDescriptionOperation = RtcPeer.SetRemoteDescription(ref remoteDescription);
             await remoteDescriptionOperation;
             if (remoteDescriptionOperation.IsError)
             {
@@ -161,7 +173,7 @@ namespace MistNet
 
         public void AddIceCandidate(Ice candidate)
         {
-            Connection.AddIceCandidate(candidate.Get());
+            RtcPeer.AddIceCandidate(candidate.Get());
         }
 
         public void Send(byte[] data)
@@ -178,22 +190,22 @@ namespace MistNet
                 case { ReadyState: RTCDataChannelState.Closing }:
                     return;
             }
-            
+
             // 評価用
             if (MistStats.I != null)
             {
                 MistStats.I.TotalSendBytes += data.Length;
                 MistStats.I.TotalMessengeCount++;
             }
-            
+
             _dataChannel.Send(data);
         }
 
         public void Close()
         {
-            if (_sender != null) Connection.RemoveTrack(_sender);
-            Connection.Close();
-            Connection = null;
+            if (_sender != null) RtcPeer.RemoveTrack(_sender);
+            RtcPeer.Close();
+            RtcPeer = null;
         }
 
         private void OnIceConnectionChange(RTCIceConnectionState state)
@@ -253,7 +265,7 @@ namespace MistNet
             if (audioSource == null) return;
             MistDebug.Log($"[MistPeer][AddTrack] {Id}");
             var track = new AudioStreamTrack(audioSource);
-            _sender = Connection.AddTrack(track);
+            _sender = RtcPeer.AddTrack(track);
         }
 
         public void AddOutputAudioSource(AudioSource audioSource)
@@ -265,14 +277,6 @@ namespace MistNet
         {
             await UniTask.Delay(TimeSpan.FromSeconds(WaitReconnectTimeSec));
             CreateOffer().Forget();
-        }
-
-        public void Dispose()
-        {
-            Connection?.Dispose();
-            _dataChannel?.Dispose();
-            _dataChannel = null;
-            Connection = null;
         }
     }
 

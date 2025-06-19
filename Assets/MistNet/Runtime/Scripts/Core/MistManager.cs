@@ -8,7 +8,6 @@ using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace MistNet
 {
@@ -87,7 +86,7 @@ namespace MistNet
             {
                 MistDebug.Log($"[SEND][{type.ToString()}] {type} {targetId}");
                 var peerData = MistPeerData.GetAllPeer[targetId];
-                peerData.Peer.Send(sendData);
+                peerData.PeerEntity.Send(sendData);
             }
         }
 
@@ -224,7 +223,7 @@ namespace MistNet
             {
                 var peer = MistPeerData.GetPeer(targetId);
                 if (peer == null
-                    || peer.Connection.ConnectionState != RTCPeerConnectionState.Connected
+                    || peer.RtcPeer.ConnectionState != RTCPeerConnectionState.Connected
                     || peer.Id == MistPeerData.I.SelfId
                     || peer.Id == senderId)
                 {
