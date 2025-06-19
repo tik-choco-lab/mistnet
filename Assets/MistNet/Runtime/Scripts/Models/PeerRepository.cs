@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class MistPeerData : IDisposable
+    public class PeerRepository : IDisposable
     {
-        public static MistPeerData I { get; private set; } = new();
+        public static PeerRepository I { get; private set; } = new();
         public NodeId SelfId { get; private set; }
         public Dictionary<NodeId, MistPeerDataElement> GetAllPeer { get; } = new();
 
@@ -127,5 +127,10 @@ namespace MistNet
         }
 
         public bool IsConnected => PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;
+    }
+
+    [Obsolete("Use PeerRepository instead. MistPeerData is deprecated and will be removed in future versions.")]
+    public class MistPeerData : PeerRepository
+    {
     }
 }

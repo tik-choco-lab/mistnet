@@ -34,7 +34,7 @@ namespace MistNet
         public void Init(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
         {
             Id = id;
-            IsOwner = MistPeerData.I.SelfId == ownerId;
+            IsOwner = PeerRepository.I.SelfId == ownerId;
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
             gameObject.TryGetComponent(out MistTransform);

@@ -305,4 +305,13 @@ namespace MistNet
             return data;
         }
     }
+
+    [Obsolete("Use PeerEntity instead.")]
+    public class MistPeer : PeerEntity
+    {
+        public MistPeer(NodeId id) : base(id)
+        {
+            MistDebug.LogWarning("[MistPeer] MistPeer is deprecated. Use PeerEntity instead.");
+        }
+    }
 }

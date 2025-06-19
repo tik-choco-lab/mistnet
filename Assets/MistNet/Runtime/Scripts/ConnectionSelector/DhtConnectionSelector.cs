@@ -35,7 +35,7 @@ namespace MistNet
         {
             OptConfigLoader.ReadConfig();
             base.Start();
-            MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
+            MistDebug.Log($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
 
             _onMessageReceived = new Dictionary<string, Action<string, NodeId>>
             {
@@ -105,7 +105,7 @@ namespace MistNet
             var nodeId = node.Id;
             routing.Add(nodeId, senderId);
 
-            if (nodeId == MistPeerData.I.SelfId) return; // 自分のNodeは無視
+            if (nodeId == PeerRepository.I.SelfId) return; // 自分のNodeは無視
 
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
@@ -150,7 +150,7 @@ namespace MistNet
             var message = new ConnectionSelectorMessage
             {
                 type = PongMessageType,
-                data = MistPeerData.I.SelfId,
+                data = PeerRepository.I.SelfId,
             };
             Send(JsonConvert.SerializeObject(message), senderId);
         }
@@ -388,7 +388,7 @@ namespace MistNet
 
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
-                    if (MistPeerData.I.IsConnectingOrConnected(node.Id)) continue;
+                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
 
                     MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))

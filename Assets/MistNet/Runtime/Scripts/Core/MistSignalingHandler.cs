@@ -25,7 +25,7 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(NodeId receiverId)
         {
-            var peer = MistManager.I.MistPeerData.CreatePeer(receiverId);
+            var peer = MistManager.I.PeerRepository.CreatePeer(receiverId);
             if (peer.RtcPeer.ConnectionState == RTCPeerConnectionState.Connecting)
             {
                 MistDebug.LogWarning($"[Warning][MistSignaling] Peer is connecting: {receiverId}");
@@ -57,7 +57,7 @@ namespace MistNet
         {
             MistDebug.Log($"[MistSignaling] ReceiveAnswer: {response.SenderId}");
             var targetId = response.SenderId;
-            var peer = MistManager.I.MistPeerData.GetPeer(targetId);
+            var peer = MistManager.I.PeerRepository.GetPeer(targetId);
 
             // if (peer.Connection.SignalingState != RTCSignalingState.HaveLocalOffer)
             // {
@@ -89,7 +89,7 @@ namespace MistNet
             MistDebug.Log($"[MistSignaling] ReceiveOffer: {response.SenderId}");
             var targetId = response.SenderId;
 
-            var peer = MistPeerData.I.CreatePeer(targetId);
+            var peer = PeerRepository.I.CreatePeer(targetId);
 
             if (peer.RtcPeer.SignalingState != RTCSignalingState.Stable)
             {
@@ -133,7 +133,7 @@ namespace MistNet
             Send(sendData, targetId);
 
             // 接続が完了したら、関連するICE候補を削除
-            var peer = MistManager.I.MistPeerData.GetPeer(targetId).RtcPeer;
+            var peer = MistManager.I.PeerRepository.GetPeer(targetId).RtcPeer;
             RegisterIceConnectionChangeHandler(targetId, peer);
             MistDebug.Log($"[MistSignaling] SendCandidate: {targetId}");
         }
@@ -202,7 +202,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                var peer = MistManager.I.MistPeerData.GetPeer(targetId);
+                var peer = MistManager.I.PeerRepository.GetPeer(targetId);
                 if (peer != null) return peer;
                 await UniTask.Yield();
             }
@@ -218,7 +218,7 @@ namespace MistNet
         {
             var sendData = new SignalingData
             {
-                SenderId = MistManager.I.MistPeerData.SelfId,
+                SenderId = MistManager.I.PeerRepository.SelfId,
                 RoomId = MistConfig.Data.RoomId
             };
 
