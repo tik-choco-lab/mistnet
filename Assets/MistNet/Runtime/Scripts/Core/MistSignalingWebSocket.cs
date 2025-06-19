@@ -57,17 +57,17 @@ namespace MistNet
         {
             if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
             {
-                MistDebug.LogError("[MistSignaling][WebSocket] All signaling server addresses failed.");
+                MistDebug.LogError("[Signaling][WebSocket] All signaling server addresses failed.");
                 return;
             }
 
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
-            _ws.OnOpen += () => MistDebug.Log("[MistSignaling][WebSocket] Opened");
+            _ws.OnOpen += () => MistDebug.Log("[Signaling][WebSocket] Opened");
             _ws.OnClose += message =>
             {
-                MistDebug.Log($"[MistSignaling][WebSocket] Closed {message}");
+                MistDebug.Log($"[Signaling][WebSocket] Closed {message}");
                 // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
                 TryNextAddress();
             };
@@ -76,7 +76,7 @@ namespace MistNet
 
             _ws.OnError += message =>
             {
-                MistDebug.LogError($"[MistSignaling][WebSocket] Error {message}");
+                MistDebug.LogError($"[Signaling][WebSocket] Error {message}");
                 // エラーが発生した場合も再接続を試みる
                 TryNextAddress();
             };

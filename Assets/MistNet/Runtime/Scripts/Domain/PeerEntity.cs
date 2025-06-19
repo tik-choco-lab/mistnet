@@ -49,10 +49,10 @@ namespace MistNet
             RtcPeer.OnIceCandidate = OnIceCandidate;
             RtcPeer.OnIceConnectionChange += OnIceConnectionChange;
             RtcPeer.OnConnectionStateChange +=
-                state => MistDebug.Log($"[MistPeer][OnConnectionStateChange] {state}");
+                state => MistDebug.Log($"[Signaling][OnConnectionStateChange] {state}");
             RtcPeer.OnIceGatheringStateChange +=
-                state => MistDebug.Log($"[MistPeer][OnIceGatheringStateChange] {state}");
-            RtcPeer.OnNegotiationNeeded += () => MistDebug.Log($"[MistPeer][OnNegotiationNeeded] {Id}");
+                state => MistDebug.Log($"[Signaling][OnIceGatheringStateChange] {state}");
+            RtcPeer.OnNegotiationNeeded += () => MistDebug.Log($"[Signaling][OnNegotiationNeeded] {Id}");
             RtcPeer.OnTrack += OnTrack;
             // ----------------------------
             // DataChannels
