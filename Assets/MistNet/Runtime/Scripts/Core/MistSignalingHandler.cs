@@ -16,6 +16,7 @@ namespace MistNet
         {
             var senderId = response.SenderId;
             if(!MistManager.I.CompareId(senderId)) return;
+            MistDebug.Log($"[Signaling] RequestOffer: {response.SenderId}");
             SendOffer(new NodeId(response.SenderId)).Forget();
         }
 

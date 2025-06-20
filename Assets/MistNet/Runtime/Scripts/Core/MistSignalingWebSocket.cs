@@ -93,12 +93,14 @@ namespace MistNet
         private void OnMessage(string message)
         {
             var response = JsonConvert.DeserializeObject<SignalingData>(message);
+            MistDebug.Log($"[Signaling][WebSocket] Received: {response.Type} {response.SenderId}");
             var type = response.Type;
             _functions[type](response);
         }
 
         private void Send(SignalingData sendData, NodeId _)
         {
+            MistDebug.Log($"[Signaling][WebSocket] Sending: {sendData.Type} {sendData.ReceiverId}");
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);
         }
