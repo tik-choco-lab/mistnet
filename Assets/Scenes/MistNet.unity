@@ -879,6 +879,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1351811400}
   - component: {fileID: 1351811401}
+  - component: {fileID: 1351811402}
   m_Layer: 0
   m_Name: ManualSelector
   m_TagString: Untagged
@@ -913,8 +914,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5390413d62384d128ee98b14ca041f84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  routing: {fileID: 5615826333483994239}
+  routing: {fileID: 1351811402}
   evalClient: {fileID: 857102512}
+--- !u!114 &1351811402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351811399}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b766a7d21be48dbad5d3de7aeba1387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1505926412
 GameObject:
   m_ObjectHideFlags: 0
@@ -1365,7 +1378,7 @@ PrefabInstance:
         type: 3}
       propertyPath: routing
       value: 
-      objectReference: {fileID: 5615826333483994239}
+      objectReference: {fileID: 1351811402}
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: showLog
@@ -1460,7 +1473,7 @@ PrefabInstance:
     - target: {fileID: 9036998985847439126, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7935780440447089082, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}

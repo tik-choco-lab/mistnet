@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using MistNet.Utils;
 using UnityEngine;
 
 namespace MistNet
@@ -13,32 +11,32 @@ namespace MistNet
 
         public virtual void OnConnected(NodeId id)
         {
-            Debug.Log($"[ConnectionSelector] OnConnected: {id}");
+            MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
             ConnectedNodes.Add(id);
         }
 
         public virtual void OnDisconnected(NodeId id)
         {
-            Debug.Log($"[ConnectionSelector] OnDisconnected: {id}");
+            MistDebug.Log($"[ConnectionSelector] OnDisconnected: {id}");
             ConnectedNodes.Remove(id);
             if (MessageNodes.Contains(id)) MessageNodes.Remove(id);
         }
 
         public virtual void AddMessageNode(NodeId id)
         {
-            Debug.Log($"[ConnectionSelector] AddMessageNode: {id}");
+            MistDebug.Log($"[ConnectionSelector] AddMessageNode: {id}");
             MessageNodes.Add(id);
         }
 
         public virtual void RemoveMessageNode(NodeId id)
         {
-            Debug.Log($"[ConnectionSelector] RemoveMessageNode: {id}");
+            MistDebug.Log($"[ConnectionSelector] RemoveMessageNode: {id}");
             MessageNodes.Remove(id);
         }
 
         public virtual void Add(NodeId sourceId, NodeId fromId)
         {
-            Debug.LogError($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
         }
 
         public virtual NodeId Get(NodeId targetId)
