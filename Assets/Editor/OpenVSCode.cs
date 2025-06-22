@@ -20,19 +20,19 @@ public class OpenVSCode
         Open(".");
     }
 
-    [MenuItem("Tools/Open Config")]
+    [MenuItem("Tools/MistNet/Open Config")]
     private static void OpenConfig()
     {
         Open("mistnet_config.json");
     }
 
-    [MenuItem("Tools/Open OPT Config")]
+    [MenuItem("Tools/MistNet/Open OPT Config")]
     private static void OpenOptConfig()
     {
         Open("mistnet_opt_config.json");
     }
 
-    [MenuItem("Tools/Open Eval Config")]
+    [MenuItem("Tools/MistNet/Open Eval Config")]
     private static void OpenEvalConfig()
     {
         Open("mistnet_eval_config.json");
