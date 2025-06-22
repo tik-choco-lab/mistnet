@@ -255,6 +255,15 @@ namespace MistNet
             ConnectAction.Invoke(id);
         }
 
+        public void Disconnect(NodeId id)
+        {
+            if (id == PeerRepository.I.SelfId) return;
+
+            routing.RemoveMessageNode(id);
+            routing.Remove(id);
+            OnDisconnected(id);
+        }
+
         public void OnConnected(NodeId id)
         {
             MistDebug.Log($"[Connected] {id}");
