@@ -34,7 +34,7 @@ namespace MistNet
             }
             _filterFunctions = ParseFilters(filters);
             Application.logMessageReceived += OnLogMessageReceived;
-            _path = $"{LogFilePath}/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{MistPeerData.I.SelfId}.log";
+            _path = $"{LogFilePath}/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{PeerRepository.I.SelfId}.log";
         }
 
         private void OnDestroy()

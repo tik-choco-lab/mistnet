@@ -23,14 +23,14 @@ namespace MistNet
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
 
-            MistDebug.Log($"[MistSignalingServer] Start {port}");
+            MistDebug.Log($"[SignalingServer] Start {port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            MistDebug.Log($"[MistSignalingServer] End");
+            MistDebug.Log($"[SignalingServer] End");
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior

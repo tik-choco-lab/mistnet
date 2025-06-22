@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class MistPeerData
+    public class PeerRepository : IDisposable
     {
-        public static MistPeerData I { get; private set; } = new();
+        public static PeerRepository I { get; private set; } = new();
         public NodeId SelfId { get; private set; }
         public Dictionary<NodeId, MistPeerDataElement> GetAllPeer { get; } = new();
 
@@ -36,7 +36,7 @@ namespace MistNet
         {
             foreach (var peerData in GetAllPeer.Values)
             {
-                peerData.Peer.Close();
+                peerData.PeerEntity.Close();
             }
         }
 
@@ -53,27 +53,30 @@ namespace MistNet
         public bool IsConnectingOrConnected(NodeId id)
         {
             if (!GetAllPeer.TryGetValue(id, out var data)) return false;
-            return data.Peer.Connection.ConnectionState is RTCPeerConnectionState.Connected or RTCPeerConnectionState.Connecting;
+            return data.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
+                or RTCPeerConnectionState.Connecting;
         }
 
-        public MistPeer CreatePeer(NodeId id)
+        public PeerEntity CreatePeer(NodeId id)
         {
             if (GetAllPeer.TryGetValue(id, out var peerData))
             {
-                peerData.Peer?.Dispose();
+                if (peerData.PeerEntity.ActiveProtocol == PeerActiveProtocol.WebSocket) return peerData.PeerEntity;
+                // WebSocketを優先する　WebRTCは以下の通り既存の物を一旦破棄する
+                peerData.PeerEntity?.Dispose();
                 GetAllPeer.Remove(id);
             }
 
             MistDebug.Log($"[MistPeerData] Add {id}");
             GetAllPeer.Add(id, new MistPeerDataElement(id));
-            GetAllPeer[id].Peer.AddInputAudioSource(_selfAudioSource);
+            GetAllPeer[id].PeerEntity.AddInputAudioSource(_selfAudioSource);
 
-            return GetAllPeer[id].Peer;
+            return GetAllPeer[id].PeerEntity;
         }
 
-        public MistPeer GetPeer(NodeId id)
+        public PeerEntity GetPeer(NodeId id)
         {
-            return GetAllPeer.TryGetValue(id, out var peerData) ? peerData.Peer : null;
+            return GetAllPeer.TryGetValue(id, out var peerData) ? peerData.PeerEntity : null;
         }
 
         public MistPeerDataElement GetPeerData(NodeId id)
@@ -92,8 +95,8 @@ namespace MistNet
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
             MistDebug.Log($"[MistPeerData] Delete {id}");
-            peerData.Peer?.Dispose();
-            peerData.Peer = null;
+            peerData.PeerEntity?.Dispose();
+            peerData.PeerEntity = null;
             GetAllPeer.Remove(id);
         }
 
@@ -101,18 +104,37 @@ namespace MistNet
         {
             _selfAudioSource = audioSource;
         }
+
+        public void Dispose()
+        {
+            MistDebug.Log("[MistPeerData] Dispose");
+            AllForceClose();
+            foreach (var peerData in GetAllPeer.Values)
+            {
+                peerData.PeerEntity?.Dispose();
+            }
+
+            I = null;
+            SelfId = null;
+            _selfAudioSource = null;
+        }
     }
 
     public class MistPeerDataElement
     {
-        public MistPeer Peer;
+        public PeerEntity PeerEntity;
 
         public MistPeerDataElement(NodeId id)
         {
-            Peer = new(id);
+            PeerEntity = new(id);
             MistDebug.Log($"[MistPeerData] Create Peer {id}");
         }
 
-        public bool IsConnected => Peer.Connection.ConnectionState == RTCPeerConnectionState.Connected;
+        public bool IsConnected => PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;
+    }
+
+    [Obsolete("Use PeerRepository instead. MistPeerData is deprecated and will be removed in future versions.")]
+    public class MistPeerData : PeerRepository
+    {
     }
 }
