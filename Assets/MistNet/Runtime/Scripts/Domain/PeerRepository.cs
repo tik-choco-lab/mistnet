@@ -53,13 +53,16 @@ namespace MistNet
         public bool IsConnectingOrConnected(NodeId id)
         {
             if (!GetAllPeer.TryGetValue(id, out var data)) return false;
-            return data.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected or RTCPeerConnectionState.Connecting;
+            return data.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
+                or RTCPeerConnectionState.Connecting;
         }
 
         public PeerEntity CreatePeer(NodeId id)
         {
             if (GetAllPeer.TryGetValue(id, out var peerData))
             {
+                if (peerData.PeerEntity.ActiveProtocol == PeerActiveProtocol.WebSocket) return peerData.PeerEntity;
+                // WebSocketを優先する　WebRTCは以下の通り既存の物を一旦破棄する
                 peerData.PeerEntity?.Dispose();
                 GetAllPeer.Remove(id);
             }
@@ -110,6 +113,7 @@ namespace MistNet
             {
                 peerData.PeerEntity?.Dispose();
             }
+
             I = null;
             SelfId = null;
             _selfAudioSource = null;

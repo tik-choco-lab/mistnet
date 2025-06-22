@@ -14,7 +14,7 @@ namespace MistNet
         
         private void Start()
         {
-            _mistSignalingHandler = new MistSignalingHandler();
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC);
             _mistSignalingHandler.Send += SendSignalingMessage;
             // Functionの登録
             _functions = new Dictionary<SignalingType, Action<SignalingData>>

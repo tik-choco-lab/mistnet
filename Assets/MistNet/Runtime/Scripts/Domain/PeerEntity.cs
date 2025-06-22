@@ -24,6 +24,7 @@ namespace MistNet
         public Action<Ice> OnCandidate;
         public readonly Action<NodeId> OnConnected;
         public readonly Action<NodeId> OnDisconnected;
+        public PeerActiveProtocol ActiveProtocol = PeerActiveProtocol.None;
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;

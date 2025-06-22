@@ -11,12 +11,19 @@ namespace MistNet
     {
         public Action<SignalingData, NodeId> Send;
         private readonly CancellationTokenSource _cts = new();
+        private readonly PeerActiveProtocol _activeProtocol;
+
+        public MistSignalingHandler(PeerActiveProtocol activeProtocol)
+        {
+            _activeProtocol = activeProtocol;
+        }
 
         public void RequestOffer(SignalingData response)
         {
             var senderId = response.SenderId;
+            MistDebug.Log($"[Signaling] RequestOffer[0]: {senderId}");
             if(!MistManager.I.CompareId(senderId)) return;
-            MistDebug.Log($"[Signaling] RequestOffer: {response.SenderId}");
+            MistDebug.Log($"[Signaling] RequestOffer[1]: {senderId}");
             SendOffer(new NodeId(response.SenderId)).Forget();
         }
 
@@ -37,7 +44,7 @@ namespace MistNet
                 MistDebug.LogWarning($"[Warning][Signaling] SignalingState is not stable: {peer.RtcPeer.SignalingState}");
                 return;
             }
-
+            peer.ActiveProtocol = _activeProtocol;
             peer.OnCandidate = ice => SendCandidate(ice, receiverId);
 
             var desc = await peer.CreateOffer();

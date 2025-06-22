@@ -14,7 +14,7 @@ namespace MistNet
 
         private async void Start()
         {
-            _mistSignalingHandler = new MistSignalingHandler();
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket);
             _mistSignalingHandler.Send += Send;
 
             // Functionの登録
@@ -100,7 +100,7 @@ namespace MistNet
 
         private void Send(SignalingData sendData, NodeId _)
         {
-            MistDebug.Log($"[Signaling][WebSocket] Sending: {sendData.Type} {sendData.ReceiverId}");
+            MistDebug.Log($"[Signaling][WebSocket] Send: {sendData.Type} {sendData.ReceiverId}");
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);
         }
