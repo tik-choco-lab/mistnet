@@ -59,5 +59,6 @@ namespace MistNet
         Connect,
         Disconnect,
         SendNodeInfo,
+        Reset,
     }
 }

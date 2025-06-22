@@ -264,6 +264,15 @@ namespace MistNet
             OnDisconnected(id);
         }
 
+        public void DisconnectAll()
+        {
+            MistDebug.Log("[DisconnectAll] All peers will be disconnected.");
+            foreach (var peerId in routing.ConnectedNodes)
+            {
+                Disconnect(peerId);
+            }
+        }
+
         public void OnConnected(NodeId id)
         {
             MistDebug.Log($"[Connected] {id}");

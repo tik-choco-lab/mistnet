@@ -7,6 +7,7 @@ namespace MistNet
 {
     public abstract class IRouting : MonoBehaviour
     {
+
         public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
         public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
 
@@ -44,6 +45,7 @@ namespace MistNet
         {
             return null;
         }
+
 
         public virtual void Remove(NodeId id)
         {
