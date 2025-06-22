@@ -14,7 +14,7 @@ namespace MistNet
 
         private async void Start()
         {
-            _mistSignalingHandler = new MistSignalingHandler();
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket);
             _mistSignalingHandler.Send += Send;
 
             // Functionの登録
@@ -38,7 +38,7 @@ namespace MistNet
             var sendData = new SignalingData
             {
                 Type = SignalingType.Request,
-                SenderId = MistPeerData.I.SelfId,
+                SenderId = PeerRepository.I.SelfId,
                 RoomId = MistConfig.Data.RoomId,
             };
 
@@ -57,17 +57,17 @@ namespace MistNet
         {
             if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
             {
-                MistDebug.LogError("[MistSignaling][WebSocket] All signaling server addresses failed.");
+                MistDebug.LogError("[Signaling][WebSocket] All signaling server addresses failed.");
                 return;
             }
 
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
-            _ws.OnOpen += () => MistDebug.Log("[MistSignaling][WebSocket] Opened");
+            _ws.OnOpen += () => MistDebug.Log("[Signaling][WebSocket] Opened");
             _ws.OnClose += message =>
             {
-                MistDebug.Log($"[MistSignaling][WebSocket] Closed {message}");
+                MistDebug.Log($"[Signaling][WebSocket] Closed {message}");
                 // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
                 TryNextAddress();
             };
@@ -76,7 +76,7 @@ namespace MistNet
 
             _ws.OnError += message =>
             {
-                MistDebug.LogError($"[MistSignaling][WebSocket] Error {message}");
+                MistDebug.LogError($"[Signaling][WebSocket] Error {message}");
                 // エラーが発生した場合も再接続を試みる
                 TryNextAddress();
             };
@@ -93,12 +93,14 @@ namespace MistNet
         private void OnMessage(string message)
         {
             var response = JsonConvert.DeserializeObject<SignalingData>(message);
+            MistDebug.Log($"[Signaling][WebSocket] Received: {response.Type} {response.SenderId}");
             var type = response.Type;
             _functions[type](response);
         }
 
         private void Send(SignalingData sendData, NodeId _)
         {
+            MistDebug.Log($"[Signaling][WebSocket] Send: {sendData.Type} {sendData.ReceiverId}");
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);
         }

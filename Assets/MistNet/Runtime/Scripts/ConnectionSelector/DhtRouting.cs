@@ -17,7 +17,7 @@ namespace MistNet
 
         public override void Add(NodeId sourceId, NodeId fromId)
         {
-            if (sourceId == MistManager.I.MistPeerData.SelfId) return;
+            if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
             MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
@@ -73,7 +73,7 @@ namespace MistNet
 
         public Result AddBucket(int index, Node node)
         {
-            if (node.Id == MistManager.I.MistPeerData.SelfId) return Result.Success;
+            if (node.Id == MistManager.I.PeerRepository.SelfId) return Result.Success;
             InitBucket(index);
             _buckets[index] ??= new HashSet<Node>();
             if (_buckets[index].Count >= BucketSize) return Result.Fail;

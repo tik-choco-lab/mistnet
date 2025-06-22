@@ -8,7 +8,6 @@ using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace MistNet
 {
@@ -18,7 +17,7 @@ namespace MistNet
     public class MistManager : MonoBehaviour
     {
         public static MistManager I;
-        public MistPeerData MistPeerData;
+        public PeerRepository PeerRepository;
         public Action<NodeId> ConnectAction;
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
@@ -36,8 +35,8 @@ namespace MistNet
         public void Awake()
         {
             MistConfig.ReadConfig();
-            MistPeerData = new();
-            MistPeerData.Init();
+            PeerRepository = new();
+            PeerRepository.Init();
             I = this;
             
             // JsonSerializerSettingsの初期化
@@ -57,7 +56,12 @@ namespace MistNet
 
         public void OnDestroy()
         {
-            MistPeerData.AllForceClose();
+            _onMessageDict.Clear();
+            _functionDict.Clear();
+            _functionArgsLengthDict.Clear();
+            _functionArgsTypeDict.Clear();
+
+            PeerRepository.Dispose();
             MistConfig.WriteConfig();
         }
 
@@ -65,24 +69,24 @@ namespace MistNet
         {
             var message = new MistMessage
             {
-                Id = MistPeerData.SelfId,
+                Id = PeerRepository.SelfId,
                 Payload = data,
                 TargetId = targetId,
                 Type = type,
             };
             var sendData = MemoryPackSerializer.Serialize(message);
 
-            if (!MistPeerData.IsConnected(targetId))
+            if (!PeerRepository.IsConnected(targetId))
             {
                 targetId = routing.Get(targetId);
                 if (targetId == null) return; // メッセージの破棄
                 MistDebug.Log($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
-            if (MistPeerData.IsConnected(targetId))
+            if (PeerRepository.IsConnected(targetId))
             {
                 MistDebug.Log($"[SEND][{type.ToString()}] {type} {targetId}");
-                var peerData = MistPeerData.GetAllPeer[targetId];
-                peerData.Peer.Send(sendData);
+                var peerData = PeerRepository.GetAllPeer[targetId];
+                peerData.PeerEntity.Send(sendData);
             }
         }
 
@@ -90,7 +94,7 @@ namespace MistNet
         {
             var message = new MistMessage
             {
-                Id = MistPeerData.SelfId,
+                Id = PeerRepository.SelfId,
                 Payload = data,
                 Type = type,
             };
@@ -100,7 +104,7 @@ namespace MistNet
                 MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
-                var peerData = MistPeerData.GetPeer(peerId);
+                var peerData = PeerRepository.GetPeer(peerId);
                 peerData.Send(sendData);
             }
         }
@@ -210,17 +214,17 @@ namespace MistNet
 
             // 他のPeer宛のメッセージの場合
             var targetId = new NodeId(message.TargetId);
-            if (!MistPeerData.IsConnected(targetId))
+            if (!PeerRepository.IsConnected(targetId))
             {
                 targetId = routing.Get(targetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
             {
-                var peer = MistPeerData.GetPeer(targetId);
+                var peer = PeerRepository.GetPeer(targetId);
                 if (peer == null
-                    || peer.Connection.ConnectionState != RTCPeerConnectionState.Connected
-                    || peer.Id == MistPeerData.I.SelfId
+                    || peer.RtcPeer.ConnectionState != RTCPeerConnectionState.Connected
+                    || peer.Id == PeerRepository.I.SelfId
                     || peer.Id == senderId)
                 {
                     MistDebug.LogWarning($"[Error] Peer is null {targetId}");
@@ -229,13 +233,13 @@ namespace MistNet
 
                 peer.Send(data);
                 MistDebug.Log(
-                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {MistPeerData.I.SelfId} -> {peer.Id}");
+                    $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {peer.Id}");
             }
         }
 
         private bool IsMessageForSelf(MistMessage message)
         {
-            return message.TargetId == MistPeerData.SelfId;
+            return message.TargetId == PeerRepository.SelfId;
         }
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
@@ -246,7 +250,7 @@ namespace MistNet
 
         public void Connect(NodeId id)
         {
-            if (id == MistPeerData.I.SelfId) return;
+            if (id == PeerRepository.I.SelfId) return;
 
             ConnectAction.Invoke(id);
         }
@@ -264,7 +268,7 @@ namespace MistNet
             MistDebug.Log($"[Disconnected] {id}");
             MistSyncManager.I.DestroyBySenderId(id);
             connectionSelector.OnDisconnected(id);
-            MistPeerData.I.OnDisconnected(id);
+            PeerRepository.I.OnDisconnected(id);
             _onDisconnectedAction?.Invoke(id);
             routing.OnDisconnected(id);
         }
@@ -300,10 +304,7 @@ namespace MistNet
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
-            syncObject.SetData(new ObjectId(objId), true, prefabAddress, MistPeerData.SelfId);
-            syncObject.Init();
-
-            MistSyncManager.I.RegisterSyncObject(syncObject);
+            syncObject.Init(new ObjectId(objId), true, prefabAddress, PeerRepository.SelfId);
 
             var sendData = new P_ObjectInstantiate()
             {
@@ -322,7 +323,7 @@ namespace MistNet
         /// </summary>
         public bool CompareId(string sourceId)
         {
-            var selfId = MistManager.I.MistPeerData.SelfId;
+            var selfId = MistManager.I.PeerRepository.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
         }
 

@@ -10,7 +10,7 @@ namespace MistNet
 
         public override void Add(NodeId sourceId, NodeId fromId)
         {
-            if (sourceId == MistManager.I.MistPeerData.SelfId) return;
+            if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
             MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");

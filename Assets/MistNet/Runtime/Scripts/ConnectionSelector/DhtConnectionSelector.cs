@@ -35,7 +35,7 @@ namespace MistNet
         {
             OptConfigLoader.ReadConfig();
             base.Start();
-            MistDebug.Log($"[ConnectionSelector] SelfId {MistPeerData.I.SelfId}");
+            MistDebug.Log($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
 
             _onMessageReceived = new Dictionary<string, Action<string, NodeId>>
             {
@@ -46,9 +46,40 @@ namespace MistNet
             };
 
             UpdateRequestObjectInfo(this.GetCancellationTokenOnDestroy()).Forget();
-            UpdateNodeInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateDebugShowBucketInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private readonly HashSet<int> _sendNodeInitialized = new();
+
+        private async UniTask InitSendNodeInfo(int bucketIndex, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(GetIntervalSeconds(bucketIndex)), cancellationToken: token);
+                if (bucketIndex >= routing.Buckets.Count) continue;
+
+                var bucketNodes = routing.Buckets[bucketIndex];
+                var connectedBucketNodes = bucketNodes
+                    .Where(node => routing.ConnectedNodes.Contains(node.Id))
+                    .ToList();
+                var message = CreateNodesInfo();
+                foreach (var node in connectedBucketNodes)
+                {
+                    MistDebug.Log($"[ConnectionSelector] SendNodeInfo: {node.Id} {bucketIndex}");
+                    Send(message, node.Id);
+                }
+            }
+        }
+
+        private float GetIntervalSeconds(int bucketIndex)
+        {
+            return (bucketIndex + 1) * Data.SendInfoIntervalSecondMultiplier;
+        }
+
+        public override void OnConnected(NodeId id)
+        {
+            Send(CreateNodesInfo(), id);
         }
 
         private void OnDestroy()
@@ -74,10 +105,16 @@ namespace MistNet
             var nodeId = node.Id;
             routing.Add(nodeId, senderId);
 
-            if (nodeId == MistPeerData.I.SelfId) return; // 自分のNodeは無視
+            if (nodeId == PeerRepository.I.SelfId) return; // 自分のNodeは無視
 
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
+            if (_sendNodeInitialized.Add(index))
+            {
+                // NodeInfo送信開始
+                InitSendNodeInfo(index, this.GetCancellationTokenOnDestroy()).Forget();
+            }
+
             MistDebug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
 
             var currentIndex = routing.GetBucketIndex(nodeId);
@@ -113,7 +150,7 @@ namespace MistNet
             var message = new ConnectionSelectorMessage
             {
                 type = PongMessageType,
-                data = MistPeerData.I.SelfId,
+                data = PeerRepository.I.SelfId,
             };
             Send(JsonConvert.SerializeObject(message), senderId);
         }
@@ -168,6 +205,7 @@ namespace MistNet
         }
 
         #region CalculateBucketIndex base N
+
         private int CalculateBucketIndexUsingBitShift(float distance)
         {
             // 初期バケツインデックス
@@ -191,6 +229,7 @@ namespace MistNet
 
             return bucketIndex;
         }
+
         #endregion
 
         private int CalculateBucketIndexUsingBaseN(float distance)
@@ -244,20 +283,21 @@ namespace MistNet
         /// Node情報を接続中のNodeに送信する
         /// </summary>
         /// <param name="token"></param>
-        private async UniTask UpdateNodeInfo(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSeconds), cancellationToken: token);
+        // private async UniTask UpdateNodeInfo(CancellationToken token)
+        // {
+        //     while (!token.IsCancellationRequested)
+        //     {
+        //         await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSecondMultiplier), cancellationToken: token);
+        //
+        //         var message = CreateNodesInfo();
+        //         foreach (var id in routing.ConnectedNodes)
+        //         {
+        //             if (string.IsNullOrEmpty(id)) MistDebug.LogError("[ConnectionSelector] Connected node id is empty");
+        //             Send(message, id);
+        //         }
+        //     }
+        // }
 
-                var message = CreateNodesInfo();
-                foreach (var id in routing.ConnectedNodes)
-                {
-                    if (string.IsNullOrEmpty(id)) MistDebug.LogError("[ConnectionSelector] Connected node id is empty");
-                    Send(message, id);
-                }
-            }
-        }
 
         /// <summary>
         /// 定期的に実行する
@@ -308,6 +348,7 @@ namespace MistNet
                 {
                     outputStr += $"{nodeId}, ";
                 }
+
                 MistDebug.Log($"[ConnectionSelector] VisibleNodes: {routing.MessageNodes.Count} {outputStr}");
             }
         }
@@ -328,6 +369,7 @@ namespace MistNet
                     {
                         outputStr += $"{node.Id}, ";
                     }
+
                     MistDebug.Log($"[ConnectionSelector] Bucket {i}: {routing.Buckets[i].Count} {outputStr}");
                 }
             }
@@ -346,7 +388,7 @@ namespace MistNet
 
                 foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
                 {
-                    if (MistPeerData.I.IsConnectingOrConnected(node.Id)) continue;
+                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
 
                     MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))

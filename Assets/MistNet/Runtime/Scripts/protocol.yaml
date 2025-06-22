@@ -107,7 +107,11 @@ messages:
       - name: Time
         type: long       
         
-  - name: PropertyRequest     
+  - name: PropertyRequest
+    fields:
+      - name: ObjId
+        type: string
+        
   - name: LeaderNotify    
         
   - name: Error

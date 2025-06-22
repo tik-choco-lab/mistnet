@@ -15,7 +15,7 @@ namespace MistNet.VC
             if (audioSource == null) audioSource = GetComponent<AudioSource>();
 
             Debug.Log($"[Debug][MistVC] add input audio source");
-            MistPeerData.I.AddInputAudioSource(audioSource);
+            PeerRepository.I.AddInputAudioSource(audioSource);
 
             if (string.IsNullOrEmpty(selectedMicDevice))
             {
@@ -52,7 +52,7 @@ namespace MistNet.VC
             audioSource.Play();
 
             // MistPeerData にオーディオ入力を追加
-            MistPeerData.I.AddInputAudioSource(audioSource);
+            PeerRepository.I.AddInputAudioSource(audioSource);
         }
 
         // マイクデバイスのリストを取得するためのヘルパーメソッド
