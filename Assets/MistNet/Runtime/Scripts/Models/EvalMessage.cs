@@ -17,6 +17,7 @@ namespace MistNet
         NodeState,
         NodeLocation,
         NodeRequest,
+        NodeReset,
     }
 
     public class EvalNodeSettings
@@ -59,6 +60,5 @@ namespace MistNet
         Connect,
         Disconnect,
         SendNodeInfo,
-        Reset,
     }
 }

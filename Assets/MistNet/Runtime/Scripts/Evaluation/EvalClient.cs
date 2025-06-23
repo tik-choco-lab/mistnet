@@ -93,7 +93,7 @@ namespace MistNet.Evaluation
                 return;
             }
 
-            func.Invoke(data.Payload.ToString());
+            func.Invoke(data.Payload == null ? string.Empty : data.Payload.ToString());
         }
     }
 }

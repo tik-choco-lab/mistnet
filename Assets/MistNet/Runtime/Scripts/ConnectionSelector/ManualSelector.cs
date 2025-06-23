@@ -19,6 +19,14 @@ namespace MistNet
             OptConfigLoader.ReadConfig();
             MistDebug.Log($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
             evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
+            evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
+        }
+
+        private void OnReset(string payload)
+        {
+            MistDebug.Log("[ConnectionSelector] Resetting connections...");
+            MistManager.I.DisconnectAll();
+            routing.ClearNodes();
         }
 
         private void OnRequest(string payload)
@@ -52,11 +60,6 @@ namespace MistNet
                         Payload = nodeState
                     };
                     Send(JsonConvert.SerializeObject(octreeMessage), nodeId);
-                    break;
-                case RequestActionType.Reset:
-                    // 全clientと切断
-                    MistManager.I.DisconnectAll();
-                    routing.ClearNodes();
                     break;
             }
         }
