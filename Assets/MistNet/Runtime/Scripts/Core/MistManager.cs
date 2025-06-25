@@ -299,7 +299,7 @@ namespace MistNet
             var argTypes = _argTypes[rpc.Method];
             var args = MemoryPackDeserializeArgs(rpc.Args, argTypes);
 
-            del.DynamicInvoke(args); // この部分は高速化オプションあり（後述）
+            del.DynamicInvoke(args);
         }
 
         private static object[] MemoryPackDeserializeArgs(RpcArgBase[] data, Type[] types)
