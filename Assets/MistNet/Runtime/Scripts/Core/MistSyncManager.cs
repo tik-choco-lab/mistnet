@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
@@ -9,7 +10,8 @@ namespace MistNet
     public class MistSyncManager : MonoBehaviour
     {
         public static MistSyncManager I { get; private set; }
-        public MistSyncObject SelfSyncObject { get; set; }                           // 自身のSyncObject
+        public MistSyncObject SelfSyncObject { get; set; }
+        public bool DestroyMyObjectsOnDisconnect { get; set; } // 自身のSyncObject
 
         private readonly Dictionary<ObjectId, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
         private readonly Dictionary<ObjectId, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
@@ -109,7 +111,30 @@ namespace MistNet
         public void RemoveObject(NodeId targetId)
         {
             MistDebug.Log($"[Debug] RemoveObject: {targetId}");
-            DestroyBySenderId(targetId);
+            if (DestroyMyObjectsOnDisconnect) DestroyBySenderId(targetId);
+            else DestroyPlayerObject(targetId);
+        }
+
+        private void DestroyPlayerObject(NodeId targetId)
+        {
+            if (!ObjectIdsByOwnerId.ContainsKey(targetId))
+            {
+                MistDebug.LogWarning($"No objects found for ownerId: {targetId}");
+                return;
+            }
+
+            var playerObjectId = ObjectIdsByOwnerId[targetId].FirstOrDefault(
+                id => _syncObjects.ContainsKey(id) && _syncObjects[id].IsPlayerObject);
+
+            if (playerObjectId == null)
+            {
+                MistDebug.LogWarning($"No player object found for ownerId: {targetId}");
+                return;
+            }
+
+            var playerObject = _syncObjects[playerObjectId];
+            _objectPool.Destroy(playerObject.gameObject);
+            _syncObjects.Remove(playerObjectId);
         }
 
         private void ReceiveLocation(byte[] data, NodeId sourceId)
