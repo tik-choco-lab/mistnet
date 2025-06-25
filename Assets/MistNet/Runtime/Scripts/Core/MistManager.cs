@@ -15,6 +15,7 @@ namespace MistNet
     /// </summary>
     public class MistManager : MonoBehaviour
     {
+        private const string Separator = "`";
         public static MistManager I;
         public PeerRepository PeerRepository;
         public Action<NodeId> ConnectAction;
@@ -119,7 +120,7 @@ namespace MistNet
 
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            var argsString = string.Join(",", args);
+            var argsString = string.Join(Separator, args);
             var sendData = new P_RPC
             {
                 Method = key,
@@ -131,7 +132,7 @@ namespace MistNet
 
         public void RPCOther(string key, params object[] args)
         {
-            var argsString = string.Join(",", args);
+            var argsString = string.Join(Separator, args);
             var sendData = new P_RPC
             {
                 Method = key,
@@ -174,7 +175,7 @@ namespace MistNet
         {
             var types = _functionArgsTypeDict[key];
             var objects = new List<object>(types.Length);
-            var parts = input.Split(',');
+            var parts = input.Split(Separator);
 
             // typesを使って、partsを変換する
             for (var i = 0; i < types.Length; i++)
