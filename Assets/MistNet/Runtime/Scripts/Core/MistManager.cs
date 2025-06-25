@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -15,7 +14,6 @@ namespace MistNet
     /// </summary>
     public class MistManager : MonoBehaviour
     {
-        //private const string Separator = "`";
         public static MistManager I;
         public PeerRepository PeerRepository;
         public Action<NodeId> ConnectAction;
@@ -26,12 +24,8 @@ namespace MistNet
         [SerializeField] public IRouting routing;
 
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
-        // private readonly Dictionary<string, Delegate> _functionDict = new();
-        // private readonly Dictionary<string, int> _functionArgsLengthDict = new();
-        // private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
-
-        private static readonly Dictionary<string, Delegate> _methods = new();
-        private static readonly Dictionary<string, Type[]> _argTypes = new();
+        private readonly Dictionary<string, Delegate> _methods = new();
+        private readonly Dictionary<string, Type[]> _argTypes = new();
 
         public void Awake()
         {
@@ -329,7 +323,7 @@ namespace MistNet
             return string.CompareOrdinal(selfId, sourceId) < 0;
         }
 
-        private static void Invoke(P_RPC rpc)
+        private void Invoke(P_RPC rpc)
         {
             if (!_methods.TryGetValue(rpc.Method, out var del))
             {
@@ -345,7 +339,7 @@ namespace MistNet
 
         private static object[] MemoryPackDeserializeArgs(RpcArgBase[] data, Type[] types)
         {
-            var list = new List<object>();
+            var result = new object[types.Length];
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -361,32 +355,36 @@ namespace MistNet
                     _ => throw new InvalidOperationException($"Unsupported argument type: {arg?.GetType()}")
                 };
 
-                // 型に合っていれば変換、合ってなければ例外で止める（またはtry-catch）
-                list.Add(Convert.ChangeType(value, types[i]));
+                result[i] = value.GetType() == types[i]
+                    ? value
+                    : Convert.ChangeType(value, types[i]);
             }
 
-            return list.ToArray();
+            return result;
         }
 
-        public static RpcArgBase[] WrapArgs(params object?[] args)
+        private static RpcArgBase[] WrapArgs(params object?[] args)
         {
             if (args == null || args.Length == 0)
-            {
                 return Array.Empty<RpcArgBase>();
+
+            var result = new RpcArgBase[args.Length];
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                result[i] = arg switch
+                {
+                    int iVal => new RpcArgInt(iVal),
+                    float fVal => new RpcArgFloat(fVal),
+                    string sVal => new RpcArgString(sVal),
+                    bool bVal => new RpcArgBool(bVal),
+                    byte[] bytes => new RpcArgByteArray(bytes),
+                    _ => throw new InvalidOperationException($"Unsupported RPC argument type: {arg?.GetType().FullName}")
+                };
             }
 
-            return args.Select(arg => (RpcArgBase)(arg switch
-            {
-                // 基本的なプリミティブ型
-                int i           => new RpcArgInt(i),
-                float f         => new RpcArgFloat(f),
-                string s        => new RpcArgString(s),
-                bool b          => new RpcArgBool(b),
-                byte[] bytes    => new RpcArgByteArray(bytes),
-
-                // 上記のいずれにも一致しない、サポート外の型
-                _ => throw new InvalidOperationException($"Unsupported RPC argument type: {arg.GetType().FullName}")
-            })).ToArray();
+            return result;
         }
     }
 }
