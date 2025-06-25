@@ -22,7 +22,7 @@ namespace MistNet
             private set => isOwner = value;
         }
 
-        public bool IsPlayerObject { get; set; }
+        public bool IsPlayerObject { get; private set; }
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
@@ -37,8 +37,8 @@ namespace MistNet
             IsOwner = PeerRepository.I.SelfId == ownerId;
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
+            IsPlayerObject = isPlayer;
             gameObject.TryGetComponent(out MistTransform);
-            if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
             InitSyncParameters();
             MistSyncManager.I.RegisterSyncObject(this);
         }

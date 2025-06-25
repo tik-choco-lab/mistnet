@@ -7,7 +7,6 @@ using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using Newtonsoft.Json;
 
 namespace MistNet
 {
@@ -25,12 +24,10 @@ namespace MistNet
         [SerializeField] private IConnectionSelector connectionSelector;
         [SerializeField] public IRouting routing;
 
-        private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _functionDict = new();
         private readonly Dictionary<string, int> _functionArgsLengthDict = new();
         private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
-        private JsonSerializerSettings _jsonSettings;
 
         public void Awake()
         {
@@ -38,15 +35,6 @@ namespace MistNet
             PeerRepository = new();
             PeerRepository.Init();
             I = this;
-            
-            // JsonSerializerSettingsの初期化
-            _jsonSettings = new JsonSerializerSettings
-            {
-                Converters = new List<JsonConverter>
-                {
-                    new NodeIdConverter()
-                }
-            };
         }
 
         private void Start()
@@ -293,18 +281,21 @@ namespace MistNet
             _onDisconnectedAction += (Action<NodeId>)callback;
         }
 
-        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
+        public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiateObject(prefabAddress, position, rotation, obj, objId);
+            InstantiatePlayerObject(prefabAddress, position, rotation, obj, objId);
             return obj;
         }
 
-        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
+        private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
             syncObject.Init(new ObjectId(objId), true, prefabAddress, PeerRepository.SelfId);
+
+            // 接続先最適化に使用するため、PlayerObjectであることを設定
+            MistSyncManager.I.SelfSyncObject = syncObject;
 
             var sendData = new P_ObjectInstantiate()
             {
@@ -325,17 +316,6 @@ namespace MistNet
         {
             var selfId = MistManager.I.PeerRepository.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
-        }
-
-        // JsonSerializerSettingsを使用するヘルパーメソッド
-        private string SerializeJson<T>(T obj)
-        {
-            return JsonConvert.SerializeObject(obj, _jsonSettings);
-        }
-
-        private T DeserializeJson<T>(string json)
-        {
-            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
         }
     }
 }
