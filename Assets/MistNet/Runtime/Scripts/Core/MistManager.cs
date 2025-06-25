@@ -255,7 +255,7 @@ namespace MistNet
         public void OnDisconnected(NodeId id)
         {
             MistDebug.Log($"[Disconnected] {id}");
-            MistSyncManager.I.DestroyBySenderId(id);
+            MistSyncManager.I.RemoveObject(id);
             connectionSelector.OnDisconnected(id);
             PeerRepository.I.OnDisconnected(id);
             _onDisconnectedAction?.Invoke(id);
@@ -280,6 +280,13 @@ namespace MistNet
         public void AddLeftCallback(Delegate callback)
         {
             _onDisconnectedAction += (Action<NodeId>)callback;
+        }
+
+        [Obsolete("Use InstantiatePlayerAsync instead. InstantiateAsync will be removed in future versions.")]
+        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position,
+            Quaternion rotation, ObjectId objId = null)
+        {
+            return await InstantiatePlayerAsync(prefabAddress, position, rotation, objId);
         }
 
         public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
