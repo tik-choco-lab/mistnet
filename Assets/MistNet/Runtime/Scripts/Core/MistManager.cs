@@ -171,17 +171,22 @@ namespace MistNet
             _functionDict[message.Method].DynamicInvoke(args.ToArray());
         }
 
+        private readonly Dictionary<Type, TypeConverter> _converterCache = new();
         private List<object> ConvertStringToObjects(string key, string input)
         {
             var types = _functionArgsTypeDict[key];
-            var objects = new List<object>(types.Length);
             var parts = input.Split(Separator);
+            var objects = new List<object>(types.Length);
 
-            // typesを使って、partsを変換する
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
-                var converter = TypeDescriptor.GetConverter(type);
+                if (!_converterCache.TryGetValue(type, out var converter))
+                {
+                    converter = TypeDescriptor.GetConverter(type);
+                    _converterCache[type] = converter;
+                }
+
                 var obj = converter.ConvertFromString(parts[i]);
                 objects.Add(obj);
             }
