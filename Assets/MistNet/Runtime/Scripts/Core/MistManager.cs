@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -127,11 +128,11 @@ namespace MistNet
         public void RPC(NodeId targetId, string key, params object[] args)
         {
             // var argsString = string.Join(Separator, args);
-            var argsBytes = MemoryPackSerializer.Serialize(args);
+            var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsBytes,
+                Args = rpcArgs,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             Send(MistNetMessageType.RPC, bytes, targetId);
@@ -140,11 +141,11 @@ namespace MistNet
         public void RPCOther(string key, params object[] args)
         {
             // var argsString = string.Join(Separator, args);
-            var argsBytes = MemoryPackSerializer.Serialize(args);
+            var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsBytes,
+                Args = rpcArgs,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             SendAll(MistNetMessageType.RPC, bytes);
@@ -342,15 +343,50 @@ namespace MistNet
             del.DynamicInvoke(args); // この部分は高速化オプションあり（後述）
         }
 
-        private static object[] MemoryPackDeserializeArgs(byte[] data, Type[] types)
+        private static object[] MemoryPackDeserializeArgs(RpcArgBase[] data, Type[] types)
         {
             var list = new List<object>();
-            var unpacked = MemoryPackSerializer.Deserialize<object[]>(data);
+
             for (int i = 0; i < types.Length; i++)
             {
-                list.Add(Convert.ChangeType(unpacked[i], types[i]));
+                var arg = data[i];
+
+                object value = arg switch
+                {
+                    RpcArgInt a => a.Value,
+                    RpcArgFloat a => a.Value,
+                    RpcArgString a => a.Value,
+                    RpcArgBool a => a.Value,
+                    RpcArgByteArray a => a.Value,
+                    _ => throw new InvalidOperationException($"Unsupported argument type: {arg?.GetType()}")
+                };
+
+                // 型に合っていれば変換、合ってなければ例外で止める（またはtry-catch）
+                list.Add(Convert.ChangeType(value, types[i]));
             }
+
             return list.ToArray();
+        }
+
+        public static RpcArgBase[] WrapArgs(params object?[] args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                return Array.Empty<RpcArgBase>();
+            }
+
+            return args.Select(arg => (RpcArgBase)(arg switch
+            {
+                // 基本的なプリミティブ型
+                int i           => new RpcArgInt(i),
+                float f         => new RpcArgFloat(f),
+                string s        => new RpcArgString(s),
+                bool b          => new RpcArgBool(b),
+                byte[] bytes    => new RpcArgByteArray(bytes),
+
+                // 上記のいずれにも一致しない、サポート外の型
+                _ => throw new InvalidOperationException($"Unsupported RPC argument type: {arg.GetType().FullName}")
+            })).ToArray();
         }
     }
 }
