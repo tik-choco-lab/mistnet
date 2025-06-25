@@ -32,7 +32,6 @@ namespace MistNet
         private readonly List<WatchedProperty> _watchedProperties = new();
         private class WatchedProperty
         {
-            public Component Component;
             public string KeyName;
             public Func<object> Getter;
         }
@@ -198,11 +197,9 @@ namespace MistNet
                 _propertyList.Add((component, property));
 
                 var keyName = $"{Id}_{property.Name}";
-                // var delegateType = typeof(Action<>).MakeGenericType(property.PropertyType);
                 var getter = CreateGetter(property, component);
                 _watchedProperties.Add(new WatchedProperty
                 {
-                    Component = component,
                     KeyName = keyName,
                     Getter = getter
                 });
@@ -219,18 +216,6 @@ namespace MistNet
                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 }
 
-                // var originalSetMethod = property.SetMethod;
-                // // Wrapperを作成
-                // // Action property.PropertyTypeの型を引数に取るActionを作成
-                // Action<object> wrapper = value =>
-                // {
-                //     originalSetMethod.Invoke(component, new[] { value });
-                //     onChangedMethodInfo?.Invoke(component, null);
-                // };
-
-                // 登録
-                // var wrapperDelegate = Delegate.CreateDelegate(delegateType, wrapper.Target, wrapper.Method);
-
                 var originalSetMethod = property.SetMethod;
 
                 void Wrapper(object value)
@@ -240,12 +225,11 @@ namespace MistNet
                 }
 
                 _rpcList.Add(keyName);
-                // _propertyValueDict.Add(keyName, property.GetValue(component));
                 MistManager.I.AddRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
             }
         }
 
-        private Func<object> CreateGetter(PropertyInfo property, Component component)
+        private static Func<object> CreateGetter(PropertyInfo property, Component component)
         {
             var instanceParam = Expression.Constant(component);
             var propertyAccess = Expression.Property(instanceParam, property);
