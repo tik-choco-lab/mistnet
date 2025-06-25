@@ -1,7 +1,6 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -43,10 +42,6 @@ namespace MistNet
         public void OnDestroy()
         {
             _onMessageDict.Clear();
-            // _functionDict.Clear();
-            // _functionArgsLengthDict.Clear();
-            // _functionArgsTypeDict.Clear();
-
             PeerRepository.Dispose();
             MistConfig.WriteConfig();
         }
@@ -104,17 +99,10 @@ namespace MistNet
         {
             _methods[key] = function;
             _argTypes[key] = types;
-            // _functionDict.Add(key, function);
-            // var parameters = function.GetMethodInfo().GetParameters();
-            // _functionArgsLengthDict.Add(key, parameters.Length);
-            // _functionArgsTypeDict.Add(key, types);
         }
 
         public void RemoveRPC(string key)
         {
-            // _functionDict.Remove(key);
-            // _functionArgsLengthDict.Remove(key);
-            // _functionArgsTypeDict.Remove(key);
             _methods.Remove(key);
             _argTypes.Remove(key);
         }
@@ -162,29 +150,6 @@ namespace MistNet
             var rpc = MemoryPackSerializer.Deserialize<P_RPC>(data);
             Invoke(rpc);
         }
-
-        private readonly Dictionary<Type, TypeConverter> _converterCache = new();
-        // private List<object> ConvertStringToObjects(string key, string input)
-        // {
-        //     var types = _functionArgsTypeDict[key];
-        //     var parts = input.Split(Separator);
-        //     var objects = new List<object>(types.Length);
-        //
-        //     for (var i = 0; i < types.Length; i++)
-        //     {
-        //         var type = types[i];
-        //         if (!_converterCache.TryGetValue(type, out var converter))
-        //         {
-        //             converter = TypeDescriptor.GetConverter(type);
-        //             _converterCache[type] = converter;
-        //         }
-        //
-        //         var obj = converter.ConvertFromString(parts[i]);
-        //         objects.Add(obj);
-        //     }
-        //
-        //     return objects;
-        // }
 
         public void OnMessage(byte[] data, NodeId senderId)
         {
