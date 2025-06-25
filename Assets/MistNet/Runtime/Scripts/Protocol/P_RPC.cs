@@ -5,5 +5,5 @@ using UnityEngine;
 public partial class P_RPC
 {
     public string Method { get; set; }
-    public string Args { get; set; }
+    public byte[] Args { get; set; }
 }

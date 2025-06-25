@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Reflection;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -15,7 +14,7 @@ namespace MistNet
     /// </summary>
     public class MistManager : MonoBehaviour
     {
-        private const string Separator = "`";
+        //private const string Separator = "`";
         public static MistManager I;
         public PeerRepository PeerRepository;
         public Action<NodeId> ConnectAction;
@@ -26,9 +25,12 @@ namespace MistNet
         [SerializeField] public IRouting routing;
 
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
-        private readonly Dictionary<string, Delegate> _functionDict = new();
-        private readonly Dictionary<string, int> _functionArgsLengthDict = new();
-        private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
+        // private readonly Dictionary<string, Delegate> _functionDict = new();
+        // private readonly Dictionary<string, int> _functionArgsLengthDict = new();
+        // private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
+
+        private static readonly Dictionary<string, Delegate> _methods = new();
+        private static readonly Dictionary<string, Type[]> _argTypes = new();
 
         public void Awake()
         {
@@ -46,9 +48,9 @@ namespace MistNet
         public void OnDestroy()
         {
             _onMessageDict.Clear();
-            _functionDict.Clear();
-            _functionArgsLengthDict.Clear();
-            _functionArgsTypeDict.Clear();
+            // _functionDict.Clear();
+            // _functionArgsLengthDict.Clear();
+            // _functionArgsTypeDict.Clear();
 
             PeerRepository.Dispose();
             MistConfig.WriteConfig();
@@ -103,28 +105,33 @@ namespace MistNet
             _onMessageDict.Add(messageType, function);
         }
 
-        public void AddRPC(string key, Delegate function, Type[] types)
+        public void AddObjectRPC(string key, Delegate function, Type[] types)
         {
-            _functionDict.Add(key, function);
-            var parameters = function.GetMethodInfo().GetParameters();
-            _functionArgsLengthDict.Add(key, parameters.Length);
-            _functionArgsTypeDict.Add(key, types);
+            _methods[key] = function;
+            _argTypes[key] = types;
+            // _functionDict.Add(key, function);
+            // var parameters = function.GetMethodInfo().GetParameters();
+            // _functionArgsLengthDict.Add(key, parameters.Length);
+            // _functionArgsTypeDict.Add(key, types);
         }
 
         public void RemoveRPC(string key)
         {
-            _functionDict.Remove(key);
-            _functionArgsLengthDict.Remove(key);
-            _functionArgsTypeDict.Remove(key);
+            // _functionDict.Remove(key);
+            // _functionArgsLengthDict.Remove(key);
+            // _functionArgsTypeDict.Remove(key);
+            _methods.Remove(key);
+            _argTypes.Remove(key);
         }
 
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            var argsString = string.Join(Separator, args);
+            // var argsString = string.Join(Separator, args);
+            var argsBytes = MemoryPackSerializer.Serialize(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsString,
+                Args = argsBytes,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             Send(MistNetMessageType.RPC, bytes, targetId);
@@ -132,11 +139,12 @@ namespace MistNet
 
         public void RPCOther(string key, params object[] args)
         {
-            var argsString = string.Join(Separator, args);
+            // var argsString = string.Join(Separator, args);
+            var argsBytes = MemoryPackSerializer.Serialize(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsString,
+                Args = argsBytes,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             SendAll(MistNetMessageType.RPC, bytes);
@@ -145,54 +153,43 @@ namespace MistNet
         public void RPCAll(string key, params object[] args)
         {
             RPCOther(key, args);
-            _functionDict[key].DynamicInvoke(args);
+
+            if (!_methods.TryGetValue(key, out var del))
+            {
+                MistDebug.LogError($"Unknown RPC method: {key}");
+                return;
+            }
+            del.DynamicInvoke(args);
         }
 
         private void OnRPC(byte[] data, NodeId sourceId)
         {
-            var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
-            if (!_functionDict.ContainsKey(message.Method))
-            {
-                MistDebug.LogError($"[Error][RPC] {message.Method} is not found");
-                return;
-            }
-
-            var args = ConvertStringToObjects(message.Method, message.Args);
-            var argsLength = _functionArgsLengthDict[message.Method];
-
-            if (args.Count != argsLength)
-            {
-                args.Add(new MessageInfo
-                {
-                    SourceId = sourceId,
-                });
-            }
-
-            _functionDict[message.Method].DynamicInvoke(args.ToArray());
+            var rpc = MemoryPackSerializer.Deserialize<P_RPC>(data);
+            Invoke(rpc);
         }
 
         private readonly Dictionary<Type, TypeConverter> _converterCache = new();
-        private List<object> ConvertStringToObjects(string key, string input)
-        {
-            var types = _functionArgsTypeDict[key];
-            var parts = input.Split(Separator);
-            var objects = new List<object>(types.Length);
-
-            for (var i = 0; i < types.Length; i++)
-            {
-                var type = types[i];
-                if (!_converterCache.TryGetValue(type, out var converter))
-                {
-                    converter = TypeDescriptor.GetConverter(type);
-                    _converterCache[type] = converter;
-                }
-
-                var obj = converter.ConvertFromString(parts[i]);
-                objects.Add(obj);
-            }
-
-            return objects;
-        }
+        // private List<object> ConvertStringToObjects(string key, string input)
+        // {
+        //     var types = _functionArgsTypeDict[key];
+        //     var parts = input.Split(Separator);
+        //     var objects = new List<object>(types.Length);
+        //
+        //     for (var i = 0; i < types.Length; i++)
+        //     {
+        //         var type = types[i];
+        //         if (!_converterCache.TryGetValue(type, out var converter))
+        //         {
+        //             converter = TypeDescriptor.GetConverter(type);
+        //             _converterCache[type] = converter;
+        //         }
+        //
+        //         var obj = converter.ConvertFromString(parts[i]);
+        //         objects.Add(obj);
+        //     }
+        //
+        //     return objects;
+        // }
 
         public void OnMessage(byte[] data, NodeId senderId)
         {
@@ -329,6 +326,31 @@ namespace MistNet
         {
             var selfId = MistManager.I.PeerRepository.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
+        }
+
+        private static void Invoke(P_RPC rpc)
+        {
+            if (!_methods.TryGetValue(rpc.Method, out var del))
+            {
+                MistDebug.LogError($"Unknown RPC method: {rpc.Method}");
+                return;
+            }
+
+            var argTypes = _argTypes[rpc.Method];
+            var args = MemoryPackDeserializeArgs(rpc.Args, argTypes);
+
+            del.DynamicInvoke(args); // この部分は高速化オプションあり（後述）
+        }
+
+        private static object[] MemoryPackDeserializeArgs(byte[] data, Type[] types)
+        {
+            var list = new List<object>();
+            var unpacked = MemoryPackSerializer.Deserialize<object[]>(data);
+            for (int i = 0; i < types.Length; i++)
+            {
+                list.Add(Convert.ChangeType(unpacked[i], types[i]));
+            }
+            return list.ToArray();
         }
     }
 }

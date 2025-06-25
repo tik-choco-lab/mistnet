@@ -181,7 +181,7 @@ namespace MistNet
                 _rpcList.Add(keyName);
 
                 var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
-                MistManager.I.AddRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
+                MistManager.I.AddObjectRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
             }
         }
 
@@ -225,7 +225,7 @@ namespace MistNet
                 }
 
                 _rpcList.Add(keyName);
-                MistManager.I.AddRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
+                MistManager.I.AddObjectRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
             }
         }
 
