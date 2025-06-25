@@ -18,7 +18,6 @@ namespace MistNet
 
         // ユーザーが退出した際のGameObjectの削除に使用している Instantiateで生成されたObjectに限る
         public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
-        // private readonly Dictionary<ObjectId, MistSyncObject> _mySyncObjects = new();    // 自身が生成したObject一覧
         private MistSyncObject _myPlayerObject; // 自身のプレイヤーオブジェクト
 
         private readonly MistObjectPool _objectPool = new();
@@ -56,17 +55,6 @@ namespace MistNet
 
             var data = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            // foreach (var obj in _mySyncObjects.Values)
-            // {
-            //     if (!obj.IsPlayerObject) continue;
-            //     sendData.ObjId = obj.Id;
-            //     var objTransform = obj.transform;
-            //     sendData.Position = objTransform.position;
-            //     sendData.Rotation = objTransform.rotation.eulerAngles;
-            //     sendData.PrefabAddress = obj.PrefabAddress;
-            //     var data = MemoryPackSerializer.Serialize(sendData);
-            //     MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            // }
             MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
