@@ -22,13 +22,19 @@ namespace MistNet
             private set => isOwner = value;
         }
 
-        public bool IsPlayerObject { get; set; }
+        public bool IsPlayerObject { get; private set; }
         [HideInInspector] public MistTransform MistTransform;
         [SerializeField] private float syncIntervalSeconds = 0.5f;
 
         private readonly List<string> _rpcList = new();
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
         private readonly Dictionary<string, object> _propertyValueDict = new();
+        private readonly List<WatchedProperty> _watchedProperties = new();
+        private class WatchedProperty
+        {
+            public string KeyName;
+            public Func<object> Getter;
+        }
         private static int _instanceIdCount;
 
         public void Init(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
@@ -37,8 +43,8 @@ namespace MistNet
             IsOwner = PeerRepository.I.SelfId == ownerId;
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
+            IsPlayerObject = isPlayer;
             gameObject.TryGetComponent(out MistTransform);
-            if (isPlayer) MistSyncManager.I.SelfSyncObject = this;
             InitSyncParameters();
             MistSyncManager.I.RegisterSyncObject(this);
         }
@@ -175,7 +181,7 @@ namespace MistNet
                 _rpcList.Add(keyName);
 
                 var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
-                MistManager.I.AddRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
+                MistManager.I.AddObjectRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
             }
         }
 
@@ -191,7 +197,13 @@ namespace MistNet
                 _propertyList.Add((component, property));
 
                 var keyName = $"{Id}_{property.Name}";
-                var delegateType = typeof(Action<>).MakeGenericType(property.PropertyType);
+                var getter = CreateGetter(property, component);
+                _watchedProperties.Add(new WatchedProperty
+                {
+                    KeyName = keyName,
+                    Getter = getter
+                });
+                _propertyValueDict[keyName] = getter();
 
                 // MistSyncAttributeからOnChangedメソッド名を取得
                 var mistSyncAttr = (MistSyncAttribute)Attribute.GetCustomAttribute(property, typeof(MistSyncAttribute));
@@ -205,41 +217,42 @@ namespace MistNet
                 }
 
                 var originalSetMethod = property.SetMethod;
-                // Wrapperを作成
-                // Action property.PropertyTypeの型を引数に取るActionを作成
-                Action<object> wrapper = value =>
+
+                void Wrapper(object value)
                 {
                     originalSetMethod.Invoke(component, new[] { value });
                     onChangedMethodInfo?.Invoke(component, null);
-                };
-
-                // 登録
-                var wrapperDelegate = Delegate.CreateDelegate(delegateType, wrapper.Target, wrapper.Method);
+                }
 
                 _rpcList.Add(keyName);
-                _propertyValueDict.Add(keyName, property.GetValue(component));
-                MistManager.I.AddRPC(keyName, wrapperDelegate, new[] { property.PropertyType });
+                MistManager.I.AddObjectRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
             }
+        }
+
+        private static Func<object> CreateGetter(PropertyInfo property, Component component)
+        {
+            var instanceParam = Expression.Constant(component);
+            var propertyAccess = Expression.Property(instanceParam, property);
+            var castToObject = Expression.Convert(propertyAccess, typeof(object));
+            var lambda = Expression.Lambda<Func<object>>(castToObject);
+            return lambda.Compile();
         }
 
         private async UniTask WatchPropertiesAsync(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                foreach (var (component, property) in _propertyList)
+                foreach (var watched in _watchedProperties)
                 {
                     // 保存されたプロパティ情報を使用して値を取得し、ログに出力
-                    var value = property.GetValue(component);
-                    var keyName = $"{Id}_{property.Name}";
+                    var value = watched.Getter();
+                    if (!_propertyValueDict.TryGetValue(watched.KeyName, out var oldValue)) continue;
+                    if (Equals(oldValue, value)) continue;
 
-                    var propertyValue = _propertyValueDict[keyName];
-                    if (propertyValue == null) continue;
-                    if (propertyValue.Equals(value)) continue;
+                    _propertyValueDict[watched.KeyName] = value;
 
-                    _propertyValueDict[keyName] = value;
-
-                    MistDebug.Log($"Property: {property.Name}, Value: {value}");
-                    MistManager.I.RPCOther(keyName, value);
+                    MistDebug.Log($"Property: {watched.KeyName}, Value: {value}");
+                    MistManager.I.RPCOther(watched.KeyName, value);
                 }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(syncIntervalSeconds), cancellationToken: token);

@@ -1,13 +1,10 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using Newtonsoft.Json;
 
 namespace MistNet
 {
@@ -25,12 +22,9 @@ namespace MistNet
         [SerializeField] private IConnectionSelector connectionSelector;
         [SerializeField] public IRouting routing;
 
-        private readonly MistConfig _config = new();
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
-        private readonly Dictionary<string, Delegate> _functionDict = new();
-        private readonly Dictionary<string, int> _functionArgsLengthDict = new();
-        private readonly Dictionary<string, Type[]> _functionArgsTypeDict = new();
-        private JsonSerializerSettings _jsonSettings;
+        private readonly Dictionary<string, Delegate> _methods = new();
+        private readonly Dictionary<string, Type[]> _argTypes = new();
 
         public void Awake()
         {
@@ -38,15 +32,6 @@ namespace MistNet
             PeerRepository = new();
             PeerRepository.Init();
             I = this;
-            
-            // JsonSerializerSettingsの初期化
-            _jsonSettings = new JsonSerializerSettings
-            {
-                Converters = new List<JsonConverter>
-                {
-                    new NodeIdConverter()
-                }
-            };
         }
 
         private void Start()
@@ -57,10 +42,6 @@ namespace MistNet
         public void OnDestroy()
         {
             _onMessageDict.Clear();
-            _functionDict.Clear();
-            _functionArgsLengthDict.Clear();
-            _functionArgsTypeDict.Clear();
-
             PeerRepository.Dispose();
             MistConfig.WriteConfig();
         }
@@ -114,28 +95,26 @@ namespace MistNet
             _onMessageDict.Add(messageType, function);
         }
 
-        public void AddRPC(string key, Delegate function, Type[] types)
+        public void AddObjectRPC(string key, Delegate function, Type[] types)
         {
-            _functionDict.Add(key, function);
-            var parameters = function.GetMethodInfo().GetParameters();
-            _functionArgsLengthDict.Add(key, parameters.Length);
-            _functionArgsTypeDict.Add(key, types);
+            _methods[key] = function;
+            _argTypes[key] = types;
         }
 
         public void RemoveRPC(string key)
         {
-            _functionDict.Remove(key);
-            _functionArgsLengthDict.Remove(key);
-            _functionArgsTypeDict.Remove(key);
+            _methods.Remove(key);
+            _argTypes.Remove(key);
         }
 
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            var argsString = string.Join(",", args);
+            // var argsString = string.Join(Separator, args);
+            var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsString,
+                Args = rpcArgs,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             Send(MistNetMessageType.RPC, bytes, targetId);
@@ -143,11 +122,12 @@ namespace MistNet
 
         public void RPCOther(string key, params object[] args)
         {
-            var argsString = string.Join(",", args);
+            // var argsString = string.Join(Separator, args);
+            var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
                 Method = key,
-                Args = argsString,
+                Args = rpcArgs,
             };
             var bytes = MemoryPackSerializer.Serialize(sendData);
             SendAll(MistNetMessageType.RPC, bytes);
@@ -156,48 +136,19 @@ namespace MistNet
         public void RPCAll(string key, params object[] args)
         {
             RPCOther(key, args);
-            _functionDict[key].DynamicInvoke(args);
+
+            if (!_methods.TryGetValue(key, out var del))
+            {
+                MistDebug.LogError($"Unknown RPC method: {key}");
+                return;
+            }
+            del.DynamicInvoke(args);
         }
 
         private void OnRPC(byte[] data, NodeId sourceId)
         {
-            var message = MemoryPackSerializer.Deserialize<P_RPC>(data);
-            if (!_functionDict.ContainsKey(message.Method))
-            {
-                MistDebug.LogError($"[Error][RPC] {message.Method} is not found");
-                return;
-            }
-
-            var args = ConvertStringToObjects(message.Method, message.Args);
-            var argsLength = _functionArgsLengthDict[message.Method];
-
-            if (args.Count != argsLength)
-            {
-                args.Add(new MessageInfo
-                {
-                    SourceId = sourceId,
-                });
-            }
-
-            _functionDict[message.Method].DynamicInvoke(args.ToArray());
-        }
-
-        private List<object> ConvertStringToObjects(string key, string input)
-        {
-            var types = _functionArgsTypeDict[key];
-            var objects = new List<object>(types.Length);
-            var parts = input.Split(',');
-
-            // typesを使って、partsを変換する
-            for (var i = 0; i < types.Length; i++)
-            {
-                var type = types[i];
-                var converter = TypeDescriptor.GetConverter(type);
-                var obj = converter.ConvertFromString(parts[i]);
-                objects.Add(obj);
-            }
-
-            return objects;
+            var rpc = MemoryPackSerializer.Deserialize<P_RPC>(data);
+            Invoke(rpc);
         }
 
         public void OnMessage(byte[] data, NodeId senderId)
@@ -284,7 +235,7 @@ namespace MistNet
         public void OnDisconnected(NodeId id)
         {
             MistDebug.Log($"[Disconnected] {id}");
-            MistSyncManager.I.DestroyBySenderId(id);
+            MistSyncManager.I.RemoveObject(id);
             connectionSelector.OnDisconnected(id);
             PeerRepository.I.OnDisconnected(id);
             _onDisconnectedAction?.Invoke(id);
@@ -311,18 +262,28 @@ namespace MistNet
             _onDisconnectedAction += (Action<NodeId>)callback;
         }
 
-        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
+        [Obsolete("Use InstantiatePlayerAsync instead. InstantiateAsync will be removed in future versions.")]
+        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position,
+            Quaternion rotation, ObjectId objId = null)
+        {
+            return await InstantiatePlayerAsync(prefabAddress, position, rotation, objId);
+        }
+
+        public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiateObject(prefabAddress, position, rotation, obj, objId);
+            InstantiatePlayerObject(prefabAddress, position, rotation, obj, objId);
             return obj;
         }
 
-        private void InstantiateObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
+        private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
             syncObject.Init(new ObjectId(objId), true, prefabAddress, PeerRepository.SelfId);
+
+            // 接続先最適化に使用するため、PlayerObjectであることを設定
+            MistSyncManager.I.SelfSyncObject = syncObject;
 
             var sendData = new P_ObjectInstantiate()
             {
@@ -345,15 +306,68 @@ namespace MistNet
             return string.CompareOrdinal(selfId, sourceId) < 0;
         }
 
-        // JsonSerializerSettingsを使用するヘルパーメソッド
-        private string SerializeJson<T>(T obj)
+        private void Invoke(P_RPC rpc)
         {
-            return JsonConvert.SerializeObject(obj, _jsonSettings);
+            if (!_methods.TryGetValue(rpc.Method, out var del))
+            {
+                MistDebug.LogError($"Unknown RPC method: {rpc.Method}");
+                return;
+            }
+
+            var argTypes = _argTypes[rpc.Method];
+            var args = MemoryPackDeserializeArgs(rpc.Args, argTypes);
+
+            del.DynamicInvoke(args);
         }
 
-        private T DeserializeJson<T>(string json)
+        private static object[] MemoryPackDeserializeArgs(RpcArgBase[] data, Type[] types)
         {
-            return JsonConvert.DeserializeObject<T>(json, _jsonSettings);
+            var result = new object[types.Length];
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                var arg = data[i];
+
+                object value = arg switch
+                {
+                    RpcArgInt a => a.Value,
+                    RpcArgFloat a => a.Value,
+                    RpcArgString a => a.Value,
+                    RpcArgBool a => a.Value,
+                    RpcArgByteArray a => a.Value,
+                    _ => throw new InvalidOperationException($"Unsupported argument type: {arg?.GetType()}")
+                };
+
+                result[i] = value.GetType() == types[i]
+                    ? value
+                    : Convert.ChangeType(value, types[i]);
+            }
+
+            return result;
+        }
+
+        private static RpcArgBase[] WrapArgs(params object?[] args)
+        {
+            if (args == null || args.Length == 0)
+                return Array.Empty<RpcArgBase>();
+
+            var result = new RpcArgBase[args.Length];
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                result[i] = arg switch
+                {
+                    int iVal => new RpcArgInt(iVal),
+                    float fVal => new RpcArgFloat(fVal),
+                    string sVal => new RpcArgString(sVal),
+                    bool bVal => new RpcArgBool(bVal),
+                    byte[] bytes => new RpcArgByteArray(bytes),
+                    _ => throw new InvalidOperationException($"Unsupported RPC argument type: {arg?.GetType().FullName}")
+                };
+            }
+
+            return result;
         }
     }
 }
