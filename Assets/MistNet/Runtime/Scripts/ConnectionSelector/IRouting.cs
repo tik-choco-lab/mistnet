@@ -45,11 +45,10 @@ namespace MistNet
             if (sourceId == fromId) return;
 
             MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
-            if (_routingTable.TryAdd(sourceId, fromId))
-            {
-                return;
-            }
-
+            // if (_routingTable.TryAdd(sourceId, fromId))
+            // {
+            //     return;
+            // }
             _routingTable[sourceId] = fromId;
         }
 
@@ -97,6 +96,17 @@ namespace MistNet
         {
             if (id == MistManager.I.PeerRepository.SelfId) return; // 自分自身のノードは更新しない
             MistDebug.Log($"[ConnectionSelector] AddNode: {id}");
+
+            if (ConnectedNodes.Contains(node.Id))
+            {
+                node.State = EvalNodeState.Connected;
+                if (MessageNodes.Contains(node.Id))
+                {
+                    node.State = EvalNodeState.Visible;
+                }
+            }
+            else node.State = EvalNodeState.Disconnected;
+
             _nodes[id] = node;
         }
 

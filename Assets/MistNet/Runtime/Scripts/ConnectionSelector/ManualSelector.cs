@@ -90,7 +90,7 @@ namespace MistNet
         protected override void OnMessage(string data, NodeId id)
         {
             var message = JsonConvert.DeserializeObject<OptMessage>(data);
-            MistDebug.Log($"[ConnectionSelector] OnMessage: {message.Type}");
+            MistDebug.Log($"[Action][OnMessage] {message.Type} {data}");
             if (message.Type == OptMessageType.NodeState) OnNodeStateReceived(message);
         }
 
