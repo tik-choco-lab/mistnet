@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using MistNet.Evaluation;
 using MistNet.Utils;
 using Newtonsoft.Json;
@@ -38,30 +37,39 @@ namespace MistNet
             {
                 case RequestActionType.Connect:
                     if (nodeId == PeerRepository.I.SelfId) return;
-                    if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
+                    // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
+                    MistDebug.Log($"[Action] Connect {nodeId}");
                     MistManager.I.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
                     if (nodeId == PeerRepository.I.SelfId) return;
-                    if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
+                    // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
+                    MistDebug.Log($"[Action] Disconnect {nodeId}");
                     MistManager.I.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
-                    var selfNode = NodeUtils.GetSelfNodeData();
-                    var allNodes = routing.Nodes.Values.ToArray();
-                    var nodeState = new NodeState
-                    {
-                        Node = selfNode,
-                        Nodes = allNodes
-                    };
-                    var octreeMessage = new OptMessage
-                    {
-                        Type = OptMessageType.NodeState,
-                        Payload = nodeState
-                    };
-                    Send(JsonConvert.SerializeObject(octreeMessage), nodeId);
+                    SendNodeInfo(nodeId);
                     break;
             }
+        }
+
+        private void SendNodeInfo(NodeId nodeId)
+        {
+            var selfNode = NodeUtils.GetSelfNodeData();
+            var allNodes = NodeUtils.GetOtherNodeData();
+            var nodeState = new NodeState
+            {
+                Node = selfNode,
+                Nodes = allNodes
+            };
+            var octreeMessage = new OptMessage
+            {
+                Type = OptMessageType.NodeState,
+                Payload = nodeState
+            };
+            var json = JsonConvert.SerializeObject(octreeMessage);
+            MistDebug.Log($"[Action] SendNodeInfo to {nodeId}: {json}");
+            Send(json, nodeId);
         }
 
         public override void OnConnected(NodeId id)
@@ -92,8 +100,8 @@ namespace MistNet
 
             foreach (var node in nodeState.Nodes)
             {
-                routing.Add(node.Id, nodeState.Node.Id);
-                routing.AddNode(node.Id, node);
+                routing.AddRouting(node.Id, nodeState.Node.Id);
+                routing.UpdateNode(node.Id, node);
             }
         }
     }

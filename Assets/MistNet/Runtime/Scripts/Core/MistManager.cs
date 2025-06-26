@@ -195,7 +195,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            routing.Add(new NodeId(message.Id), senderId);
+            routing.AddRouting(new NodeId(message.Id), senderId);
             _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 

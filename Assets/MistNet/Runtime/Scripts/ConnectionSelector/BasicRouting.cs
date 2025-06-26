@@ -8,7 +8,7 @@ namespace MistNet
     {
         private readonly Dictionary<NodeId, NodeId> _routingTable = new();
 
-        public override void Add(NodeId sourceId, NodeId fromId)
+        public override void AddRouting(NodeId sourceId, NodeId fromId)
         {
             if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;

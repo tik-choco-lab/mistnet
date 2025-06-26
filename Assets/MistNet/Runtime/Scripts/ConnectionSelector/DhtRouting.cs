@@ -9,25 +9,11 @@ namespace MistNet
     public class DhtRouting : IRouting
     {
         private const int BucketSize = 8;
-        private readonly Dictionary<NodeId, NodeId> _routingTable = new();
+
 
         public IReadOnlyList<IReadOnlyCollection<Node>> Buckets => _buckets;
         private readonly List<HashSet<Node>> _buckets = new();
         private readonly Dictionary<NodeId, int> _bucketIndexByNodeId = new();
-
-        public override void Add(NodeId sourceId, NodeId fromId)
-        {
-            if (sourceId == MistManager.I.PeerRepository.SelfId) return;
-            if (sourceId == fromId) return;
-
-            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
-            if (_routingTable.TryAdd(sourceId, fromId))
-            {
-                return;
-            }
-
-            _routingTable[sourceId] = fromId;
-        }
 
         public override NodeId Get(NodeId targetId)
         {

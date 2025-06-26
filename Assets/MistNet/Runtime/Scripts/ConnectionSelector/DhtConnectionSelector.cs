@@ -103,7 +103,7 @@ namespace MistNet
         private void OnNodeReceived(Node node, NodeId senderId)
         {
             var nodeId = node.Id;
-            routing.Add(nodeId, senderId);
+            routing.AddRouting(nodeId, senderId);
 
             if (nodeId == PeerRepository.I.SelfId) return; // 自分のNodeは無視
 
