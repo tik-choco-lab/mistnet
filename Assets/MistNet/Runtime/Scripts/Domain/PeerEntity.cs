@@ -38,11 +38,20 @@ namespace MistNet
 
             // ----------------------------
             // Configuration
-            var configuration = default(RTCConfiguration);
-            configuration.iceServers = new RTCIceServer[]
+            var stunServer = new RTCIceServer
             {
-                new() { urls = MistConfig.Data.StunUrls }
+                urls = MistConfig.Data.StunUrls,
             };
+
+            var turnServer = MistConfig.Data.TurnUrls;
+
+            var configuration = default(RTCConfiguration);
+            var iceServers = new[]
+            {
+                stunServer, turnServer
+            };
+            configuration.iceServers = iceServers;
+
             RtcPeer = new RTCPeerConnection(ref configuration);
 
             // ----------------------------
