@@ -44,7 +44,7 @@ namespace MistNet
                 urls = MistConfig.Data.StunUrls,
             };
 
-            var turnServer = MistConfig.Data.TurnUrls;
+            var turnServer = MistConfig.Data.TurnServer;
 
             var configuration = default(RTCConfiguration);
             var iceServers = new List<RTCIceServer> { stunServer };
