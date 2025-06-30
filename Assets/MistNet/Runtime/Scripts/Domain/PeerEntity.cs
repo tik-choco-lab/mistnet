@@ -1,5 +1,6 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using Unity.WebRTC;
 using UnityEngine;
 
@@ -46,11 +47,9 @@ namespace MistNet
             var turnServer = MistConfig.Data.TurnUrls;
 
             var configuration = default(RTCConfiguration);
-            var iceServers = new[]
-            {
-                stunServer, turnServer
-            };
-            configuration.iceServers = iceServers;
+            var iceServers = new List<RTCIceServer> { stunServer };
+            if (turnServer.urls is { Length: > 0 }) iceServers.Add(turnServer);
+            configuration.iceServers = iceServers.ToArray();
 
             RtcPeer = new RTCPeerConnection(ref configuration);
 
