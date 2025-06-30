@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Unity.WebRTC;
 
 namespace MistNet
 {
@@ -10,6 +11,7 @@ namespace MistNet
         [JsonProperty("globalNode")] public GlobalNodeData GlobalNode = new();
         [JsonProperty("roomId")] public string RoomId = "MistNet";
         [JsonProperty("stunUrls")] public string[] StunUrls = { "stun:stun.l.google.com:19302" };
+        [JsonProperty("turnServer")] public RTCIceServer TurnServer;
         [JsonProperty("showLogLine")] public int ShowLogLine = 10;
         [JsonProperty("logFilter")] public string LogFilter = "[STATS]"; // ログフィルターの種類を指定する文字列
         [JsonProperty("logDisplay")] public bool LogDisplay;
