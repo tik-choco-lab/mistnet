@@ -33,7 +33,7 @@ namespace MistNet
             SendRequest();
         }
 
-        private void SendRequest()
+        public void SendRequest()
         {
             var sendData = new SignalingData
             {

@@ -11,6 +11,7 @@ namespace MistNet
         private readonly HashSet<string> _connectedNodes = new();
         [SerializeField] private ManualRouting routing;
         [SerializeField] private EvalClient evalClient;
+        [SerializeField] private MistSignalingWebSocket signalingWebSocket;
 
         protected override void Start()
         {
@@ -26,6 +27,8 @@ namespace MistNet
             MistDebug.Log("[ConnectionSelector] Resetting connections...");
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
+
+            signalingWebSocket.SendRequest();
         }
 
         private void OnRequest(string payload)
