@@ -32,7 +32,7 @@ namespace MistNet
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
-            await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
+            await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
             signalingWebSocket.SendOffer(_initialNodeIds[0]);
             signalingWebSocket.SendOffer(_initialNodeIds[1]);
             _initialNodeIds.Clear();
