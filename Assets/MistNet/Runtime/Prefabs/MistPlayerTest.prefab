@@ -186,7 +186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31de544a0be1bd8448dd603186b8e903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isOwner: 1
+  isOwner: 1
   MistTransform: {fileID: 0}
   syncIntervalSeconds: 0.5
 --- !u!114 &4381840333400488554
@@ -201,7 +201,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab62af81ea3086a42a67d6c27ea73823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _syncIntervalTimeSecond: 0.1
+  syncIntervalTimeSecond: 0.1
 --- !u!114 &1559557820499594004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -215,7 +215,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   syncObject: {fileID: 1998646823194181299}
-  maxSpeed: 10
   yFixed: 1
 --- !u!114 &2156153193105701224
 MonoBehaviour:

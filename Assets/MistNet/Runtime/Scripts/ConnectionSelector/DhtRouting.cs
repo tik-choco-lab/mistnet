@@ -17,6 +17,12 @@ namespace MistNet
 
         public override NodeId Get(NodeId targetId)
         {
+            if (ConnectedNodes.Count == 0)
+            {
+                MistDebug.LogWarning("[RoutingTable] Not found connected peer");
+                return null;
+            }
+
             if (ConnectedNodes.Contains(targetId)) return targetId;
 
             MistDebug.Log($"[RoutingTable] Get {targetId}");
@@ -27,23 +33,28 @@ namespace MistNet
 
             MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
 
-            // 適当に返す
             if (_bucketIndexByNodeId.TryGetValue(targetId, out var bucketIndex))
             {
                 var bucket = Buckets[bucketIndex];
                 if (bucket.Count != 0)
                 {
                     var node = bucket.FirstOrDefault(n => ConnectedNodes.Contains(n.Id));
-                    if (node == null)
-                    {
-                        MistDebug.LogWarning($"[RoutingTable] node {bucketIndex} is null");
-                        return null;
-                    }
 
-                    if (!string.IsNullOrEmpty(node.Id)) // デフォルト値もしくは条件不一致でない場合
+                    if (node != null && !string.IsNullOrEmpty(node.Id)) // デフォルト値もしくは条件不一致でない場合
                     {
                         return node.Id;
                     }
+                }
+            }
+
+            // 別のBucketから取得
+            foreach (var bucket in Buckets)
+            {
+                var node = bucket.FirstOrDefault();
+                if (node != null)
+                {
+                    MistDebug.LogWarning($"[RoutingTable] Using first node from bucket");
+                    return node.Id;
                 }
             }
 
@@ -60,11 +71,15 @@ namespace MistNet
         public Result AddBucket(int index, Node node)
         {
             if (node.Id == MistManager.I.PeerRepository.SelfId) return Result.Success;
+
             InitBucket(index);
             _buckets[index] ??= new HashSet<Node>();
+
             if (_buckets[index].Count >= BucketSize) return Result.Fail;
+
             _buckets[index].Add(node);
             _bucketIndexByNodeId[node.Id] = index;
+
             return Result.Success;
         }
 
