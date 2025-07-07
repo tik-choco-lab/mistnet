@@ -1,6 +1,7 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -218,7 +219,8 @@ namespace MistNet
         public void DisconnectAll()
         {
             MistDebug.Log("[DisconnectAll] All peers will be disconnected.");
-            foreach (var peerId in routing.ConnectedNodes)
+            var peerIds = routing.ConnectedNodes.ToArray();
+            foreach (var peerId in peerIds)
             {
                 Disconnect(peerId);
             }

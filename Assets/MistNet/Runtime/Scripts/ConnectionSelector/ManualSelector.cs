@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using MistNet.Evaluation;
 using MistNet.Utils;
 using Newtonsoft.Json;
@@ -12,6 +14,8 @@ namespace MistNet
         [SerializeField] private ManualRouting routing;
         [SerializeField] private EvalClient evalClient;
         [SerializeField] private MistSignalingWebSocket signalingWebSocket;
+        private const int InitialNodeCount = 2;
+        private readonly List<NodeId> _initialNodeIds = new(InitialNodeCount);
 
         protected override void Start()
         {
@@ -22,13 +26,16 @@ namespace MistNet
             evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
         }
 
-        private void OnReset(string payload)
+        private async void OnReset(string payload)
         {
             MistDebug.Log("[ConnectionSelector] Resetting connections...");
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
-            signalingWebSocket.SendRequest();
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
+            signalingWebSocket.SendOffer(_initialNodeIds[0]);
+            signalingWebSocket.SendOffer(_initialNodeIds[1]);
+            _initialNodeIds.Clear();
         }
 
         private void OnRequest(string payload)
@@ -78,6 +85,12 @@ namespace MistNet
         public override void OnConnected(NodeId id)
         {
             MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
+
+            if (_initialNodeIds.Count < InitialNodeCount)
+            {
+                _initialNodeIds.Add(id);
+            }
+
             if (!_connectedNodes.Add(id)) return;
             routing.AddMessageNode(id);
             RequestObject(id);
