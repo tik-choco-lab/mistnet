@@ -149,7 +149,6 @@ GameObject:
   - component: {fileID: 4381840333400488554}
   - component: {fileID: 1559557820499594004}
   - component: {fileID: 2156153193105701224}
-  - component: {fileID: 1708044025362283048}
   m_Layer: 0
   m_Name: MistPlayerTest
   m_TagString: Untagged
@@ -230,18 +229,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   changeMaterial: {fileID: 2100000, guid: a969d4dff3aba524f95ac99e16d09646, type: 2}
---- !u!114 &1708044025362283048
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6339836550088581722}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 079e999a10d345a08bd7f9f5c3c869cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &6773592497839365628
 GameObject:
   m_ObjectHideFlags: 0
