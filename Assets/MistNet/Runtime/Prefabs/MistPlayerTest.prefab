@@ -149,6 +149,7 @@ GameObject:
   - component: {fileID: 4381840333400488554}
   - component: {fileID: 1559557820499594004}
   - component: {fileID: 2156153193105701224}
+  - component: {fileID: 1708044025362283048}
   m_Layer: 0
   m_Name: MistPlayerTest
   m_TagString: Untagged
@@ -186,7 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31de544a0be1bd8448dd603186b8e903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isOwner: 1
+  isOwner: 1
   MistTransform: {fileID: 0}
   syncIntervalSeconds: 0.5
 --- !u!114 &4381840333400488554
@@ -201,7 +202,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab62af81ea3086a42a67d6c27ea73823, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _syncIntervalTimeSecond: 0.1
+  syncIntervalTimeSecond: 0.1
 --- !u!114 &1559557820499594004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -215,7 +216,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   syncObject: {fileID: 1998646823194181299}
-  maxSpeed: 10
   yFixed: 1
 --- !u!114 &2156153193105701224
 MonoBehaviour:
@@ -230,6 +230,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   changeMaterial: {fileID: 2100000, guid: a969d4dff3aba524f95ac99e16d09646, type: 2}
+--- !u!114 &1708044025362283048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6339836550088581722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 079e999a10d345a08bd7f9f5c3c869cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6773592497839365628
 GameObject:
   m_ObjectHideFlags: 0
