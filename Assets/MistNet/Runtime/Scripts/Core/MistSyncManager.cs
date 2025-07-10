@@ -189,7 +189,12 @@ namespace MistNet
             }
 
             _syncObjects.Remove(syncObject.Id);
-            ObjectIdsByOwnerId.Remove(syncObject.OwnerId);
+            if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
+            {
+                MistDebug.LogWarning($"No objects found for ownerId: {syncObject.OwnerId}");
+                return;
+            }
+            ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
             
             UnregisterSyncAnimator(syncObject);
             MistManager.I.OnDestroyed(syncObject.OwnerId);
