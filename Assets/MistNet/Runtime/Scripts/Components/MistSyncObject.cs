@@ -54,7 +54,9 @@ namespace MistNet
             OwnerId = newOwnerId;
             IsOwner = PeerRepository.I.SelfId == newOwnerId;
             MistSyncManager.I.UnregisterSyncObject(this);
+
             InitSyncParameters();
+            MistSyncManager.I.RegisterSyncObject(this);
         }
 
         private void InitSyncParameters()
