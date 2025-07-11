@@ -78,7 +78,6 @@ namespace MistNet
                 MistManager.I.RemoveRPC(rpc);
             }
 
-            // if (IsOwner) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
