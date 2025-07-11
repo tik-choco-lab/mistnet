@@ -49,6 +49,16 @@ namespace MistNet
             MistSyncManager.I.RegisterSyncObject(this);
         }
 
+        public void SetOwner(NodeId newOwnerId)
+        {
+            OwnerId = newOwnerId;
+            IsOwner = PeerRepository.I.SelfId == newOwnerId;
+            MistSyncManager.I.UnregisterSyncObject(this);
+
+            InitSyncParameters();
+            MistSyncManager.I.RegisterSyncObject(this);
+        }
+
         private void InitSyncParameters()
         {
             RegisterPropertyAndRPC();
@@ -68,7 +78,6 @@ namespace MistNet
                 MistManager.I.RemoveRPC(rpc);
             }
 
-            if (IsOwner) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
