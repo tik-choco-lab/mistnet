@@ -171,13 +171,25 @@ namespace MistNet
         /// <param name= "newNode" ></param>
         private async UniTask SendPingAndAddNode(int index, Node newNode)
         {
-            var oldNode = routing.Buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
+            // var oldNode = routing.Buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
+            // 一番距離が遠いものを取得
+            var oldNode = routing.Buckets[index]
+                .OrderByDescending(node => Vector3.Distance(NodeUtils.GetSelfNodeData().Position.ToVector3(), node.Position.ToVector3()))
+                .FirstOrDefault();
+
             MistDebug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
 
             var octreeMessage = new ConnectionSelectorMessage
             {
                 type = PingMessageType,
             };
+
+            if (_pongWaitList.ContainsKey(oldNode.Id))
+            {
+                // すでにPingを送信している場合は何もしない
+                MistDebug.Log($"[ConnectionSelector] Already waiting for pong: {oldNode.Id}");
+                return;
+            }
 
             Send(JsonConvert.SerializeObject(octreeMessage), oldNode.Id);
             _pongWaitList.TryAdd(oldNode.Id, false);
@@ -278,26 +290,6 @@ namespace MistNet
             };
             return JsonConvert.SerializeObject(octreeMessage);
         }
-
-        /// <summary>
-        /// Node情報を接続中のNodeに送信する
-        /// </summary>
-        /// <param name="token"></param>
-        // private async UniTask UpdateNodeInfo(CancellationToken token)
-        // {
-        //     while (!token.IsCancellationRequested)
-        //     {
-        //         await UniTask.Delay(TimeSpan.FromSeconds(Data.SendInfoIntervalSecondMultiplier), cancellationToken: token);
-        //
-        //         var message = CreateNodesInfo();
-        //         foreach (var id in routing.ConnectedNodes)
-        //         {
-        //             if (string.IsNullOrEmpty(id)) MistDebug.LogError("[ConnectionSelector] Connected node id is empty");
-        //             Send(message, id);
-        //         }
-        //     }
-        // }
-
 
         /// <summary>
         /// 定期的に実行する
