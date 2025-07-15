@@ -8,7 +8,6 @@ namespace MistNet
     /// </summary>
     public class DhtRouting : IRouting
     {
-        private const int BucketSize = 8;
         private readonly Dictionary<NodeId, NodeId> _routingTable = new();
 
         public IReadOnlyList<IReadOnlyCollection<Node>> Buckets => _buckets;
@@ -89,7 +88,7 @@ namespace MistNet
             InitBucket(index);
             _buckets[index] ??= new HashSet<Node>();
 
-            if (_buckets[index].Count >= BucketSize) return Result.Fail;
+            if (_buckets[index].Count >= OptConfigLoader.Data.BucketMax) return Result.Fail;
 
             _buckets[index].Add(node);
             _bucketIndexByNodeId[node.Id] = index;
