@@ -109,6 +109,7 @@ namespace MistNet
 
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
+            if (index == -1) return; // bucket最大indexを超えているため中断
             if (_sendNodeInitialized.Add(index))
             {
                 // NodeInfo送信開始
@@ -263,6 +264,8 @@ namespace MistNet
             {
                 intDistance /= Data.BucketBase; // baseNで割る
                 bucketIndex++;
+
+                if (bucketIndex > OptConfigLoader.Data.BucketIndexMax) return -1;
             }
 
             return bucketIndex;
