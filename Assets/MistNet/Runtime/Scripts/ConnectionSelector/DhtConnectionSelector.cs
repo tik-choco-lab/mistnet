@@ -175,7 +175,8 @@ namespace MistNet
             // var oldNode = routing.Buckets[index].First(); // これがきちんと最初のNodeであるか確認が必要
             // 一番距離が遠いものを取得
             var oldNode = routing.Buckets[index]
-                .OrderByDescending(node => Vector3.Distance(NodeUtils.GetSelfNodeData().Position.ToVector3(), node.Position.ToVector3()))
+                .OrderByDescending(node =>
+                    Vector3.Distance(NodeUtils.GetSelfNodeData().Position.ToVector3(), node.Position.ToVector3()))
                 .FirstOrDefault();
 
             MistDebug.Log($"[ConnectionSelector] SendPingAndAddNode: {oldNode.Id} -> {newNode.Id}");
@@ -381,19 +382,84 @@ namespace MistNet
                 MistDebug.Log("[ConnectionSelector] UpdateFindNextConnect");
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
 
-                foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
+                // bucket 0番は全員と接続する
+                ConnectToBucket0();
+                SelectConnectBucketNodes();
+
+                // foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
+                // {
+                //     if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+                //
+                //     MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
+                //     if (MistManager.I.CompareId(node.Id))
+                //     {
+                //         MistManager.I.Connect(node.Id);
+                //     }
+                //
+                //     break;
+                // }
+
+                // それ以降は1つのバケツから1つのNodeを選んで接続する
+                // それ以外は切断する
+            }
+        }
+
+        private void ConnectToBucket0()
+        {
+            if (routing.Buckets.Count == 0 || routing.Buckets[0].Count == 0) return;
+            for (var i = 0; i < routing.Buckets[0].Count; i++)
+            {
+                var node = routing.Buckets[0].ElementAt(i);
+                if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+
+                MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
+                if (MistManager.I.CompareId(node.Id))
                 {
+                    MistManager.I.Connect(node.Id);
+                    _requestedNodes.Add(node.Id);
+                }
+            }
+        }
+
+        private readonly HashSet<NodeId> _requestedNodes = new();
+
+        private void SelectConnectBucketNodes()
+        {
+            foreach (var bucket in routing.Buckets)
+            {
+                var alreadyRequestedNodes = bucket
+                    .Where(node => _requestedNodes.Contains(node.Id))
+                    .ToList();
+
+                if (alreadyRequestedNodes.Count == 1) continue;
+                if (alreadyRequestedNodes.Count == 0)
+                {
+                    if (bucket.Count == 0) continue;
+                    var node = bucket.First();
                     if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
 
-                    MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
                     if (MistManager.I.CompareId(node.Id))
                     {
                         MistManager.I.Connect(node.Id);
+                        _requestedNodes.Add(node.Id);
                     }
 
-                    break;
+                    continue;
+                }
+
+                // 1つのみに接続し、それ以外は切断する
+                for (var i = 1; i < alreadyRequestedNodes.Count; i++)
+                {
+                    var second = alreadyRequestedNodes[i];
+                    MistManager.I.Disconnect(second.Id);
                 }
             }
+        }
+
+        public override void OnDisconnected(NodeId id)
+        {
+            if (!_requestedNodes.Contains(id)) return;
+            _requestedNodes.Remove(id);
         }
     }
 }
