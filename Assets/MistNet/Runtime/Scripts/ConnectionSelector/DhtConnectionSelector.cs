@@ -382,8 +382,7 @@ namespace MistNet
                 MistDebug.Log("[ConnectionSelector] UpdateFindNextConnect");
                 await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
 
-                // bucket 0番は全員と接続する
-                ConnectToBucket0();
+                // ConnectToBucket0();
                 SelectConnectBucketNodes();
 
                 // foreach (var node in from bucket in routing.Buckets where bucket.Count != 0 select bucket.First())
@@ -430,6 +429,23 @@ namespace MistNet
                 var alreadyRequestedNodes = bucket
                     .Where(node => _requestedNodes.Contains(node.Id))
                     .ToList();
+
+                for (var i = 0; i < bucket.Count; i++)
+                {
+                    var node = bucket.ElementAt(i);
+                    if (alreadyRequestedNodes.Contains(node)) continue;
+                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+
+                    // すでに接続しているNodeが多い場合は、接続しない
+                    if (_requestedNodes.Count >= OptConfigLoader.Data.VisibleCount) break;
+
+                    MistDebug.Log($"[ConnectionSelector] Connecting: {node.Id}");
+                    if (MistManager.I.CompareId(node.Id))
+                    {
+                        MistManager.I.Connect(node.Id);
+                        _requestedNodes.Add(node.Id);
+                    }
+                }
 
                 if (alreadyRequestedNodes.Count == 1) continue;
                 if (alreadyRequestedNodes.Count == 0)
