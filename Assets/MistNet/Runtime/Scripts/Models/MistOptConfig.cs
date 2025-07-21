@@ -8,6 +8,7 @@ namespace MistNet
         [JsonProperty("bucketBase")] public int BucketBase = 4;
         [JsonProperty("bucketMax")] public int BucketMax = 5;
         [JsonProperty("bucketIndexMax")] public int BucketIndexMax = 4;
+        [JsonProperty("connectionsPerBucket")] public int ConnectionsPerBucket = 2;
         [JsonProperty("sendInfoIntervalSecondMultiplier")] public int SendInfoIntervalSecondMultiplier = 3;
         [JsonProperty("pingTimeoutSeconds")] public int PingTimeoutSeconds = 5;
         [JsonProperty("requestObjectIntervalSeconds")] public int RequestObjectIntervalSeconds = 5;

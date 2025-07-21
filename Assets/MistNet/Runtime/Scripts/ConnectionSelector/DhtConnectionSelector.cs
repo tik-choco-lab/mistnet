@@ -447,7 +447,6 @@ namespace MistNet
                     }
                 }
 
-                if (alreadyRequestedNodes.Count == 1) continue;
                 if (alreadyRequestedNodes.Count == 0)
                 {
                     if (bucket.Count == 0) continue;
@@ -462,9 +461,10 @@ namespace MistNet
 
                     continue;
                 }
+                if (alreadyRequestedNodes.Count <= OptConfigLoader.Data.ConnectionsPerBucket) continue;
 
                 // 1つのみに接続し、それ以外は切断する
-                for (var i = 1; i < alreadyRequestedNodes.Count; i++)
+                for (var i = OptConfigLoader.Data.ConnectionsPerBucket; i < alreadyRequestedNodes.Count; i++)
                 {
                     var second = alreadyRequestedNodes[i];
                     MistManager.I.Disconnect(second.Id);
