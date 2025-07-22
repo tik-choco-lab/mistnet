@@ -293,6 +293,7 @@ namespace MistNet
         /// </summary>
         public bool CompareId(string sourceId)
         {
+            return true;
             var selfId = MistManager.I.PeerRepository.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
         }
