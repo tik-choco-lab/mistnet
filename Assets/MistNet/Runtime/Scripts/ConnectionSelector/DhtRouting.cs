@@ -88,7 +88,7 @@ namespace MistNet
             InitBucket(index);
             _buckets[index] ??= new HashSet<Node>();
 
-            if (_buckets[index].Count >= OptConfigLoader.Data.BucketMax) return Result.Fail;
+            // if (_buckets[index].Count >= OptConfigLoader.Data.BucketMax) return Result.Fail;
 
             _buckets[index].Add(node);
             _bucketIndexByNodeId[node.Id] = index;

@@ -430,6 +430,7 @@ namespace MistNet
                     .Where(node => _requestedNodes.Contains(node.Id))
                     .ToList();
 
+                // 表示数分は近い順に接続を行う
                 for (var i = 0; i < bucket.Count; i++)
                 {
                     var node = bucket.ElementAt(i);
@@ -447,10 +448,12 @@ namespace MistNet
                     }
                 }
 
-                if (alreadyRequestedNodes.Count == 0)
+                if (alreadyRequestedNodes.Count < OptConfigLoader.Data.ConnectionsPerBucket)
                 {
                     if (bucket.Count == 0) continue;
-                    var node = bucket.First();
+                    // 接続する
+                    var node = bucket.FirstOrDefault(node => !_requestedNodes.Contains(node.Id));
+                    if (node == null) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
 
                     if (MistManager.I.CompareId(node.Id))
@@ -463,7 +466,6 @@ namespace MistNet
                 }
                 if (alreadyRequestedNodes.Count <= OptConfigLoader.Data.ConnectionsPerBucket) continue;
 
-                // 1つのみに接続し、それ以外は切断する
                 for (var i = OptConfigLoader.Data.ConnectionsPerBucket; i < alreadyRequestedNodes.Count; i++)
                 {
                     var node = alreadyRequestedNodes[i];
