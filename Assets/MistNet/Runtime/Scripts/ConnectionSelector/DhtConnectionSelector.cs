@@ -47,7 +47,7 @@ namespace MistNet
 
             UpdateRequestObjectInfo(this.GetCancellationTokenOnDestroy()).Forget();
             UpdateDebugShowBucketInfo(this.GetCancellationTokenOnDestroy()).Forget();
-            UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
+            // UpdateFindNextConnect(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         private readonly HashSet<int> _sendNodeInitialized = new();
