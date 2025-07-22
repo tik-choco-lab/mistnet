@@ -466,8 +466,12 @@ namespace MistNet
                 // 1つのみに接続し、それ以外は切断する
                 for (var i = OptConfigLoader.Data.ConnectionsPerBucket; i < alreadyRequestedNodes.Count; i++)
                 {
-                    var second = alreadyRequestedNodes[i];
-                    MistManager.I.Disconnect(second.Id);
+                    var node = alreadyRequestedNodes[i];
+                    if (MistManager.I.CompareId(node.Id))
+                    {
+                        if (routing.ConnectedNodes.Count == 1) break;
+                        MistManager.I.Disconnect(node.Id);
+                    }
                 }
             }
         }
