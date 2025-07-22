@@ -100,12 +100,30 @@ namespace MistNet
             OnNodeReceived(node, senderId);
         }
 
+        private void OnNodesReceived(string data, NodeId senderId)
+        {
+            var nodes = JsonConvert.DeserializeObject<List<Node>>(data);
+            foreach (var node in nodes)
+            {
+                OnNodeReceived(node, senderId);
+            }
+        }
+
         private void OnNodeReceived(Node node, NodeId senderId)
         {
             var nodeId = node.Id;
             routing.Add(nodeId, senderId);
 
             if (nodeId == PeerRepository.I.SelfId) return; // 自分のNodeは無視
+
+            if (!PeerRepository.I.IsConnectingOrConnected(node.Id))
+            {
+                if (MistManager.I.CompareId(node.Id))
+                {
+                    MistManager.I.Connect(node.Id);
+                    _requestedNodes.Add(node.Id);
+                }
+            }
 
             var position = node.Position.ToVector3();
             var index = GetBucketIndex(position);
@@ -134,15 +152,6 @@ namespace MistNet
             if (index != currentIndex)
             {
                 routing.ReplaceBucket(node, index);
-            }
-        }
-
-        private void OnNodesReceived(string data, NodeId senderId)
-        {
-            var nodes = JsonConvert.DeserializeObject<List<Node>>(data);
-            foreach (var node in nodes)
-            {
-                OnNodeReceived(node, senderId);
             }
         }
 
