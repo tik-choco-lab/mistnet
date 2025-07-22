@@ -52,22 +52,27 @@ namespace MistNet
 
         private readonly HashSet<int> _sendNodeInitialized = new();
 
-        private async UniTask InitSendNodeInfo(int bucketIndex, CancellationToken token)
+        private async UniTask UpdateSendNodeInfo(int bucketIndex, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(GetIntervalSeconds(bucketIndex)), cancellationToken: token);
-                if (bucketIndex >= routing.Buckets.Count) continue;
-
-                var bucketNodes = routing.Buckets[bucketIndex];
-                var connectedBucketNodes = bucketNodes
-                    .Where(node => routing.ConnectedNodes.Contains(node.Id))
-                    .ToList();
+                // if (bucketIndex >= routing.Buckets.Count) continue;
+                //
+                // var bucketNodes = routing.Buckets[bucketIndex];
+                // var connectedBucketNodes = bucketNodes
+                //     .Where(node => routing.ConnectedNodes.Contains(node.Id))
+                //     .ToList();
                 var message = CreateNodesInfo();
-                foreach (var node in connectedBucketNodes)
+                // foreach (var node in connectedBucketNodes)
+                // {
+                //     MistDebug.Log($"[ConnectionSelector] SendNodeInfo: {node.Id} {bucketIndex}");
+                //     Send(message, node.Id);
+                // }
+                foreach (var id in routing.ConnectedNodes)
                 {
-                    MistDebug.Log($"[ConnectionSelector] SendNodeInfo: {node.Id} {bucketIndex}");
-                    Send(message, node.Id);
+                    // MistDebug.Log($"[ConnectionSelector] SendNodeInfo: {node.Id} {bucketIndex}");
+                    Send(message, id);
                 }
             }
         }
@@ -131,7 +136,7 @@ namespace MistNet
             if (_sendNodeInitialized.Add(index))
             {
                 // NodeInfo送信開始
-                InitSendNodeInfo(index, this.GetCancellationTokenOnDestroy()).Forget();
+                UpdateSendNodeInfo(index, this.GetCancellationTokenOnDestroy()).Forget();
             }
 
             MistDebug.Log($"[ConnectionSelector] OnNodeReceived: {nodeId} {position} {index}");
@@ -295,7 +300,8 @@ namespace MistNet
         private string CreateNodesInfo()
         {
             var nodes = routing.Buckets.SelectMany(b => b).ToList();
-            nodes.Add(NodeUtils.GetSelfNodeData());
+            nodes.Add(NodeUtils.GetSelfNodeData()); // 自分のNodeも追加
+
             var octreeMessage = new ConnectionSelectorMessage
             {
                 type = NodesMessageType,
