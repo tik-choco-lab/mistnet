@@ -2,6 +2,7 @@
 {
     public class KademliaMessage
     {
+        public NodeInfo Sender;
         public KademliaMessageType Type;
         public string Payload;
     }
@@ -13,6 +14,7 @@
         Store,
         FindNode,
         FindValue,
-        Value
+        ResponseNode,
+        ResponseValue,
     }
 }

@@ -4,46 +4,46 @@ namespace MistNet
 {
     public class Kademlia
     {
-        private readonly Action<NodeId, string> _send;
+        private readonly Action<NodeInfo, KademliaMessage> _send;
 
-        public Kademlia(Action<NodeId, string> send)
+        public Kademlia(Action<NodeInfo, KademliaMessage> send)
         {
             _send = send;
         }
 
-        public void Ping(NodeId id)
+        public void Ping(NodeInfo id)
         {
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Ping,
             };
 
-            _send?.Invoke(id, message.Payload);
+            _send?.Invoke(id, message);
         }
 
-        public void Store(NodeId id, string key, string value)
+        public void Store(NodeInfo id, byte[] key, string value)
         {
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
-                Payload = $"{key}:{value}"
+                Payload = $"{Convert.ToBase64String(key)}:{value}"
             };
 
-            _send?.Invoke(id, message.Payload);
+            _send?.Invoke(id, message);
         }
 
-        public void FindNode(NodeId id, NodeId target)
+        public void FindNode(NodeInfo id, byte[] target)
         {
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.FindNode,
-                Payload = target.ToString()
+                Payload = Convert.ToBase64String(target)
             };
 
-            _send?.Invoke(id, message.Payload);
+            _send?.Invoke(id, message);
         }
 
-        public void FindValue(NodeId id, string key)
+        public void FindValue(NodeInfo id, string key)
         {
             var message = new KademliaMessage
             {
@@ -51,7 +51,7 @@ namespace MistNet
                 Payload = key
             };
 
-            _send?.Invoke(id, message.Payload);
+            _send?.Invoke(id, message);
         }
     }
 }
