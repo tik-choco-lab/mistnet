@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MistNet.Utils;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -21,6 +22,7 @@ namespace MistNet
             _onMessageReceived[KademliaMessageType.Store] = OnStore;
             _onMessageReceived[KademliaMessageType.FindNode] = OnFindNode;
             _onMessageReceived[KademliaMessageType.FindValue] = OnFindValue;
+            _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -40,7 +42,43 @@ namespace MistNet
         {
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
             var chunk = new Area(position);
-            // _kademlia.FindNode(chunk.GetId());
+            var target = IdUtil.ToBytes(chunk.ToString());
+            var closestNodes = _routingTable.FindClosestNodes(target);
+            if (closestNodes.Count < KBucket.K)
+            {
+                UpdateArea(target, chunk, closestNodes);
+            }
+            else
+            {
+                foreach (var node in closestNodes)
+                {
+                    _kademlia.FindNode(node, target);
+                }
+            }
+        }
+
+        private void UpdateArea(byte[] target, Area chunk, List<NodeInfo> closestNodes)
+        {
+            AreaInfo areaInfo;
+            if (!_dataStore.TryGetValue(target, out var value))
+            {
+                areaInfo = new AreaInfo
+                {
+                    Chunk = chunk,
+                };
+            }
+            else
+            {
+                areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
+            }
+
+            areaInfo.Nodes.Add(_routingTable.SelfNode);
+            _dataStore.Store(target, areaInfo.ToString());
+
+            foreach (var node in closestNodes)
+            {
+                _kademlia.Store(node, target, areaInfo.ToString());
+            }
         }
 
         private void OnPing(string payload, NodeInfo sender)
@@ -57,6 +95,13 @@ namespace MistNet
         {
             var target = Convert.FromBase64String(payload);
             SendClosestNodes(sender, target);
+        }
+
+        private void OnFindNodeResponse(string payload, NodeInfo sender)
+        {
+            var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(payload);
+            var target = closestNodes.Target;
+            //
         }
 
         private void OnStore(string payload, NodeInfo sender)
@@ -98,15 +143,17 @@ namespace MistNet
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
 
-            foreach (var node in closestNodes)
+            var responseFindNode = new ResponseFindNode
             {
-                var response = new KademliaMessage
-                {
-                    Type = KademliaMessageType.ResponseNode,
-                    Payload = JsonConvert.SerializeObject(node)
-                };
-                SendInternal(sender, response);
-            }
+                Nodes = closestNodes,
+                Target = target
+            };
+            var response = new KademliaMessage
+            {
+                Type = KademliaMessageType.ResponseNode,
+                Payload = JsonConvert.SerializeObject(responseFindNode)
+            };
+            SendInternal(sender, response);
         }
     }
 }

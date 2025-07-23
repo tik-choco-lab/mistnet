@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -22,5 +23,16 @@ namespace MistNet
             Y = y;
             Z = z;
         }
+
+        public override string ToString()
+        {
+            return $"{X},{Y},{Z}";
+        }
+    }
+
+    public class AreaInfo
+    {
+        public Area Chunk { get; set; }
+        public List<NodeInfo> Nodes { get; set; } = new List<NodeInfo>();
     }
 }
