@@ -43,12 +43,12 @@ namespace MistNet
             _send?.Invoke(id, message);
         }
 
-        public void FindValue(NodeInfo id, string key)
+        public void FindValue(NodeInfo id, byte[] key)
         {
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.FindValue,
-                Payload = key
+                Payload = Convert.ToBase64String(key)
             };
 
             _send?.Invoke(id, message);

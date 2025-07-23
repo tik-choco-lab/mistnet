@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using MistNet.Utils;
 using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -23,6 +24,7 @@ namespace MistNet
             _onMessageReceived[KademliaMessageType.FindNode] = OnFindNode;
             _onMessageReceived[KademliaMessageType.FindValue] = OnFindValue;
             _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
+            _onMessageReceived[KademliaMessageType.ResponseValue] = OnFindValueResponse;
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -41,6 +43,20 @@ namespace MistNet
         private void Init()
         {
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
+            FindMyAreaInfo(position);
+            //StoreMyLocation(position);
+        }
+
+        private void FindMyAreaInfo(Vector3 position)
+        {
+            var chunk = new Area(position);
+            var target = IdUtil.ToBytes(chunk.ToString());
+            var closestNodes = _routingTable.FindClosestNodes(target);
+            FindValue(closestNodes, target);
+        }
+
+        private void StoreMyLocation(Vector3 position)
+        {
             var chunk = new Area(position);
             var target = IdUtil.ToBytes(chunk.ToString());
             var closestNodes = _routingTable.FindClosestNodes(target);
@@ -50,10 +66,24 @@ namespace MistNet
             }
             else
             {
-                foreach (var node in closestNodes)
-                {
-                    _kademlia.FindNode(node, target);
-                }
+                FindNode(closestNodes, target);
+            }
+        }
+
+
+        private void FindValue(List<NodeInfo> closestNodes, byte[] target)
+        {
+            foreach (var node in closestNodes)
+            {
+                _kademlia.FindValue(node, target);
+            }
+        }
+
+        private void FindNode(List<NodeInfo> closestNodes, byte[] target)
+        {
+            foreach (var node in closestNodes)
+            {
+                _kademlia.FindNode(node, target);
             }
         }
 
@@ -101,7 +131,20 @@ namespace MistNet
         {
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(payload);
             var target = closestNodes.Target;
-            //
+            FindNode(closestNodes.Nodes, target);
+        }
+
+        private void OnFindValueResponse(string payload, NodeInfo sender)
+        {
+            var response = JsonConvert.DeserializeObject<ResponseFindValue>(payload);
+            if (response.Value != null)
+            {
+                _dataStore.Store(response.Target, response.Value);
+            }
+            else
+            {
+                FindValue(response.Nodes, response.Target);
+            }
         }
 
         private void OnStore(string payload, NodeInfo sender)

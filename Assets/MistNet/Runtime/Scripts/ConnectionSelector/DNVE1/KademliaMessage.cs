@@ -29,4 +29,11 @@ namespace MistNet
         [JsonProperty("nodes")] public List<NodeInfo> Nodes { get; set; }
         [JsonProperty("target")] public byte[] Target { get; set; }
     }
+
+    public class ResponseFindValue
+    {
+        [JsonProperty("nodes")] public List<NodeInfo> Nodes { get; set; }
+        [JsonProperty("value")] public string Value { get; set; }
+        [JsonProperty("target")] public byte[] Target { get; set; }
+    }
 }
