@@ -200,6 +200,18 @@ namespace MistNet
             MistManager.I.OnDestroyed(syncObject.OwnerId);
         }
 
+        public MistSyncObject GetSyncObject(NodeId id)
+        {
+            var objectId = ObjectIdsByOwnerId
+                .FirstOrDefault(pair => pair.Key == id).Value?.FirstOrDefault();
+            if (objectId == null || !_syncObjects.ContainsKey(objectId))
+            {
+                return null;
+            }
+
+            return _syncObjects[objectId];
+        }
+
         public MistSyncObject GetSyncObject(ObjectId id)
         {
             if (!_syncObjects.ContainsKey(id))

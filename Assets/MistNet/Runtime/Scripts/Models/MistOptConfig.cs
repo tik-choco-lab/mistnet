@@ -13,5 +13,8 @@ namespace MistNet
         [JsonProperty("sendInfoIntervalSecondMultiplier")] public int SendInfoIntervalSecondMultiplier = 3;
         [JsonProperty("pingTimeoutSeconds")] public int PingTimeoutSeconds = 5;
         [JsonProperty("requestObjectIntervalSeconds")] public int RequestObjectIntervalSeconds = 5;
+        [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 2f;
+        [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f;
+        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 20;
     }
 }
