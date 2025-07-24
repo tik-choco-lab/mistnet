@@ -1,14 +1,39 @@
 ﻿using System;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace MistNet
 {
     public class Kademlia
     {
         private readonly Action<NodeInfo, KademliaMessage> _send;
+        private readonly Dictionary<KademliaMessageType, Action<KademliaMessage>> _onMessageReceived = new();
+        private readonly KademliaDataStore _dataStore;
+        private readonly KademliaRoutingTable _routingTable;
 
-        public Kademlia(Action<NodeInfo, KademliaMessage> send)
+        public Kademlia(Action<NodeInfo, KademliaMessage> send, KademliaDataStore dataStore, KademliaRoutingTable routingTable)
         {
+            _routingTable = routingTable;
+            routingTable.Init(this);
+            _dataStore = dataStore;
             _send = send;
+
+            _onMessageReceived[KademliaMessageType.Ping] = OnPing;
+            _onMessageReceived[KademliaMessageType.Store] = OnStore;
+            _onMessageReceived[KademliaMessageType.FindNode] = OnFindNode;
+            _onMessageReceived[KademliaMessageType.FindValue] = OnFindValue;
+        }
+
+        public void OnMessage(KademliaMessage message)
+        {
+            if (_onMessageReceived.TryGetValue(message.Type, out var handler))
+            {
+                handler(message);
+            }
+            else
+            {
+                MistDebug.LogError($"Unhandled Kademlia message type: {message.Type}");
+            }
         }
 
         public void Ping(NodeInfo id)
@@ -52,6 +77,73 @@ namespace MistNet
             };
 
             _send?.Invoke(id, message);
+        }
+
+        private void OnPing(KademliaMessage message)
+        {
+            var response = new KademliaMessage
+            {
+                Type = KademliaMessageType.Pong,
+                Payload = ""
+            };
+            _send?.Invoke(message.Sender, response);
+        }
+
+        private void OnStore(KademliaMessage message)
+        {
+            var parts = message.Payload.Split(':');
+            if (parts.Length == 2)
+            {
+                var key = Convert.FromBase64String(parts[0]);
+                var value = parts[1];
+                _dataStore.Store(key, value);
+            }
+        }
+
+        private void OnFindNode(KademliaMessage message)
+        {
+            var target = Convert.FromBase64String(message.Payload);
+            SendClosestNodes(message.Sender, target);
+        }
+
+        private void OnFindValue(KademliaMessage message)
+        {
+            var targetKey = Convert.FromBase64String(message.Payload);
+            if (_dataStore.TryGetValue(targetKey, out var value))
+            {
+                SendValue(message.Sender, value);
+            }
+            else
+            {
+                SendClosestNodes(message.Sender, targetKey);
+            }
+        }
+
+        private void SendValue(NodeInfo sender, string value)
+        {
+            var response = new KademliaMessage
+            {
+                Type = KademliaMessageType.ResponseValue,
+                Payload = value
+            };
+            _send?.Invoke(sender, response);
+        }
+
+        private void SendClosestNodes(NodeInfo sender, byte[] target)
+        {
+            var closestNodes = _routingTable.FindClosestNodes(target);
+
+            var responseFindNode = new ResponseFindNode
+            {
+                Nodes = closestNodes,
+                Target = target
+            };
+            var response = new KademliaMessage
+            {
+                Type = KademliaMessageType.ResponseNode,
+                Payload = JsonConvert.SerializeObject(responseFindNode)
+            };
+            _send?.Invoke(sender, response);
         }
     }
 }

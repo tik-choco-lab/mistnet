@@ -10,9 +10,9 @@ namespace MistNet
         public NodeInfo SelfNode { get; private set; } = new NodeInfo();
         private readonly KBucket[] _buckets = new KBucket[IdUtil.BitLength];
         private byte[] _selfId;
-        private readonly Kademlia _kademlia;
+        private Kademlia _kademlia;
 
-        public KademliaRoutingTable(Kademlia kademlia)
+        public void Init(Kademlia kademlia)
         {
             _kademlia = kademlia;
         }
