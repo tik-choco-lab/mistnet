@@ -30,10 +30,6 @@ namespace MistNet
             {
                 handler(message);
             }
-            else
-            {
-                MistDebug.LogError($"Unhandled Kademlia message type: {message.Type}");
-            }
         }
 
         public void Ping(NodeInfo id)

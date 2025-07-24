@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -13,13 +15,27 @@ namespace MistNet
         private readonly KademliaDataStore _dataStore;
         private readonly AreaTracker _areaTracker;
         private readonly CancellationTokenSource _cts = new();
+        private readonly Action<NodeId, KademliaMessage> _send;
+        public IReadOnlyDictionary<NodeId, Vector3> NodeLocations => _nodeLocations;
+        private readonly Dictionary<NodeId, Vector3> _nodeLocations = new();
+        private KademliaMessage _message;
+        private readonly KademliaRoutingTable _routingTable;
 
-        public ConnectionBalancer(KademliaDataStore dataStore, AreaTracker areaTracker)
+        public ConnectionBalancer(Action<NodeId, KademliaMessage> send, KademliaDataStore dataStore,
+            KademliaRoutingTable routingTable, AreaTracker areaTracker)
         {
+            _send = send;
             _dataStore = dataStore;
             _areaTracker = areaTracker;
             _routing = MistManager.I.routing;
+            _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
+        }
+
+        public void OnMessage(KademliaMessage message)
+        {
+            if (message.Type != KademliaMessageType.Location) return;
+            _nodeLocations[message.Sender.Id] = JsonConvert.DeserializeObject<Vector3>(message.Payload);
         }
 
         private async UniTask LoopBalanceConnections(CancellationToken token)
@@ -31,6 +47,25 @@ namespace MistNet
 
                 SelectConnection();
                 SelectDisconnection();
+                SendLocation();
+            }
+        }
+
+        private void SendLocation()
+        {
+            var connectedNodes = _routing.ConnectedNodes;
+            if (connectedNodes.Count == 0) return;
+            _message ??= new KademliaMessage
+            {
+                Type = KademliaMessageType.Location,
+                Sender = _routingTable.SelfNode
+            };
+            var position = MistSyncManager.I.SelfSyncObject.transform.position;
+            _message.Payload = JsonConvert.SerializeObject(position);
+
+            foreach (var nodeId in connectedNodes)
+            {
+                _send?.Invoke(nodeId, _message);
             }
         }
 
@@ -93,10 +128,7 @@ namespace MistNet
             var connectedNodes = _routing.ConnectedNodes;
             foreach (var nodeId in connectedNodes)
             {
-                var nodeObj = MistSyncManager.I.GetSyncObject(nodeId);
-                if (nodeObj == null) continue; // ノードが存在しない場合はスキップ
-
-                var position = nodeObj.transform.position;
+                if (!_nodeLocations.TryGetValue(nodeId, out var position)) continue;
                 var area = new Area(position);
 
                 if (_areaTracker.SurroundingChunks.Contains(area)) continue;

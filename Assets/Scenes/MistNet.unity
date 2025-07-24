@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &55600892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -332,6 +332,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &432360732
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 432360733}
+  - component: {fileID: 432360735}
+  - component: {fileID: 432360734}
+  m_Layer: 0
+  m_Name: Kademlia
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &432360733
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432360732}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5615826333483994238}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &432360734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432360732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2640667af6e531d42bbe751955710568, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &432360735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432360732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92742359bd7b4047820a5f2af1ab27de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &483094201
 GameObject:
   m_ObjectHideFlags: 0
@@ -1319,7 +1376,7 @@ PrefabInstance:
         type: 3}
       propertyPath: routing
       value: 
-      objectReference: {fileID: 55600894}
+      objectReference: {fileID: 432360734}
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: showLog
@@ -1335,7 +1392,7 @@ PrefabInstance:
         type: 3}
       propertyPath: connectionSelector
       value: 
-      objectReference: {fileID: 55600892}
+      objectReference: {fileID: 432360735}
     - target: {fileID: 5898994104393881841, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: m_RootOrder
@@ -1421,6 +1478,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 55600893}
+    - targetCorrespondingSourceObject: {fileID: 5898994104393881841, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 432360733}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
 --- !u!4 &5615826333483994238 stripped

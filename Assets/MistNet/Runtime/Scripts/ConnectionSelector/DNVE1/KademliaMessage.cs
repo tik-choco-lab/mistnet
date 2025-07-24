@@ -22,6 +22,8 @@ namespace MistNet
         FindValue,
         ResponseNode,
         ResponseValue,
+        // 拡張
+        Location,
     }
 
     public class ResponseFindNode

@@ -15,6 +15,7 @@ namespace MistNet
         [JsonProperty("requestObjectIntervalSeconds")] public int RequestObjectIntervalSeconds = 5;
         [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 2f;
         [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f;
+        [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
         [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 20;
     }
 }
