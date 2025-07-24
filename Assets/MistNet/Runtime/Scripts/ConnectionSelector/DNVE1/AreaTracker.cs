@@ -16,9 +16,9 @@ namespace MistNet
         private readonly KademliaController _kademliaController;
         private readonly CancellationTokenSource _cts;
 
-        public Area MyArea => new Area(MistSyncManager.I.SelfSyncObject.transform.position);
+        public Area MyArea => new(MistSyncManager.I.SelfSyncObject.transform.position);
         public IReadOnlyCollection<Area> SurroundingChunks => _surroundingChunks;
-        private HashSet<Area> _surroundingChunks;
+        private readonly HashSet<Area> _surroundingChunks = new();
         private readonly HashSet<Area> _unloadedChunks = new();
 
         public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable,
@@ -42,7 +42,7 @@ namespace MistNet
                 var chunk = new Area(selfNodePosition);
 
                 var previousChunk = new HashSet<Area>(_surroundingChunks);
-                _surroundingChunks = GetSurroundingChunks(OptConfigLoader.Data.ChunkLoadSize, chunk);
+                GetSurroundingChunks(OptConfigLoader.Data.ChunkLoadSize, chunk);
                 _unloadedChunks.Clear();
 
                 foreach (var area in _surroundingChunks)
@@ -156,9 +156,9 @@ namespace MistNet
             }
         }
 
-        private HashSet<Area> GetSurroundingChunks(int sizeIndex, Area area)
+        private void GetSurroundingChunks(int sizeIndex, Area area)
         {
-            var surroundingChunks = new HashSet<Area>();
+            _surroundingChunks.Clear();
             for (int x = -sizeIndex; x <= sizeIndex; x++)
             {
                 for (int y = -sizeIndex; y <= sizeIndex; y++)
@@ -166,12 +166,10 @@ namespace MistNet
                     for (int z = -sizeIndex; z <= sizeIndex; z++)
                     {
                         var newArea = new Area(area.X + x, area.Y + y, area.Z + z);
-                        surroundingChunks.Add(newArea);
+                        _surroundingChunks.Add(newArea);
                     }
                 }
             }
-
-            return surroundingChunks;
         }
 
         public void Dispose()

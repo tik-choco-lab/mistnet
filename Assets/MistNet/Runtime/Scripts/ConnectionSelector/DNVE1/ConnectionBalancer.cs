@@ -35,7 +35,7 @@ namespace MistNet
         public void OnMessage(KademliaMessage message)
         {
             if (message.Type != KademliaMessageType.Location) return;
-            _nodeLocations[message.Sender.Id] = JsonConvert.DeserializeObject<Vector3>(message.Payload);
+            _nodeLocations[message.Sender.Id] = JsonUtility.FromJson<Vector3>(message.Payload);
         }
 
         private async UniTask LoopBalanceConnections(CancellationToken token)
@@ -61,7 +61,7 @@ namespace MistNet
                 Sender = _routingTable.SelfNode
             };
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
-            _message.Payload = JsonConvert.SerializeObject(position);
+            _message.Payload = JsonUtility.ToJson(position);
 
             foreach (var nodeId in connectedNodes)
             {

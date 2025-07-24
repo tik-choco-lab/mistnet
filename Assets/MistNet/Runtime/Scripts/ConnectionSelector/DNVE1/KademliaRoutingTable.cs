@@ -19,12 +19,18 @@ namespace MistNet
 
         public void AddNode(NodeInfo nodeInfo)
         {
+            if (nodeInfo.Id == PeerRepository.I.SelfId) return;
+
             nodeInfo.LastSeen = DateTime.UtcNow;
             var id = IdUtil.ToBytes(nodeInfo.Id.ToString());
             _selfId ??= IdUtil.ToBytes(PeerRepository.I.SelfId.ToString());
             var distance = IdUtil.Xor(_selfId, id);
             var index = IdUtil.LeadingBitIndex(distance);
 
+            if (index == -1)
+            {
+                MistDebug.LogError($"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {PeerRepository.I.SelfId}Cannot determine bucket index.");
+            }
             _buckets[index] ??= new KBucket(_kademlia);
             _buckets[index].AddNode(nodeInfo);
         }

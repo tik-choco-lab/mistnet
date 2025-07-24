@@ -5,7 +5,7 @@ namespace MistNet.Utils
 {
     public static class IdUtil
     {
-        public const int BitLength = 128;
+        public const int BitLength = 160;
         public static byte[] ToBytes(string id)
         {
             using var sha1 = SHA1.Create();
