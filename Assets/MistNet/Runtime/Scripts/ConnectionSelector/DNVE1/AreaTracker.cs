@@ -55,14 +55,14 @@ namespace MistNet
 
                 FindMyAreaInfo(_surroundingChunks);
 
-                foreach (var surroundingChunk in _surroundingChunks)
+                foreach (var areaChunk in _surroundingChunks)
                 {
-                    AddNodeToArea(IdUtil.ToBytes(surroundingChunk.ToString()), _routingTable.SelfNode);
+                    AddNodeToArea(areaChunk, _routingTable.SelfNode);
                 }
 
-                foreach (var unloadedChunk in _unloadedChunks)
+                foreach (var areaChunk in _unloadedChunks)
                 {
-                    RemoveNodeFromArea(IdUtil.ToBytes(unloadedChunk.ToString()), _routingTable.SelfNode);
+                    RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
                 }
             }
         }
@@ -78,14 +78,11 @@ namespace MistNet
             }
         }
 
-        private void AddNodeToArea(byte[] target, NodeInfo node)
+        private void AddNodeToArea(Area chunk, NodeInfo node)
         {
-            if (!_dataStore.TryGetValue(target, out var value))
-            {
-                return; // Area not found
-            }
+            var target = IdUtil.ToBytes(chunk.ToString());
+            var areaInfo = GetAreaInfo(chunk, target);
 
-            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             if (areaInfo.Nodes.Contains(node)) return; // Node already exists
 
             areaInfo.Nodes.Add(node);
@@ -98,14 +95,11 @@ namespace MistNet
             }
         }
 
-        private void RemoveNodeFromArea(byte[] target, NodeInfo node)
+        private void RemoveNodeFromArea(Area chunk, NodeInfo node)
         {
-            if (!_dataStore.TryGetValue(target, out var value))
-            {
-                return; // Area not found
-            }
+            var target = IdUtil.ToBytes(chunk.ToString());
+            var areaInfo = GetAreaInfo(chunk, target);
 
-            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             if (!areaInfo.Nodes.Contains(node)) return; // Node does not exist
 
             areaInfo.Nodes.Remove(node);
@@ -116,6 +110,25 @@ namespace MistNet
             {
                 _kademlia.Store(closestNode, target, areaInfo.ToString());
             }
+        }
+
+        private AreaInfo GetAreaInfo(Area chunk, byte[] target)
+        {
+            AreaInfo areaInfo;
+            if (_dataStore.TryGetValue(target, out var value))
+            {
+                areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
+            }
+            else
+            {
+                areaInfo = new AreaInfo
+                {
+                    Chunk = chunk,
+                    Nodes = new List<NodeInfo>()
+                };
+            }
+
+            return areaInfo;
         }
 
         private void GetSurroundingChunks(int sizeIndex, Area area)
