@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class Area
     {
-        private const int ChunkSize = 64;
+        private const int ChunkSize = 128;
         public int X;
         public int Y;
         public int Z;
