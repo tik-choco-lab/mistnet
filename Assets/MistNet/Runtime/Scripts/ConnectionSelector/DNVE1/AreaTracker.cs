@@ -36,8 +36,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfigLoader.Data.AreaTrackerIntervalSeconds),
-                    cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfigLoader.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
                 var selfNodePosition = MistSyncManager.I.SelfSyncObject.transform.position;
                 var chunk = new Area(selfNodePosition);
 
@@ -51,6 +50,11 @@ namespace MistNet
                     _unloadedChunks.Add(area);
                 }
 
+                // 前と同じ場合は何もしない
+                // if (previousChunk.SetEquals(_surroundingChunks)) continue; // 途中で空間のNodesに更新がかかるので、何度も読み込む
+
+                FindMyAreaInfo(_surroundingChunks);
+
                 foreach (var surroundingChunk in _surroundingChunks)
                 {
                     AddNodeToArea(IdUtil.ToBytes(surroundingChunk.ToString()), _routingTable.SelfNode);
@@ -60,8 +64,6 @@ namespace MistNet
                 {
                     RemoveNodeFromArea(IdUtil.ToBytes(unloadedChunk.ToString()), _routingTable.SelfNode);
                 }
-
-                FindMyAreaInfo(_surroundingChunks);
             }
         }
 
@@ -73,22 +75,6 @@ namespace MistNet
                 if (_dataStore.TryGetValue(target, out var _)) continue;
                 var closestNodes = _routingTable.FindClosestNodes(target);
                 _kademliaController.FindValue(closestNodes, target);
-            }
-        }
-
-        private void StoreMyLocation(Vector3 position)
-        {
-            var chunk = new Area(position);
-
-            var target = IdUtil.ToBytes(chunk.ToString());
-            var closestNodes = _routingTable.FindClosestNodes(target);
-            if (closestNodes.Count < KBucket.K)
-            {
-                UpdateArea(target, chunk, closestNodes);
-            }
-            else
-            {
-                _kademliaController.FindNode(closestNodes, target);
             }
         }
 
@@ -132,40 +118,17 @@ namespace MistNet
             }
         }
 
-        private void UpdateArea(byte[] target, Area chunk, List<NodeInfo> closestNodes)
-        {
-            AreaInfo areaInfo;
-            if (!_dataStore.TryGetValue(target, out var value))
-            {
-                areaInfo = new AreaInfo
-                {
-                    Chunk = chunk,
-                };
-            }
-            else
-            {
-                areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
-            }
-
-            areaInfo.Nodes.Add(_routingTable.SelfNode);
-            _dataStore.Store(target, areaInfo.ToString());
-
-            foreach (var node in closestNodes)
-            {
-                _kademlia.Store(node, target, areaInfo.ToString());
-            }
-        }
-
         private void GetSurroundingChunks(int sizeIndex, Area area)
         {
             _surroundingChunks.Clear();
             for (int x = -sizeIndex; x <= sizeIndex; x++)
             {
-                for (int y = -sizeIndex; y <= sizeIndex; y++)
+                // for (int y = -sizeIndex; y <= sizeIndex; y++)
                 {
                     for (int z = -sizeIndex; z <= sizeIndex; z++)
                     {
-                        var newArea = new Area(area.X + x, area.Y + y, area.Z + z);
+                        // var newArea = new Area(area.X + x, area.Y + y, area.Z + z);
+                        var newArea = new Area(area.X + x, 0, area.Z + z);
                         _surroundingChunks.Add(newArea);
                     }
                 }

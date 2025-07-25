@@ -9,8 +9,8 @@ namespace MistNet
     public class MistStats : MonoBehaviour
     {
         public static MistStats I { get; private set; }
-        private static readonly float IntervalPingDistanceTimeSec = 1f;
-        private static readonly float IntervalSendSizeTimeSec = 1f;
+        private static readonly float IntervalPingDistanceTimeSec = 1;
+        private static readonly float IntervalSendSizeTimeSec = 1;
         
         public int TotalSendBytes { get; set; }
         public int TotalReceiveBytes { get; set; }
@@ -78,10 +78,10 @@ namespace MistNet
                 
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;
-                MistDebug.Log($"[STATS][Upload] {sendBps} bps");
+                MistDebug.Log($"[STATS][Upload]\t\t{FormatBps(sendBps)}\t{sendBps} bps");
                 
                 var receiveBps = TotalReceiveBytes * 8 / IntervalSendSizeTimeSec;
-                MistDebug.Log($"[STATS][Download] {receiveBps} bps");
+                MistDebug.Log($"[STATS][Download]\t{FormatBps(receiveBps)}\t{receiveBps} bps");
                 
                 // メッセージ数
                 MistDebug.Log($"[STATS][MessageCount] {TotalMessengeCount}");
@@ -92,6 +92,31 @@ namespace MistNet
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }
+        }
+
+        private string FormatBps(float bps)
+        {
+            string unit;
+            double scaled;
+
+            if (bps >= 1_000_000)
+            {
+                scaled = bps / 1_000_000;
+                unit = "Mbps";
+            }
+            else if (bps >= 1_000)
+            {
+                scaled = bps / 1_000;
+                unit = "Kbps";
+            }
+            else
+            {
+                scaled = bps;
+                unit = "bps";
+            }
+
+            // 右揃え幅10、少数2桁
+            return $"{scaled,10:F2} {unit}";
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 namespace MistNet.Utils
@@ -42,4 +43,18 @@ namespace MistNet.Utils
             return distance;
         }
     }
+
+    public class ByteArrayDistanceComparer : IComparer<byte[]>
+    {
+        public int Compare(byte[] a, byte[] b)
+        {
+            for (int i = 0; i < a.Length && i < b.Length; i++)
+            {
+                if (a[i] < b[i]) return -1;
+                if (a[i] > b[i]) return 1;
+            }
+            return 0;
+        }
+    }
+
 }

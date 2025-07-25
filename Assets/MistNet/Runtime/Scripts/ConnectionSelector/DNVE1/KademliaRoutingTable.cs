@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using MistNet.Utils;
 
 namespace MistNet
@@ -46,9 +47,17 @@ namespace MistNet
                 }
             }
 
+            if (allNodes.Count == 0)
+            {
+                MistDebug.LogWarning("[KademliaRoutingTable] No nodes found in routing table.");
+                return new List<NodeInfo>();
+            }
+
             return allNodes
-                .OrderBy(n => IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString())))
+                .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
+                .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
                 .Take(KBucket.K)
+                .Select(tuple => tuple.Node)
                 .ToList();
         }
     }

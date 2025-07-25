@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class Area
     {
-        private const int ChunkSize = 16;
+        private const int ChunkSize = 64;
         public int X;
         public int Y;
         public int Z;
@@ -14,14 +14,16 @@ namespace MistNet
         public Area(Vector3 position)
         {
             X = Mathf.FloorToInt(position.x / ChunkSize);
-            Y = Mathf.FloorToInt(position.y / ChunkSize);
+            // Y = Mathf.FloorToInt(position.y / ChunkSize);
+            Y = 0;
             Z = Mathf.FloorToInt(position.z / ChunkSize);
         }
 
         public Area(int x, int y, int z)
         {
             X = x;
-            Y = y;
+            // Y = y;
+            Y = 0;
             Z = z;
         }
 
