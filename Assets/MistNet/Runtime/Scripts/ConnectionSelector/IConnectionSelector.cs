@@ -45,6 +45,7 @@ namespace MistNet
 
         protected void Send(string data, NodeId targetId)
         {
+            MistDebug.Log($"[Debug][Send] {data}");
             MistManager.I.Send(MistNetMessageType.ConnectionSelector, CreateData(data), targetId);
         }
 
