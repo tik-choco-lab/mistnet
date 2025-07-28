@@ -60,6 +60,6 @@ namespace MistNet
     public class AreaInfo
     {
         [JsonProperty("chunk")] public Area Chunk { get; set; }
-        [JsonProperty("nodes")] public HashSet<NodeInfo> Nodes { get; set; } = new ();
+        [JsonProperty("nodes")] public HashSet<NodeId> Nodes { get; set; } = new ();
     }
 }

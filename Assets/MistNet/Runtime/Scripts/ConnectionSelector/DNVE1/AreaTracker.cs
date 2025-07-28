@@ -87,9 +87,8 @@ namespace MistNet
             var target = IdUtil.ToBytes(chunk.ToString());
             var areaInfo = GetAreaInfo(chunk, target);
 
-            if (areaInfo.Nodes.Contains(node)) return; // Node already exists
+            if (!areaInfo.Nodes.Add(node.Id)) return; // Node already exists
 
-            areaInfo.Nodes.Add(node);
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
             _dataStore.Store(target, areaInfoStr);
 
@@ -105,9 +104,9 @@ namespace MistNet
             var target = IdUtil.ToBytes(chunk.ToString());
             var areaInfo = GetAreaInfo(chunk, target);
 
-            if (!areaInfo.Nodes.Contains(node)) return; // Node does not exist
+            if (!areaInfo.Nodes.Contains(node.Id)) return; // Node does not exist
 
-            areaInfo.Nodes.Remove(node);
+            areaInfo.Nodes.Remove(node.Id);
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
             _dataStore.Store(target, areaInfoStr);
 
@@ -123,7 +122,7 @@ namespace MistNet
             AreaInfo areaInfo;
             if (_dataStore.TryGetValue(target, out var value))
             {
-                Debug.Log($"[Debug][AreaTracker] Found area info for chunk {chunk}");
+                Debug.Log($"[Debug][AreaTracker] Found area info for chunk {chunk} {value}");
                 areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             }
             else

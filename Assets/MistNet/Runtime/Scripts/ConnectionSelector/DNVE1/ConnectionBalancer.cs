@@ -85,12 +85,12 @@ namespace MistNet
             if (_dataStore.TryGetValue(chunkId, out var data))
             {
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var node in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes)
                 {
                     // TODO: 衝突するかチェック
                     // if (MistManager.I.CompareId(node.Id))
                     {
-                        MistManager.I.Connect(node.Id);
+                        MistManager.I.Connect(nodeId);
                     }
 
                     i++;
@@ -106,12 +106,12 @@ namespace MistNet
                 if (!_dataStore.TryGetValue(areaId, out data)) continue;
 
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var node in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes)
                 {
-                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
-                    if (MistManager.I.CompareId(node.Id))
+                    if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    if (MistManager.I.CompareId(nodeId))
                     {
-                        MistManager.I.Connect(node.Id);
+                        MistManager.I.Connect(nodeId);
                     }
 
                     i++;
