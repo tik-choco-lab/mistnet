@@ -29,7 +29,7 @@ namespace MistNet
     public class ResponseFindNode
     {
         [JsonProperty("key")] public byte[] Key { get; set; }
-        [JsonProperty("nodes")] public List<NodeInfo> Nodes { get; set; }
+        [JsonProperty("nodes")] public HashSet<NodeInfo> Nodes { get; set; }
     }
 
     public class ResponseFindValue

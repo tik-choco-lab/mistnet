@@ -36,7 +36,7 @@ namespace MistNet
             _buckets[index].AddNode(nodeInfo);
         }
 
-        public List<NodeInfo> FindClosestNodes(byte[] targetId)
+        public HashSet<NodeInfo> FindClosestNodes(byte[] targetId)
         {
             var allNodes = new List<NodeInfo>();
             foreach (var bucket in _buckets)
@@ -50,7 +50,7 @@ namespace MistNet
             if (allNodes.Count == 0)
             {
                 MistDebug.LogWarning("[KademliaRoutingTable] No nodes found in routing table.");
-                return new List<NodeInfo>();
+                return new HashSet<NodeInfo>();
             }
 
             return allNodes
@@ -58,7 +58,7 @@ namespace MistNet
                 .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
                 .Take(KBucket.K)
                 .Select(tuple => tuple.Node)
-                .ToList();
+                .ToHashSet();
         }
     }
 }

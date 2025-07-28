@@ -98,7 +98,7 @@ namespace MistNet
             _dataStore.Store(response.Key, response.Value);
         }
 
-        public void FindValue(List<NodeInfo> closestNodes, byte[] target)
+        public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
         {
             var count = 0;
             foreach (var node in closestNodes)
@@ -109,7 +109,7 @@ namespace MistNet
             }
         }
 
-        private void FindNode(List<NodeInfo> closestNodes, byte[] target)
+        private void FindNode(HashSet<NodeInfo> closestNodes, byte[] target)
         {
             var count = 0;
             foreach (var node in closestNodes)
