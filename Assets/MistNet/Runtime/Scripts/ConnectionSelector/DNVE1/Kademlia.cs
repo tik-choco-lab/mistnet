@@ -95,7 +95,28 @@ namespace MistNet
                 Debug.Log($"[Debug][Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
                 var key = Convert.FromBase64String(parts[0]);
                 var value = parts[1];
-                _dataStore.Store(key, value);
+                var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
+
+                // ここはKademliaと異なる
+                // NOTE: 上書きしてデータが失われないようにするための処理
+                if (_dataStore.TryGetValue(key, out var existingValue))
+                {
+                    var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
+                    foreach (var node in newAreaInfo.Nodes)
+                    {
+                        areaInfo.Nodes.Add(node);
+                    }
+
+                    // 削除されている場合は、Senderに限り削除を行う
+                    if (!newAreaInfo.Nodes.Contains(message.Sender.Id))
+                    {
+                        areaInfo.Nodes.Remove(message.Sender.Id);
+                    }
+
+                    var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+                    _dataStore.Store(key, areaInfoStr);
+                }
+                else _dataStore.Store(key, value);
             }
         }
 
