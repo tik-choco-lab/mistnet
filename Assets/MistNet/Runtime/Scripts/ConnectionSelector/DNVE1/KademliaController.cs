@@ -63,7 +63,7 @@ namespace MistNet
         private void OnFindNodeResponse(KademliaMessage message)
         {
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
-            var target = closestNodes.Target;
+            var key = closestNodes.Key;
             foreach (var node in closestNodes.Nodes)
             {
                 _routingTable.AddNode(node);
@@ -78,24 +78,24 @@ namespace MistNet
             {
                 Debug.Log($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
                 // さらに絞り込む
-                FindNode(closestNodes.Nodes, target);
+                FindNode(closestNodes.Nodes, key);
             }
         }
 
         private void OnFindValueResponse(KademliaMessage message)
         {
+            Debug.Log($"[Debug][KademliaController] Received FindValue {message.Payload} from {message.Sender.Id}");
+
             var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
-            if (response.Value != null)
+            if (string.IsNullOrEmpty(response.Value))
             {
-                Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Target)}: {response.Value}");
-                _dataStore.Store(response.Target, response.Value);
+                MistDebug.LogError(
+                    $"[Error][KademliaController] No value found for target {BitConverter.ToString(response.Key)}");
+                return;
             }
-            else
-            {
-                // さらに検索する
-                Debug.Log($"[Debug][KademliaController] No value found for target {BitConverter.ToString(response.Target)}. Searching in closest nodes.");
-                FindValue(response.Nodes, response.Target);
-            }
+
+            Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
+            _dataStore.Store(response.Key, response.Value);
         }
 
         public void FindValue(List<NodeInfo> closestNodes, byte[] target)

@@ -132,7 +132,7 @@ namespace MistNet
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
                 Debug.Log($"[Debug][Kademlia] Found value for key {BitConverter.ToString(targetKey)}: {value}");
-                SendValue(message.Sender, value);
+                SendValue(message.Sender, targetKey, value);
             }
             else
             {
@@ -141,12 +141,20 @@ namespace MistNet
             }
         }
 
-        private void SendValue(NodeInfo sender, string value)
+        private void SendValue(NodeInfo sender, byte[] key, string value)
         {
+            var responseFindValue = new ResponseFindValue
+            {
+                Key = key,
+                Value = value,
+            };
+
+            var json = JsonConvert.SerializeObject(responseFindValue);
+
             var response = new KademliaMessage
             {
                 Type = KademliaMessageType.ResponseValue,
-                Payload = value
+                Payload = json
             };
             _send?.Invoke(sender, response);
         }
@@ -157,8 +165,8 @@ namespace MistNet
 
             var responseFindNode = new ResponseFindNode
             {
+                Key = target,
                 Nodes = closestNodes,
-                Target = target
             };
             var response = new KademliaMessage
             {
