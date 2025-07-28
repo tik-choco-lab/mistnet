@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace MistNet
 {
@@ -20,13 +21,15 @@ namespace MistNet
         public IReadOnlyCollection<Area> SurroundingChunks => _surroundingChunks;
         private readonly HashSet<Area> _surroundingChunks = new();
         private readonly HashSet<Area> _unloadedChunks = new();
+        private readonly IRouting _routing;
 
-        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable,
+        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable, IRouting routing,
             KademliaController kademliaController)
         {
             _kademlia = kademlia;
             _dataStore = dataStore;
             _routingTable = routingTable;
+            _routing = routing;
             _kademliaController = kademliaController;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
@@ -50,8 +53,14 @@ namespace MistNet
                     _unloadedChunks.Add(area);
                 }
 
-                // 前と同じ場合は何もしない
-                // if (previousChunk.SetEquals(_surroundingChunks)) continue; // 途中で空間のNodesに更新がかかるので、何度も読み込む
+                var randomNum = Random.Range(0, 10);
+                if (randomNum == 0)
+                {
+                    SendGossip();
+                }
+
+                // 前と同じ場合は何もしない 新しくChunkに来たものがConnectionRequestを送ることを期待する
+                if (previousChunk.SetEquals(_surroundingChunks)) continue;
 
                 FindMyAreaInfo(_surroundingChunks);
 
@@ -64,6 +73,32 @@ namespace MistNet
                 {
                     RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
                 }
+            }
+        }
+
+        private void SendGossip()
+        {
+            var selfId = IdUtil.ToBytes(PeerRepository.I.SelfId.ToString());
+            var responseFindValue = new ResponseFindValue
+            {
+                Key = selfId,
+                Value = JsonConvert.SerializeObject(new AreaInfo
+                {
+                    Chunk = MyArea,
+                    Nodes = new HashSet<NodeId> { _routingTable.SelfNode.Id }
+                })
+            };
+            var json = JsonConvert.SerializeObject(responseFindValue);
+            var message = new KademliaMessage
+            {
+                Type = KademliaMessageType.Gossip,
+                Sender = _routingTable.SelfNode,
+                Payload = json
+            };
+
+            foreach (var id in _routing.ConnectedNodes)
+            {
+                _kademliaController.SendInternal(id, message);
             }
         }
 

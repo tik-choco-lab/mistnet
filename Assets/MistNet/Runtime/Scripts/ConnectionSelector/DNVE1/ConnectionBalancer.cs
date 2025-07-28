@@ -87,11 +87,8 @@ namespace MistNet
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
                 foreach (var nodeId in areaInfo.Nodes)
                 {
-                    // TODO: 衝突するかチェック
-                    // if (MistManager.I.CompareId(node.Id))
-                    {
-                        MistManager.I.Connect(nodeId);
-                    }
+                    if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    MistManager.I.Connect(nodeId);
 
                     i++;
                     if (i >= requestCount) return;
@@ -109,7 +106,7 @@ namespace MistNet
                 foreach (var nodeId in areaInfo.Nodes)
                 {
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                    if (MistManager.I.CompareId(nodeId))
+                    // if (MistManager.I.CompareId(nodeId))
                     {
                         MistManager.I.Connect(nodeId);
                     }

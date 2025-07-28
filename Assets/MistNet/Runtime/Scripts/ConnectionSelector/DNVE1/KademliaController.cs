@@ -22,16 +22,18 @@ namespace MistNet
             OptConfigLoader.ReadConfig();
 
             base.Start();
+
+            _routing = MistManager.I.routing;
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
             _kademlia = new Kademlia(SendInternal, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, this);
+            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, _routing, this);
             _connectionBalancer = new ConnectionBalancer(SendInternal, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
-            _routing = MistManager.I.routing;
 
             _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
             _onMessageReceived[KademliaMessageType.ResponseValue] = OnFindValueResponse;
+            _onMessageReceived[KademliaMessageType.Gossip] = OnGossip;
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -54,7 +56,7 @@ namespace MistNet
             SendInternal(node.Id, message);
         }
 
-        private void SendInternal(NodeId nodeId, KademliaMessage message)
+        public void SendInternal(NodeId nodeId, KademliaMessage message)
         {
             message.Sender = _routingTable.SelfNode;
             Send(JsonConvert.SerializeObject(message), nodeId);
@@ -96,6 +98,22 @@ namespace MistNet
 
             Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
+        }
+
+        private void OnGossip(KademliaMessage message)
+        {
+            var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
+            if (_dataStore.TryGetValue(response.Key, out var _)) return;
+            Debug.Log($"[Debug][KademliaController] Gossip: {response.Value}");
+            _dataStore.Store(response.Key, response.Value);
+            foreach (var node in _routing.ConnectedNodes)
+            {
+                SendInternal(node, new KademliaMessage
+                {
+                    Type = KademliaMessageType.Gossip,
+                    Payload = JsonConvert.SerializeObject(response)
+                });
+            }
         }
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
