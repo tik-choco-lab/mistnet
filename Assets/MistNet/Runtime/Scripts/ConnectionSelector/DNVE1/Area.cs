@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace MistNet
@@ -7,9 +8,13 @@ namespace MistNet
     public class Area
     {
         private const int ChunkSize = 128;
-        public int X;
-        public int Y;
-        public int Z;
+        [JsonProperty("x")] public int X;
+        [JsonProperty("y")] public int Y;
+        [JsonProperty("z")] public int Z;
+
+        public Area()
+        {
+        }
 
         public Area(Vector3 position)
         {
@@ -54,15 +59,7 @@ namespace MistNet
 
     public class AreaInfo
     {
-        public Area Chunk { get; set; }
-        public List<NodeInfo> Nodes { get; set; } = new List<NodeInfo>();
-
-        public void AddNode(NodeInfo node)
-        {
-            if (!Nodes.Contains(node))
-            {
-                Nodes.Add(node);
-            }
-        }
+        [JsonProperty("chunk")] public Area Chunk { get; set; }
+        [JsonProperty("nodes")] public HashSet<NodeInfo> Nodes { get; set; } = new ();
     }
 }

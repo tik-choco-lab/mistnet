@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -71,9 +72,11 @@ namespace MistNet
             if (closestNodes.Nodes.Count < KBucket.K)
             {
                 // OK 既にroutingTableに登録されている
+                Debug.Log($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
             else
             {
+                Debug.Log($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
                 // さらに絞り込む
                 FindNode(closestNodes.Nodes, target);
             }
@@ -84,11 +87,13 @@ namespace MistNet
             var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
             if (response.Value != null)
             {
+                Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Target)}: {response.Value}");
                 _dataStore.Store(response.Target, response.Value);
             }
             else
             {
                 // さらに検索する
+                Debug.Log($"[Debug][KademliaController] No value found for target {BitConverter.ToString(response.Target)}. Searching in closest nodes.");
                 FindValue(response.Nodes, response.Target);
             }
         }
@@ -104,7 +109,7 @@ namespace MistNet
             }
         }
 
-        public void FindNode(List<NodeInfo> closestNodes, byte[] target)
+        private void FindNode(List<NodeInfo> closestNodes, byte[] target)
         {
             var count = 0;
             foreach (var node in closestNodes)

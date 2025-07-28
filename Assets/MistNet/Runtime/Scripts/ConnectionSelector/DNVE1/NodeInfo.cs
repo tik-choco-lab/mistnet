@@ -1,16 +1,11 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace MistNet
 {
     public class NodeInfo
     {
-        public NodeId Id { get; set; }
-        public DateTime LastSeen;
-
-        public NodeInfo()
-        {
-            Id = PeerRepository.I.SelfId;
-            LastSeen = DateTime.UtcNow;
-        }
+        [JsonProperty("id")] public NodeId Id { get; set; } = PeerRepository.I.SelfId;
+        [JsonIgnore] public DateTime LastSeen = DateTime.UtcNow;
     }
 }

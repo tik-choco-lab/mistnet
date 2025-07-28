@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -71,7 +72,11 @@ namespace MistNet
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
-                if (_dataStore.TryGetValue(target, out var _)) continue;
+                if (_dataStore.TryGetValue(target, out var _))
+                {
+                    Debug.Log($"[Debug][AreaTracker] Area {area} already exists in data store.");
+                    continue;
+                }
                 var closestNodes = _routingTable.FindClosestNodes(target);
                 _kademliaController.FindValue(closestNodes, target);
             }
@@ -85,9 +90,9 @@ namespace MistNet
             if (areaInfo.Nodes.Contains(node)) return; // Node already exists
 
             areaInfo.Nodes.Add(node);
-            _dataStore.Store(target, areaInfo.ToString());
-
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(target, areaInfoStr);
+
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
@@ -103,9 +108,9 @@ namespace MistNet
             if (!areaInfo.Nodes.Contains(node)) return; // Node does not exist
 
             areaInfo.Nodes.Remove(node);
-            _dataStore.Store(target, areaInfo.ToString());
-
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(target, areaInfoStr);
+
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
@@ -118,14 +123,16 @@ namespace MistNet
             AreaInfo areaInfo;
             if (_dataStore.TryGetValue(target, out var value))
             {
+                Debug.Log($"[Debug][AreaTracker] Found area info for chunk {chunk}");
                 areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             }
             else
             {
+                Debug.Log($"[Debug][AreaTracker] Creating new area info for chunk {chunk}");
                 areaInfo = new AreaInfo
                 {
                     Chunk = chunk,
-                    Nodes = new List<NodeInfo>()
+                    Nodes = new ()
                 };
             }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -44,6 +45,7 @@ namespace MistNet
 
         public void Store(NodeInfo id, byte[] key, string value)
         {
+            Debug.Log($"[Debug][Kademlia] Store: {value}");
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
@@ -90,6 +92,7 @@ namespace MistNet
             var parts = message.Payload.Split(':');
             if (parts.Length == 2)
             {
+                Debug.Log($"[Debug][Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
                 var key = Convert.FromBase64String(parts[0]);
                 var value = parts[1];
                 _dataStore.Store(key, value);
@@ -107,10 +110,12 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
+                Debug.Log($"[Debug][Kademlia] Found value for key {BitConverter.ToString(targetKey)}: {value}");
                 SendValue(message.Sender, value);
             }
             else
             {
+                Debug.Log($"[Debug][Kademlia] Value not found for key {BitConverter.ToString(targetKey)}. Sending closest nodes.");
                 SendClosestNodes(message.Sender, targetKey);
             }
         }

@@ -87,7 +87,12 @@ namespace MistNet
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
                 foreach (var node in areaInfo.Nodes)
                 {
-                    MistManager.I.Connect(node.Id);
+                    // TODO: 衝突するかチェック
+                    // if (MistManager.I.CompareId(node.Id))
+                    {
+                        MistManager.I.Connect(node.Id);
+                    }
+
                     i++;
                     if (i >= requestCount) return;
                 }
