@@ -87,10 +87,11 @@ namespace MistNet
             areaInfo.Nodes.Add(node);
             _dataStore.Store(target, areaInfo.ToString());
 
+            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
-                _kademlia.Store(closestNode, target, areaInfo.ToString());
+                _kademlia.Store(closestNode, target, areaInfoStr);
             }
         }
 
@@ -104,10 +105,11 @@ namespace MistNet
             areaInfo.Nodes.Remove(node);
             _dataStore.Store(target, areaInfo.ToString());
 
+            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
-                _kademlia.Store(closestNode, target, areaInfo.ToString());
+                _kademlia.Store(closestNode, target, areaInfoStr);
             }
         }
 
