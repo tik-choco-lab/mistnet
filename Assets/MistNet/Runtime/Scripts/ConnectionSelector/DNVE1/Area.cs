@@ -7,7 +7,7 @@ namespace MistNet
 {
     public class Area
     {
-        private const int ChunkSize = 128;
+        public const int ChunkSize = 256;
         [JsonProperty("x")] public int X;
         [JsonProperty("y")] public int Y;
         [JsonProperty("z")] public int Z;

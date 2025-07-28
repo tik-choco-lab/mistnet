@@ -6,6 +6,6 @@ namespace MistNet
     {
         [JsonProperty("serverUrl")] public string ServerUrl = "ws://localhost:8081";
         [JsonProperty("maxAreaSize")] public int MaxAreaSize = 1000;
-        [JsonProperty("maxMoveSpeed")] public float MaxMoveSpeed = 1.0f;
+        [JsonProperty("maxMoveSpeed")] public float MaxMoveSpeed = 6.0f; // 1秒間の移動速度 m/s
     }
 }

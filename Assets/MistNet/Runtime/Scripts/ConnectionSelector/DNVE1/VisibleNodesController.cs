@@ -61,7 +61,8 @@ namespace MistNet
 
         private void RemoveObject(IEnumerable<NodeId> nodeIds)
         {
-            foreach (var nodeId in nodeIds)
+            var nodeIdsList = nodeIds.ToList();
+            foreach (var nodeId in nodeIdsList)
             {
                 MistSyncManager.I.RemoveObject(nodeId);
                 _routing.RemoveMessageNode(nodeId);
