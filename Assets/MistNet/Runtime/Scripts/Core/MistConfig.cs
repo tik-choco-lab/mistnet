@@ -15,6 +15,7 @@ namespace MistNet
             {
                 var json = File.ReadAllText(ConfigPath);
                 Data = JsonConvert.DeserializeObject<MistConfigData>(json);
+                MistLogger.LogLevel = Data.LogLevel;
             }
             else
             {

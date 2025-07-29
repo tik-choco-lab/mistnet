@@ -4,7 +4,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace MistNet
 {
@@ -76,7 +75,7 @@ namespace MistNet
                 var target = IdUtil.ToBytes(area.ToString());
                 if (_dataStore.TryGetValue(target, out var _))
                 {
-                    Debug.Log($"[Debug][AreaTracker] Area {area} already exists in data store.");
+                    MistLogger.Debug($"[Debug][AreaTracker] Area {area} already exists in data store.");
                     continue;
                 }
                 var closestNodes = _routingTable.FindClosestNodes(target);
@@ -124,12 +123,12 @@ namespace MistNet
             AreaInfo areaInfo;
             if (_dataStore.TryGetValue(target, out var value))
             {
-                Debug.Log($"[Debug][AreaTracker] Found area info for chunk {chunk} {value}");
+                MistLogger.Debug($"[Debug][AreaTracker] Found area info for chunk {chunk} {value}");
                 areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             }
             else
             {
-                Debug.Log($"[Debug][AreaTracker] Creating new area info for chunk {chunk}");
+                MistLogger.Debug($"[Debug][AreaTracker] Creating new area info for chunk {chunk}");
                 areaInfo = new AreaInfo
                 {
                     Chunk = chunk,

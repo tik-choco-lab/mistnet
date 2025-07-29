@@ -14,6 +14,7 @@ namespace MistNet
         [JsonProperty("turnServer")] public RTCIceServer TurnServer;
         [JsonProperty("showLogLine")] public int ShowLogLine = 10;
         [JsonProperty("logFilter")] public string LogFilter = "[STATS]"; // ログフィルターの種類を指定する文字列
+        [JsonProperty("logLevel")] public MistLogger.Level LogLevel = MistLogger.Level.Info;
         [JsonProperty("logDisplay")] public bool LogDisplay;
         [JsonProperty("logWarningDisplay")] public bool LogWarningDisplay;
         [JsonProperty("logErrorDisplay")] public bool LogErrorDisplay = true;

@@ -28,14 +28,14 @@ public class MistTestCode : MistBehaviour
 
     private void OnChanged()
     {
-        MistDebug.Log($"喵喵喵{_userName}");
+        MistLogger.Log($"喵喵喵{_userName}");
     }
 
     private void Update()
     {
         if (!SyncObject.IsOwner)
         {
-            MistDebug.Log($"Another: {_userName}");
+            MistLogger.Log($"Another: {_userName}");
             return;
         }
         if(mao) _speed += Time.deltaTime;
@@ -48,12 +48,12 @@ public class MistTestCode : MistBehaviour
     [MistRpc]
     public void RPC_Test(string a)
     {
-        MistDebug.Log(a);
+        MistLogger.Log(a);
     }
 
     [MistRpc]
     public void RPC_Test2(string a, int b, float c, MessageInfo info)
     {
-        MistDebug.Log($"RPC_Test2: {a}, {b}, {c} {info.SourceId} {info.SenderId}");        
+        MistLogger.Log($"RPC_Test2: {a}, {b}, {c} {info.SourceId} {info.SenderId}");        
     }
 }

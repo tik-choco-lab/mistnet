@@ -21,9 +21,9 @@ namespace MistNet
         public void RequestOffer(SignalingData response)
         {
             var senderId = response.SenderId;
-            MistDebug.Log($"[Signaling] RequestOffer[0]: {senderId}");
+            MistLogger.Log($"[Signaling] RequestOffer[0]: {senderId}");
             if(!MistManager.I.CompareId(senderId)) return;
-            MistDebug.Log($"[Signaling] RequestOffer[1]: {senderId}");
+            MistLogger.Log($"[Signaling] RequestOffer[1]: {senderId}");
             SendOffer(new NodeId(response.SenderId)).Forget();
         }
 
@@ -36,12 +36,12 @@ namespace MistNet
             var peer = MistManager.I.PeerRepository.CreatePeer(receiverId);
             if (peer.RtcPeer.ConnectionState == RTCPeerConnectionState.Connecting)
             {
-                MistDebug.LogWarning($"[Warning][Signaling] Peer is connecting: {receiverId}");
+                MistLogger.LogWarning($"[Warning][Signaling] Peer is connecting: {receiverId}");
                 return;
             }
             if (peer.RtcPeer.SignalingState != RTCSignalingState.Stable)
             {
-                MistDebug.LogWarning($"[Warning][Signaling] SignalingState is not stable: {peer.RtcPeer.SignalingState}");
+                MistLogger.LogWarning($"[Warning][Signaling] SignalingState is not stable: {peer.RtcPeer.SignalingState}");
                 return;
             }
             peer.ActiveProtocol = _activeProtocol;
@@ -54,7 +54,7 @@ namespace MistNet
             sendData.ReceiverId = receiverId;
 
             Send(sendData, receiverId);
-            MistDebug.Log($"[Signaling] SendOffer: {receiverId}");
+            MistLogger.Log($"[Signaling] SendOffer: {receiverId}");
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace MistNet
         /// <param name="response"></param>
         public void ReceiveAnswer(SignalingData response)
         {
-            MistDebug.Log($"[Signaling] ReceiveAnswer: {response.SenderId}");
+            MistLogger.Log($"[Signaling] ReceiveAnswer: {response.SenderId}");
             var targetId = response.SenderId;
             var peer = MistManager.I.PeerRepository.GetPeer(targetId);
 
@@ -76,7 +76,7 @@ namespace MistNet
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
             {
-                MistDebug.LogError("sdp is null or empty");
+                MistLogger.LogError("sdp is null or empty");
                 return;
             }
             // MistDebug.Log($"[Signaling][SignalingState] {peer.SignalingState}");
@@ -94,14 +94,14 @@ namespace MistNet
         /// <returns></returns>
         public void ReceiveOffer(SignalingData response)
         {
-            MistDebug.Log($"[Signaling] ReceiveOffer: {response.SenderId}");
+            MistLogger.Log($"[Signaling] ReceiveOffer: {response.SenderId}");
             var targetId = response.SenderId;
 
             var peer = PeerRepository.I.CreatePeer(targetId);
 
             if (peer.RtcPeer.SignalingState != RTCSignalingState.Stable)
             {
-                MistDebug.LogWarning($"[Error][Signaling] SignalingState is not stable: {peer.RtcPeer.SignalingState}");
+                MistLogger.LogWarning($"[Error][Signaling] SignalingState is not stable: {peer.RtcPeer.SignalingState}");
                 return;
             }
             peer.OnCandidate = (ice) => SendCandidate(ice, targetId);
@@ -127,7 +127,7 @@ namespace MistNet
             sendData.Data = JsonConvert.SerializeObject(desc);
             sendData.ReceiverId = targetId;
             Send(sendData, targetId);
-            MistDebug.Log($"[Signaling] SendAnswer: {targetId}");
+            MistLogger.Log($"[Signaling] SendAnswer: {targetId}");
         }
 
         private void SendCandidate(Ice candidate, NodeId targetId)
@@ -143,12 +143,12 @@ namespace MistNet
             // 接続が完了したら、関連するICE候補を削除
             var peer = MistManager.I.PeerRepository.GetPeer(targetId).RtcPeer;
             RegisterIceConnectionChangeHandler(targetId, peer);
-            MistDebug.Log($"[Signaling] SendCandidate: {targetId}");
+            MistLogger.Log($"[Signaling] SendCandidate: {targetId}");
         }
 
         public async void ReceiveCandidates(SignalingData response)
         {
-            MistDebug.Log($"[Signaling] ReceiveCandidates: {response.SenderId}");
+            MistLogger.Log($"[Signaling] ReceiveCandidates: {response.SenderId}");
             var senderId = response.SenderId;
             var candidatesStr = response.Data;
             var candidatesArray = JsonConvert.DeserializeObject<string[]>(candidatesStr);
@@ -157,7 +157,7 @@ namespace MistNet
             if (!await WaitForRemoteOfferOrPrAnswerWithTimeout(peer)) return;
             foreach (var candidateStr in candidatesArray)
             {
-                MistDebug.Log($"[Signaling] ReceiveCandidates: {candidateStr}");
+                MistLogger.Log($"[Signaling] ReceiveCandidates: {candidateStr}");
                 var candidate = JsonUtility.FromJson<Ice>(candidateStr);
                 peer.AddIceCandidate(candidate);
             }
@@ -165,7 +165,7 @@ namespace MistNet
 
         public async void ReceiveCandidate(SignalingData response)
         {
-            MistDebug.Log($"[Signaling] ReceiveCandidate: {response.SenderId}");
+            MistLogger.Log($"[Signaling] ReceiveCandidate: {response.SenderId}");
             var senderId = response.SenderId;
             var peer = await GetPeer(senderId, _cts.Token);
 
@@ -201,7 +201,7 @@ namespace MistNet
                 // 既に接続が完了している場合は、タイムアウトしても問題ない
                 if (peerEntity.RtcPeer.SignalingState is RTCSignalingState.Stable or RTCSignalingState.Closed) return false;
 
-                MistDebug.LogError("[Signaling][Candidate] Timeout");
+                MistLogger.LogError("[Signaling][Candidate] Timeout");
                 return false;
             }
         }

@@ -58,13 +58,13 @@ namespace MistNet
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
             var response = JsonConvert.DeserializeObject<SignalingData>(receiveData.Data);
             var type = response.Type;
-            MistDebug.Log($"[Signaling][WebRTC][{type}] {sourceId}");
+            MistLogger.Trace($"[Signaling][WebRTC][{type}] {sourceId}");
             _functions[type](response);
         }
 
         private void Connect(NodeId id)
         {
-            MistDebug.Log($"[Signaling][WebRTC] Connecting: {id}");
+            MistLogger.Trace($"[Signaling][WebRTC] Connecting: {id}");
             _mistSignalingHandler.SendOffer(id).Forget();
         }
     }

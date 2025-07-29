@@ -16,7 +16,7 @@ namespace MistNet.VC
 
             if (_syncObject == null)
             {
-                MistDebug.LogError("[Error] MistSyncObject is not found");
+                MistLogger.Error("[Error] MistSyncObject is not found");
                 return;
             }
 
@@ -33,7 +33,7 @@ namespace MistNet.VC
                 peerData = PeerRepository.I.GetPeerData(_syncObject.OwnerId);
             }
 
-            MistDebug.Log($"[Debug][MistVC] {peerData.PeerEntity.Id} add output audio source");
+            MistLogger.Info($"[Debug][MistVC] {peerData.PeerEntity.Id} add output audio source");
             peerData.PeerEntity.AddOutputAudioSource(audioSource);
         }
     }

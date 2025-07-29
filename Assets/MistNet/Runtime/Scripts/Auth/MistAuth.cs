@@ -20,7 +20,7 @@ namespace MistNet
             FriendsConfig.LoadConfig();
             var signature = Sign(ConfigLoader.Config.Keys.PrivateKey);
             var result = Verify(ConfigLoader.Config.Keys.PublicKey, signature);
-            Debug.Log($"Signature: {result}");
+            MistLogger.Debug($"Signature: {result}");
         }
 
         public void AddFriend(string name, string id)
@@ -35,7 +35,7 @@ namespace MistNet
 
         public string Sign(string privateKey)
         {
-            Debug.Log($"[Sign] {privateKey}");
+            MistLogger.Debug($"[Sign] {privateKey}");
             var messageBytes = Convert.FromBase64String(AuthMessage);
             var privateKeyBytes = Convert.FromBase64String(privateKey);
             var signatureBytes = Ed25519.Sign(messageBytes,privateKeyBytes);
@@ -44,7 +44,7 @@ namespace MistNet
 
         public bool Verify(string publicKey, string signature)
         {
-            Debug.Log($"[Verify] {publicKey} {signature}");
+            MistLogger.Debug($"[Verify] {publicKey} {signature}");
             var messageBytes = Convert.FromBase64String(AuthMessage);
             var publicKeyBytes = Convert.FromBase64String(publicKey);
             var signatureBytes = System.Convert.FromBase64String(signature);

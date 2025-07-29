@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace MistNet
 {
@@ -55,7 +54,7 @@ namespace MistNet
             SendInternal(node.Id, message);
         }
 
-        public void SendInternal(NodeId nodeId, KademliaMessage message)
+        private void SendInternal(NodeId nodeId, KademliaMessage message)
         {
             message.Sender = _routingTable.SelfNode;
             Send(JsonConvert.SerializeObject(message), nodeId);
@@ -73,11 +72,11 @@ namespace MistNet
             if (closestNodes.Nodes.Count < KBucket.K)
             {
                 // OK 既にroutingTableに登録されている
-                Debug.Log($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
+                MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
             else
             {
-                Debug.Log($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
+                MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
                 // さらに絞り込む
                 FindNode(closestNodes.Nodes, key);
             }
@@ -85,17 +84,17 @@ namespace MistNet
 
         private void OnFindValueResponse(KademliaMessage message)
         {
-            Debug.Log($"[Debug][KademliaController] Received FindValue {message.Payload} from {message.Sender.Id}");
+            MistLogger.Debug($"[Debug][KademliaController] Received FindValue {message.Payload} from {message.Sender.Id}");
 
             var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
             if (string.IsNullOrEmpty(response.Value))
             {
-                MistDebug.LogError(
+                MistLogger.Error(
                     $"[Error][KademliaController] No value found for target {BitConverter.ToString(response.Key)}");
                 return;
             }
 
-            Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
+            MistLogger.Debug($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
         }
 

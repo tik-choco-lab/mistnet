@@ -23,14 +23,14 @@ namespace MistNet
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
 
-            MistDebug.Log($"[SignalingServer] Start {port}");
+            MistLogger.Log($"[SignalingServer] Start {port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            MistDebug.Log($"[SignalingServer] End");
+            MistLogger.Log($"[SignalingServer] End");
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior
@@ -42,12 +42,12 @@ namespace MistNet
 
             protected override void OnOpen()
             {
-                MistDebug.Log($"[SERVER][OPEN] {ID}");
+                MistLogger.Info($"[SERVER][OPEN] {ID}");
             }
 
             private void RequestOffer()
             {
-                Debug.Log($"[Server] RequestOffer {ID}");
+                MistLogger.Info($"[Server] RequestOffer {ID}");
                 var sendData = new SignalingData
                 {
                     Type = SignalingType.Request
@@ -58,7 +58,7 @@ namespace MistNet
 
             protected override void OnMessage(MessageEventArgs e)
             {
-                MistDebug.Log($"[SERVER][RECV] {e.Data}");
+                MistLogger.Trace($"[SERVER][RECV] {e.Data}");
 
                 var data = JsonConvert.DeserializeObject<SignalingData>(e.Data);
                 if (data.RoomId != MistConfig.Data.RoomId) return;
@@ -105,11 +105,11 @@ namespace MistNet
 
             private void Send(NodeId receiverId, string data)
             {
-                Debug.Log($"[SERVER][SEND] {receiverId} {data}");
+                MistLogger.Trace($"[SERVER][SEND] {receiverId} {data}");
                 var targetSessionId = SessionIdByNodeId.GetValueOrDefault(receiverId);
                 if (string.IsNullOrEmpty(targetSessionId))
                 {
-                    MistDebug.LogError($"[SERVER][ERROR] {receiverId} is not found.");
+                    MistLogger.LogError($"[SERVER][ERROR] {receiverId} is not found.");
                     return;
                 }
 
@@ -118,7 +118,7 @@ namespace MistNet
 
             protected override void OnClose(CloseEventArgs e)
             {
-                MistDebug.Log($"[SERVER][CLOSE] {ID}");
+                MistLogger.Log($"[SERVER][CLOSE] {ID}");
 
                 SessionIdByNodeId.Remove(NodeIdBySessionId[ID]);
                 NodeIdBySessionId.Remove(ID);

@@ -45,7 +45,7 @@ namespace MistNet
 
         public void Store(NodeInfo node, byte[] key, string value)
         {
-            Debug.Log($"[Debug][Kademlia] Store: {value}");
+            MistLogger.Debug($"[Debug][Kademlia] Store: {value}");
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
@@ -92,15 +92,15 @@ namespace MistNet
             var parts = message.Payload.Split(':');
             if (parts.Length == 2)
             {
-                Debug.Log($"[Debug][Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
+                MistLogger.Debug($"[Debug][Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
                 var key = Convert.FromBase64String(parts[0]);
                 var value = parts[1];
-                var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
 
                 // ここはKademliaと異なる
                 // NOTE: 上書きしてデータが失われないようにするための処理
                 if (_dataStore.TryGetValue(key, out var existingValue))
                 {
+                    var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
                     var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
                     foreach (var node in newAreaInfo.Nodes)
                     {
@@ -131,12 +131,12 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
-                Debug.Log($"[Debug][Kademlia] Found value for key {BitConverter.ToString(targetKey)}: {value}");
+                MistLogger.Debug($"[Debug][Kademlia] Found value for key {BitConverter.ToString(targetKey)}: {value}");
                 SendValue(message.Sender, targetKey, value);
             }
             else
             {
-                Debug.Log($"[Debug][Kademlia] Value not found for key {BitConverter.ToString(targetKey)}. Sending closest nodes.");
+                MistLogger.Debug($"[Debug][Kademlia] Value not found for key {BitConverter.ToString(targetKey)}. Sending closest nodes.");
                 SendClosestNodes(message.Sender, targetKey);
             }
         }

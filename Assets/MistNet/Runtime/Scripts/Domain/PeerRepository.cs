@@ -18,7 +18,7 @@ namespace MistNet
             I = this;
             InitSelfId();
 
-            MistDebug.Log($"[Self ID] {SelfId}");
+            MistLogger.Info($"[Self ID] {SelfId}");
             GetAllPeer.Clear();
         }
 
@@ -67,7 +67,7 @@ namespace MistNet
                 GetAllPeer.Remove(id);
             }
 
-            MistDebug.Log($"[MistPeerData] Add {id}");
+            MistLogger.Log($"[MistPeerData] Add {id}");
             GetAllPeer.Add(id, new MistPeerDataElement(id));
             GetAllPeer[id].PeerEntity.AddInputAudioSource(_selfAudioSource);
 
@@ -83,10 +83,10 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id))
             {
-                MistDebug.LogError("GetPeerData id is null");
+                MistLogger.LogError("GetPeerData id is null");
             }
 
-            MistDebug.Log($"[GetPeerData] {id}");
+            MistLogger.Debug($"[GetPeerData] {id}");
             return GetAllPeer.GetValueOrDefault(id);
         }
 
@@ -94,7 +94,7 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
-            MistDebug.Log($"[MistPeerData] Delete {id}");
+            MistLogger.Debug($"[MistPeerData] Delete {id}");
             peerData.PeerEntity?.Dispose();
             peerData.PeerEntity = null;
             GetAllPeer.Remove(id);
@@ -107,7 +107,7 @@ namespace MistNet
 
         public void Dispose()
         {
-            MistDebug.Log("[MistPeerData] Dispose");
+            MistLogger.Debug("[MistPeerData] Dispose");
             AllForceClose();
             foreach (var peerData in GetAllPeer.Values)
             {
@@ -127,7 +127,7 @@ namespace MistNet
         public MistPeerDataElement(NodeId id)
         {
             PeerEntity = new(id);
-            MistDebug.Log($"[MistPeerData] Create Peer {id}");
+            MistLogger.Debug($"[MistPeerData] Create Peer {id}");
         }
 
         public bool IsConnected => PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;

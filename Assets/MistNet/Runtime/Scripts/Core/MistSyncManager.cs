@@ -55,7 +55,7 @@ namespace MistNet
 
             var data = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
+            MistLogger.Log($"[Debug] SendObjectInstantiateInfo: {id}");
         }
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
@@ -81,7 +81,7 @@ namespace MistNet
             syncObject.Init(new ObjectId(instantiateData.ObjId), true, instantiateData.PrefabAddress, sourceId);
 
             MistManager.I.OnSpawned(sourceId);
-            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
+            MistLogger.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
-            MistDebug.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
+            MistLogger.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
         }
 
         /// <summary>
@@ -103,13 +103,13 @@ namespace MistNet
         /// <param name="sourceId"></param>
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
-            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
+            MistLogger.Debug($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
         public void RemoveObject(NodeId targetId)
         {
-            MistDebug.Log($"[Debug] RemoveObject: {targetId}");
+            MistLogger.Debug($"[Debug] RemoveObject: {targetId}");
             if (DestroyMyObjectsOnDisconnect) DestroyBySenderId(targetId);
             else DestroyPlayerObject(targetId);
         }
@@ -118,7 +118,7 @@ namespace MistNet
         {
             if (!ObjectIdsByOwnerId.ContainsKey(targetId))
             {
-                MistDebug.LogWarning($"No objects found for ownerId: {targetId}");
+                MistLogger.Warning($"No objects found for ownerId: {targetId}");
                 return;
             }
 
@@ -127,7 +127,7 @@ namespace MistNet
 
             if (playerObjectId == null)
             {
-                MistDebug.LogWarning($"No player object found for ownerId: {targetId}");
+                MistLogger.Warning($"No player object found for ownerId: {targetId}");
                 return;
             }
 
@@ -148,7 +148,7 @@ namespace MistNet
         {
             if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
-                MistDebug.LogError($"Sync object with id {syncObject.Id} already exists!");
+                MistLogger.Error($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -184,14 +184,14 @@ namespace MistNet
         {
             if (!_syncObjects.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogWarning($"Sync object with id {syncObject.Id} does not exist!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} does not exist!");
                 return;
             }
 
             _syncObjects.Remove(syncObject.Id);
             if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
             {
-                MistDebug.LogWarning($"No objects found for ownerId: {syncObject.OwnerId}");
+                MistLogger.Warning($"No objects found for ownerId: {syncObject.OwnerId}");
                 return;
             }
             ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
@@ -216,7 +216,7 @@ namespace MistNet
         {
             if (!_syncObjects.ContainsKey(id))
             {
-                MistDebug.LogWarning($"Sync object with id {id} does not exist!");
+                MistLogger.Warning($"Sync object with id {id} does not exist!");
                 return null;
             }
 
@@ -227,7 +227,7 @@ namespace MistNet
         {
             if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {
-                MistDebug.LogWarning("Already destroyed");
+                MistLogger.Warning("Already destroyed");
                 return;
             }
 
@@ -245,7 +245,7 @@ namespace MistNet
         {
             if (_syncAnimators.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogError($"Sync animator with id {syncObject.Id} already exists!");
+                MistLogger.Error($"Sync animator with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -257,7 +257,7 @@ namespace MistNet
         {
             if (!_syncAnimators.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogWarning($"Sync animator with id {syncObject.Id} does not exist!");
+                MistLogger.Warning($"Sync animator with id {syncObject.Id} does not exist!");
                 return;
             }
 

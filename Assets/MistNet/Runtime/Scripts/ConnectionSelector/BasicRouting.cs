@@ -13,7 +13,7 @@ namespace MistNet
             if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
-            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistLogger.Log($"[RoutingTable] Add {sourceId} from {fromId}");
             if (_routingTable.TryAdd(sourceId, fromId))
             {
                 return;
@@ -24,19 +24,19 @@ namespace MistNet
 
         public override NodeId Get(NodeId targetId)
         {
-            MistDebug.Log($"[RoutingTable] Get {targetId}");
+            MistLogger.Log($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;
             }
 
-            MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
+            MistLogger.LogWarning($"[RoutingTable] Not found {targetId}");
 
             // 適当に返す
             if (ConnectedNodes.Count != 0)
                 return ConnectedNodes.First();
 
-            MistDebug.LogWarning("[RoutingTable] Not found connected peer");
+            MistLogger.LogWarning("[RoutingTable] Not found connected peer");
             return null;
         }
     }
