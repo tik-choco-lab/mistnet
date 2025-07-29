@@ -16,13 +16,13 @@ namespace MistNet
         [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
         public enum Level
         {
-            None,
             Trace,
             Debug,
             Info,
             Warning,
             Error,
-            Fatal
+            Fatal,
+            None,
         }
 
         [Serializable]

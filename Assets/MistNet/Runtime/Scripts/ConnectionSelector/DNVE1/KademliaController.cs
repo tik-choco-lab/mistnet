@@ -74,12 +74,12 @@ namespace MistNet
                 // OK 既にroutingTableに登録されている
                 MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
-            else
-            {
-                MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
-                // さらに絞り込む
-                FindNode(closestNodes.Nodes, key);
-            }
+            // else
+            // {
+            //     MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
+            //     // さらに絞り込む
+            //     FindNode(closestNodes.Nodes, key);
+            // }
         }
 
         private void OnFindValueResponse(KademliaMessage message)
