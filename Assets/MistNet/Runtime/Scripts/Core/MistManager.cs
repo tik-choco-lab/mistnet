@@ -85,8 +85,8 @@ namespace MistNet
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
-                var peerData = PeerRepository.GetPeer(peerId);
-                peerData.Send(sendData);
+                var peerEntity = PeerRepository.GetPeer(peerId);
+                peerEntity?.Send(sendData);
             }
         }
 
