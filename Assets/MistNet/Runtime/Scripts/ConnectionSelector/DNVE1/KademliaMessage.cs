@@ -24,7 +24,6 @@ namespace MistNet
         ResponseValue,
         // 拡張
         Location,
-        Gossip,
     }
 
     public class ResponseFindNode

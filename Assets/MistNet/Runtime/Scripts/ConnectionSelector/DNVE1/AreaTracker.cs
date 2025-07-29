@@ -5,7 +5,6 @@ using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace MistNet
 {
@@ -53,12 +52,6 @@ namespace MistNet
                     _unloadedChunks.Add(area);
                 }
 
-                var randomNum = Random.Range(0, 10);
-                if (randomNum == 0)
-                {
-                    SendGossip();
-                }
-
                 // 前と同じ場合は何もしない 新しくChunkに来たものがConnectionRequestを送ることを期待する
                 if (previousChunk.SetEquals(_surroundingChunks)) continue;
 
@@ -73,32 +66,6 @@ namespace MistNet
                 {
                     RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
                 }
-            }
-        }
-
-        private void SendGossip()
-        {
-            var selfId = IdUtil.ToBytes(PeerRepository.I.SelfId.ToString());
-            var responseFindValue = new ResponseFindValue
-            {
-                Key = selfId,
-                Value = JsonConvert.SerializeObject(new AreaInfo
-                {
-                    Chunk = MyArea,
-                    Nodes = new HashSet<NodeId> { _routingTable.SelfNode.Id }
-                })
-            };
-            var json = JsonConvert.SerializeObject(responseFindValue);
-            var message = new KademliaMessage
-            {
-                Type = KademliaMessageType.Gossip,
-                Sender = _routingTable.SelfNode,
-                Payload = json
-            };
-
-            foreach (var id in _routing.ConnectedNodes)
-            {
-                _kademliaController.SendInternal(id, message);
             }
         }
 

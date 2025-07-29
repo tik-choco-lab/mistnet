@@ -33,7 +33,6 @@ namespace MistNet
 
             _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
             _onMessageReceived[KademliaMessageType.ResponseValue] = OnFindValueResponse;
-            _onMessageReceived[KademliaMessageType.Gossip] = OnGossip;
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -98,22 +97,6 @@ namespace MistNet
 
             Debug.Log($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
-        }
-
-        private void OnGossip(KademliaMessage message)
-        {
-            var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
-            if (_dataStore.TryGetValue(response.Key, out var _)) return;
-            Debug.Log($"[Debug][KademliaController] Gossip: {response.Value}");
-            _dataStore.Store(response.Key, response.Value);
-            foreach (var node in _routing.ConnectedNodes)
-            {
-                SendInternal(node, new KademliaMessage
-                {
-                    Type = KademliaMessageType.Gossip,
-                    Payload = JsonConvert.SerializeObject(response)
-                });
-            }
         }
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
