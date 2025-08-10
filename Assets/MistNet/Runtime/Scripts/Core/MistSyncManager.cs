@@ -55,13 +55,17 @@ namespace MistNet
 
             var data = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            MistLogger.Log($"[Debug] SendObjectInstantiateInfo: {id}");
+            MistLogger.Debug($"[Sync] SendObjectInstantiateInfo: {id}");
         }
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
-            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId))) return;
+            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId)))
+            {
+                MistLogger.Warning($"[Sync] Object with id {instantiateData.ObjId} already exists!");
+                return;
+            }
 
             // -----------------
             // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
@@ -81,7 +85,7 @@ namespace MistNet
             syncObject.Init(new ObjectId(instantiateData.ObjId), true, instantiateData.PrefabAddress, sourceId);
 
             MistManager.I.OnSpawned(sourceId);
-            MistLogger.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
         /// <summary>
@@ -93,7 +97,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
-            MistLogger.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
+            MistLogger.Log($"[Sync] RequestObjectInstantiateInfo: {id}");
         }
 
         /// <summary>
@@ -103,13 +107,13 @@ namespace MistNet
         /// <param name="sourceId"></param>
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
-            MistLogger.Debug($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
         public void RemoveObject(NodeId targetId)
         {
-            MistLogger.Debug($"[Debug] RemoveObject: {targetId}");
+            MistLogger.Debug($"[Sync] RemoveObject: {targetId}");
             if (DestroyMyObjectsOnDisconnect) DestroyBySenderId(targetId);
             else DestroyPlayerObject(targetId);
         }

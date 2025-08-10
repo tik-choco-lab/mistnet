@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -54,6 +53,7 @@ namespace MistNet
         {
             foreach (var nodeId in nodeIds)
             {
+                if (!_routing.ConnectedNodes.Contains(nodeId)) continue; // 既に表示中のNodeはスキップ
                 MistSyncManager.I.RequestObjectInstantiateInfo(nodeId);
                 _routing.AddMessageNode(nodeId);
             }
