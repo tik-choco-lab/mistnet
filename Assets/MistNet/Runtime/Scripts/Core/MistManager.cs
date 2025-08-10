@@ -139,7 +139,7 @@ namespace MistNet
 
             if (!_methods.TryGetValue(key, out var del))
             {
-                MistLogger.Error($"Unknown RPC method: {key}");
+                MistLogger.Warning($"Unknown RPC method: {key}");
                 return;
             }
             del.DynamicInvoke(args);
@@ -301,7 +301,7 @@ namespace MistNet
         {
             if (!_methods.TryGetValue(rpc.Method, out var del))
             {
-                MistLogger.LogError($"Unknown RPC method: {rpc.Method}");
+                MistLogger.Warning($"Unknown RPC method: {rpc.Method}");
                 return;
             }
 
