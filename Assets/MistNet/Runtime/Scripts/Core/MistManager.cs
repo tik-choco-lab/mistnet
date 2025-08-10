@@ -270,8 +270,8 @@ namespace MistNet
         private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
-            objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
-            syncObject.Init(new ObjectId(objId), true, prefabAddress, PeerRepository.SelfId);
+            objId ??= new ObjectId(PeerRepository.SelfId);
+            syncObject.Init(objId, true, prefabAddress, PeerRepository.SelfId);
 
             // 接続先最適化に使用するため、PlayerObjectであることを設定
             MistSyncManager.I.SelfSyncObject = syncObject;
