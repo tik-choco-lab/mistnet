@@ -35,7 +35,7 @@ namespace MistNet.Evaluation
         public void RegisterMessageHandler(EvalMessageType type, Action<string> func)
         {
             if (_onMessageFunc.TryAdd(type, func)) return;
-            MistDebug.LogWarning($"[EvalClient] Message handler already registered for type: {type}");
+            MistLogger.Warning($"[EvalClient] Message handler already registered for type: {type}");
         }
 
         private NodeState GetNodeStateData()
@@ -89,7 +89,7 @@ namespace MistNet.Evaluation
             _onMessageFunc.TryGetValue(data.Type, out var func);
             if (func == null)
             {
-                MistDebug.LogWarning($"No handler for message type: {data.Type}");
+                MistLogger.Warning($"No handler for message type: {data.Type}");
                 return;
             }
 

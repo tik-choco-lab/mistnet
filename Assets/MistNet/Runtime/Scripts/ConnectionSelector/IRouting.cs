@@ -14,28 +14,28 @@ namespace MistNet
 
         public virtual void OnConnected(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
+            MistLogger.Info($"[ConnectionSelector] OnConnected: {id}");
             ConnectedNodes.Add(id);
             AddNode(id);
         }
 
         public virtual void OnDisconnected(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] OnDisconnected: {id}");
+            MistLogger.Info($"[ConnectionSelector] OnDisconnected: {id}");
             ConnectedNodes.Remove(id);
             if (MessageNodes.Contains(id)) MessageNodes.Remove(id);
         }
 
         public virtual void AddMessageNode(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] AddMessageNode: {id}");
+            MistLogger.Info($"[ConnectionSelector] AddMessageNode: {id}");
             MessageNodes.Add(id);
             AddNode(id);
         }
 
         public virtual void RemoveMessageNode(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] RemoveMessageNode: {id}");
+            MistLogger.Info($"[ConnectionSelector] RemoveMessageNode: {id}");
             MessageNodes.Remove(id);
         }
 
@@ -44,7 +44,7 @@ namespace MistNet
             if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
-            MistDebug.Log($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
             // if (_routingTable.TryAdd(sourceId, fromId))
             // {
             //     return;
@@ -52,17 +52,22 @@ namespace MistNet
             _routingTable[sourceId] = fromId;
         }
 
+        public virtual void Add(NodeId sourceId, NodeId fromId)
+        {
+            Debug.LogError($"[RoutingTable] Add {sourceId} from {fromId}");
+        }
+
         public virtual NodeId Get(NodeId targetId)
         {
             if (ConnectedNodes.Contains(targetId)) return targetId;
 
-            MistDebug.Log($"[RoutingTable] Get {targetId}");
+            MistLogger.Info($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;
             }
 
-            MistDebug.LogWarning($"[RoutingTable] Not found {targetId}");
+            MistLogger.Warning($"[RoutingTable] Not found {targetId}");
 
             // 適当に返す
             if (_nodes.TryGetValue(targetId, out var node) && node != null)
@@ -70,7 +75,7 @@ namespace MistNet
                 return node.Id;
             }
 
-            MistDebug.LogWarning($"[RoutingTable] Not found node {targetId}");
+            MistLogger.Warning($"[RoutingTable] Not found node {targetId}");
             return null;
         }
 
@@ -95,7 +100,7 @@ namespace MistNet
         public void UpdateNode(NodeId id, Node node)
         {
             if (id == MistManager.I.PeerRepository.SelfId) return; // 自分自身のノードは更新しない
-            MistDebug.Log($"[ConnectionSelector] AddNode: {id}");
+            MistLogger.Info($"[ConnectionSelector] AddNode: {id}");
 
             if (ConnectedNodes.Contains(node.Id))
             {
@@ -112,13 +117,13 @@ namespace MistNet
 
         public void RemoveNode(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] RemoveNode: {id}");
+            MistLogger.Info($"[ConnectionSelector] RemoveNode: {id}");
             _nodes.Remove(id);
         }
 
         public void ClearNodes()
         {
-            MistDebug.Log("[ConnectionSelector] ClearNodes");
+            MistLogger.Info("[ConnectionSelector] ClearNodes");
             _nodes.Clear();
         }
 

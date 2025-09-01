@@ -21,14 +21,14 @@ namespace MistNet
         {
             base.Start();
             OptConfigLoader.ReadConfig();
-            MistDebug.Log($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
+            MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
             evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
             evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
         }
 
         private async void OnReset(string payload)
         {
-            MistDebug.Log("[ConnectionSelector] Resetting connections...");
+            MistLogger.Info("[ConnectionSelector] Resetting connections...");
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
@@ -48,13 +48,13 @@ namespace MistNet
                 case RequestActionType.Connect:
                     if (nodeId == PeerRepository.I.SelfId) return;
                     // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
-                    MistDebug.Log($"[Action] Connect {nodeId}");
+                    MistLogger.Info($"[Action] Connect {nodeId}");
                     MistManager.I.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
                     if (nodeId == PeerRepository.I.SelfId) return;
                     // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
-                    MistDebug.Log($"[Action] Disconnect {nodeId}");
+                    MistLogger.Info($"[Action] Disconnect {nodeId}");
                     MistManager.I.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
@@ -78,13 +78,13 @@ namespace MistNet
                 Payload = nodeState
             };
             var json = JsonConvert.SerializeObject(octreeMessage);
-            MistDebug.Log($"[Action] SendNodeInfo to {nodeId}: {json}");
+            MistLogger.Info($"[Action] SendNodeInfo to {nodeId}: {json}");
             Send(json, nodeId);
         }
 
         public override void OnConnected(NodeId id)
         {
-            MistDebug.Log($"[ConnectionSelector] OnConnected: {id}");
+            MistLogger.Info($"[ConnectionSelector] OnConnected: {id}");
 
             if (_initialNodeIds.Count < InitialNodeCount)
             {
@@ -106,7 +106,7 @@ namespace MistNet
         protected override void OnMessage(string data, NodeId id)
         {
             var message = JsonConvert.DeserializeObject<OptMessage>(data);
-            MistDebug.Log($"[Action][OnMessage] {message.Type} {data}");
+            MistLogger.Info($"[Action][OnMessage] {message.Type} {data}");
             if (message.Type == OptMessageType.NodeState) OnNodeStateReceived(message);
         }
 
