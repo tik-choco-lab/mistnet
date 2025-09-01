@@ -49,6 +49,16 @@ namespace MistNet
             MistSyncManager.I.RegisterSyncObject(this);
         }
 
+        public void SetOwner(NodeId newOwnerId)
+        {
+            OwnerId = newOwnerId;
+            IsOwner = PeerRepository.I.SelfId == newOwnerId;
+            MistSyncManager.I.UnregisterSyncObject(this);
+
+            InitSyncParameters();
+            MistSyncManager.I.RegisterSyncObject(this);
+        }
+
         private void InitSyncParameters()
         {
             RegisterPropertyAndRPC();
@@ -68,7 +78,6 @@ namespace MistNet
                 MistManager.I.RemoveRPC(rpc);
             }
 
-            if (IsOwner) return;
             MistSyncManager.I.UnregisterSyncObject(this);
         }
 
@@ -167,7 +176,7 @@ namespace MistNet
         {
             foreach (var methodInfo in methodsWithAttribute)
             {
-                MistDebug.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                MistLogger.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
                 // 引数の種類に応じたDelegateを作成
                 var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
 
@@ -251,7 +260,7 @@ namespace MistNet
 
                     _propertyValueDict[watched.KeyName] = value;
 
-                    MistDebug.Log($"Property: {watched.KeyName}, Value: {value}");
+                    MistLogger.Log($"Property: {watched.KeyName}, Value: {value}");
                     MistManager.I.RPCOther(watched.KeyName, value);
                 }
 

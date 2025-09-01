@@ -62,11 +62,11 @@ namespace MistNet
             {
                 targetId = routing.Get(targetId);
                 if (targetId == null) return; // メッセージの破棄
-                MistDebug.Log($"[FORWARD] {targetId} {type} {message.TargetId}");
+                MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
             if (PeerRepository.IsConnected(targetId))
             {
-                MistDebug.Log($"[SEND][{type.ToString()}] {type} {targetId}");
+                MistLogger.Trace($"[SEND][{type.ToString()}] {type} {targetId}");
                 var peerData = PeerRepository.GetAllPeer[targetId];
                 peerData.PeerEntity.Send(sendData);
             }
@@ -83,11 +83,11 @@ namespace MistNet
 
             foreach (var peerId in routing.MessageNodes)
             {
-                MistDebug.Log($"[SEND][{peerId}] {type.ToString()}");
+                MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
                 var sendData = MemoryPackSerializer.Serialize(message);
-                var peerData = PeerRepository.GetPeer(peerId);
-                peerData.Send(sendData);
+                var peerEntity = PeerRepository.GetPeer(peerId);
+                peerEntity?.Send(sendData);
             }
         }
 
@@ -140,7 +140,7 @@ namespace MistNet
 
             if (!_methods.TryGetValue(key, out var del))
             {
-                MistDebug.LogError($"Unknown RPC method: {key}");
+                MistLogger.Warning($"Unknown RPC method: {key}");
                 return;
             }
             del.DynamicInvoke(args);
@@ -155,7 +155,7 @@ namespace MistNet
         public void OnMessage(byte[] data, NodeId senderId)
         {
             var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
-            MistDebug.Log($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
+            MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
 
             if (IsMessageForSelf(message))
             {
@@ -179,12 +179,12 @@ namespace MistNet
                     || peer.Id == PeerRepository.I.SelfId
                     || peer.Id == senderId)
                 {
-                    MistDebug.LogWarning($"[Error] Peer is null {targetId}");
+                    MistLogger.Warning($"[Error] Peer is null {targetId}");
                     return;
                 }
 
                 peer.Send(data);
-                MistDebug.Log(
+                MistLogger.Trace(
                     $"[RECV][SEND][FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {peer.Id}");
             }
         }
@@ -218,7 +218,7 @@ namespace MistNet
 
         public void DisconnectAll()
         {
-            MistDebug.Log("[DisconnectAll] All peers will be disconnected.");
+            MistLogger.Info("[DisconnectAll] All peers will be disconnected.");
             var peerIds = routing.ConnectedNodes.ToArray();
             foreach (var peerId in peerIds)
             {
@@ -228,7 +228,7 @@ namespace MistNet
 
         public void OnConnected(NodeId id)
         {
-            MistDebug.Log($"[Connected] {id}");
+            MistLogger.Info($"[Connected] {id}");
             connectionSelector.OnConnected(id);
             _onConnectedAction?.Invoke(id);
             routing.OnConnected(id);
@@ -236,7 +236,7 @@ namespace MistNet
 
         public void OnDisconnected(NodeId id)
         {
-            MistDebug.Log($"[Disconnected] {id}");
+            MistLogger.Info($"[Disconnected] {id}");
             MistSyncManager.I.RemoveObject(id);
             connectionSelector.OnDisconnected(id);
             PeerRepository.I.OnDisconnected(id);
@@ -246,12 +246,12 @@ namespace MistNet
 
         public void OnSpawned(NodeId id)
         {
-            MistDebug.Log($"[Spawned] {id}");
+            MistLogger.Info($"[Spawned] {id}");
         }
 
         public void OnDestroyed(NodeId id)
         {
-            MistDebug.Log($"[Destroyed] {id}");
+            MistLogger.Info($"[Destroyed] {id}");
         }
 
         public void AddJoinedCallback(Delegate callback)
@@ -281,8 +281,8 @@ namespace MistNet
         private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
-            objId ??= new ObjectId(Guid.NewGuid().ToString("N"));
-            syncObject.Init(new ObjectId(objId), true, prefabAddress, PeerRepository.SelfId);
+            objId ??= new ObjectId(PeerRepository.SelfId);
+            syncObject.Init(objId, true, prefabAddress, PeerRepository.SelfId);
 
             // 接続先最適化に使用するため、PlayerObjectであることを設定
             MistSyncManager.I.SelfSyncObject = syncObject;
@@ -312,7 +312,7 @@ namespace MistNet
         {
             if (!_methods.TryGetValue(rpc.Method, out var del))
             {
-                MistDebug.LogError($"Unknown RPC method: {rpc.Method}");
+                MistLogger.Warning($"Unknown RPC method: {rpc.Method}");
                 return;
             }
 

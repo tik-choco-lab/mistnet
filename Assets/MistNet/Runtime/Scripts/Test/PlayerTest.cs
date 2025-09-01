@@ -15,22 +15,22 @@ namespace MistNet.Test
 
         private void OnChanged()
         {
-            MistDebug.Log($"[Test] Player name changed to: {PlayerName}");
+            MistLogger.Log($"[Test] Player name changed to: {PlayerName}");
         }
 
         private void OnChanged2()
         {
-            MistDebug.Log($"[Test] Player name 2 changed to: {PlayerName2}");
+            MistLogger.Log($"[Test] Player name 2 changed to: {PlayerName2}");
         }
 
         private void OnChanged3()
         {
-            MistDebug.Log($"[Test] Player name 3 changed to: {PlayerName3}");
+            MistLogger.Log($"[Test] Player name 3 changed to: {PlayerName3}");
         }
 
         private void OnChanged4()
         {
-            MistDebug.Log($"[Test] Player name 4 changed to: {PlayerName4}");
+            MistLogger.Log($"[Test] Player name 4 changed to: {PlayerName4}");
         }
 
         protected override void LocalStart()
@@ -39,7 +39,7 @@ namespace MistNet.Test
             PlayerName2 = "Player2_" + Guid.NewGuid().ToString("N").Substring(0, 4);
             PlayerName3 = "Player3_" + Guid.NewGuid().ToString("N").Substring(0, 4);
             PlayerName4 = "Player4_" + Guid.NewGuid().ToString("N").Substring(0, 4);
-            MistDebug.Log($"[Test] Player initialized with name: {PlayerName}");
+            MistLogger.Log($"[Test] Player initialized with name: {PlayerName}");
         }
     }
 }
