@@ -38,7 +38,6 @@ namespace MistNet
 
             var nodes = string.Join(", ", _initialNodeIds);
             EventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
-            _initialNodeIds.Clear();
         }
 
         private void OnRequest(string payload)
