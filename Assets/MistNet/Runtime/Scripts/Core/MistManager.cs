@@ -348,7 +348,7 @@ namespace MistNet
             return result;
         }
 
-        private static RpcArgBase[] WrapArgs(params object?[] args)
+        private static RpcArgBase[] WrapArgs(params object[] args)
         {
             if (args == null || args.Length == 0)
                 return Array.Empty<RpcArgBase>();

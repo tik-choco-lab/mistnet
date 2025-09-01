@@ -23,14 +23,14 @@ namespace MistNet
             _webSocketServer.AddWebSocketService<MistWebSocketBehavior>("/signaling");
             _webSocketServer.Start();
 
-            MistLogger.Log($"[SignalingServer] Start {port}");
+            MistLogger.Debug($"[SignalingServer] Start {port}");
         }
 
         private void OnDestroy()
         {
             if (_webSocketServer == null) return;
             _webSocketServer.Stop();
-            MistLogger.Log($"[SignalingServer] End");
+            MistLogger.Debug($"[SignalingServer] End");
         }
 
         private class MistWebSocketBehavior : WebSocketBehavior
@@ -109,7 +109,7 @@ namespace MistNet
                 var targetSessionId = SessionIdByNodeId.GetValueOrDefault(receiverId);
                 if (string.IsNullOrEmpty(targetSessionId))
                 {
-                    MistLogger.LogError($"[SERVER][ERROR] {receiverId} is not found.");
+                    MistLogger.Error($"[SERVER][ERROR] {receiverId} is not found.");
                     return;
                 }
 
@@ -118,7 +118,7 @@ namespace MistNet
 
             protected override void OnClose(CloseEventArgs e)
             {
-                MistLogger.Log($"[SERVER][CLOSE] {ID}");
+                MistLogger.Debug($"[SERVER][CLOSE] {ID}");
 
                 SessionIdByNodeId.Remove(NodeIdBySessionId[ID]);
                 NodeIdBySessionId.Remove(ID);

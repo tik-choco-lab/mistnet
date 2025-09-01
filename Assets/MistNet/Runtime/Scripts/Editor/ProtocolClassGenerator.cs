@@ -14,7 +14,7 @@ public class ProtocolClassGenerator : MonoBehaviour
 
 
     [MenuItem("Tools/MistNet/Generate Protocol Classes")]
-    private static void GenerateClassesFromYAML()
+    private static void GenerateClassesFromYaml()
     {
         var data = Read($"{ParentPath}/{YamlFileName}");
         GenerateClasses(data);

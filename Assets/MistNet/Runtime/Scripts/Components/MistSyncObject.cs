@@ -176,7 +176,7 @@ namespace MistNet
         {
             foreach (var methodInfo in methodsWithAttribute)
             {
-                MistLogger.Log($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
+                MistLogger.Debug($"Found method: {methodInfo.Name} in component: {component.GetType().Name}");
                 // 引数の種類に応じたDelegateを作成
                 var argTypes = methodInfo.GetParameters().Select(p => p.ParameterType).ToArray();
 
@@ -260,7 +260,7 @@ namespace MistNet
 
                     _propertyValueDict[watched.KeyName] = value;
 
-                    MistLogger.Log($"Property: {watched.KeyName}, Value: {value}");
+                    MistLogger.Debug($"Property: {watched.KeyName}, Value: {value}");
                     MistManager.I.RPCOther(watched.KeyName, value);
                 }
 

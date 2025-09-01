@@ -30,7 +30,7 @@ namespace MistNet
 
             if (index == -1)
             {
-                MistLogger.LogError($"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
+                MistLogger.Error($"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
             }
             _buckets[index] ??= new KBucket(_kademlia);
             _buckets[index].AddNode(nodeInfo);
@@ -49,7 +49,7 @@ namespace MistNet
 
             if (allNodes.Count == 0)
             {
-                MistLogger.LogWarning("[KademliaRoutingTable] No nodes found in routing table.");
+                MistLogger.Warning("[KademliaRoutingTable] No nodes found in routing table.");
                 return new HashSet<NodeInfo>();
             }
 
