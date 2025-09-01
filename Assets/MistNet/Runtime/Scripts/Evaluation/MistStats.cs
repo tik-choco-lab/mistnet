@@ -50,7 +50,7 @@ namespace MistNet
             var time = DateTime.Now.Ticks - pong.Time;
             var timeSpan = new TimeSpan(time);
             var rtt = (int)timeSpan.TotalMilliseconds;
-            MistDebug.Log($"[STATS][RTT][{sourceId}] {rtt} ms");
+            MistLogger.Debug($"[STATS][RTT][{sourceId}] {rtt} ms");
         }
 
         private async UniTask UpdatePing(CancellationToken token = default)
@@ -74,17 +74,17 @@ namespace MistNet
             {
                 // 現在の接続人数を調べる
                 var peers = MistManager.I.routing.ConnectedNodes;
-                MistDebug.Log($"[STATS][Peers] {peers.Count}");
+                MistLogger.Debug($"[STATS][Peers] {peers.Count}");
                 
                 // 帯域幅(bps)を計算
                 var sendBps = TotalSendBytes * 8 / IntervalSendSizeTimeSec;
-                MistDebug.Log($"[STATS][Upload] {sendBps} bps");
+                MistLogger.Debug($"[STATS][Upload]\t\t{FormatBps(sendBps)}\t{sendBps} bps");
                 
                 var receiveBps = TotalReceiveBytes * 8 / IntervalSendSizeTimeSec;
-                MistDebug.Log($"[STATS][Download] {receiveBps} bps");
+                MistLogger.Debug($"[STATS][Download]\t{FormatBps(receiveBps)}\t{receiveBps} bps");
                 
                 // メッセージ数
-                MistDebug.Log($"[STATS][MessageCount] {TotalMessengeCount}");
+                MistLogger.Debug($"[STATS][MessageCount] {TotalMessengeCount}");
                 
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
@@ -92,6 +92,31 @@ namespace MistNet
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }
+        }
+
+        private string FormatBps(float bps)
+        {
+            string unit;
+            double scaled;
+
+            if (bps >= 1_000_000)
+            {
+                scaled = bps / 1_000_000;
+                unit = "Mbps";
+            }
+            else if (bps >= 1_000)
+            {
+                scaled = bps / 1_000;
+                unit = "Kbps";
+            }
+            else
+            {
+                scaled = bps;
+                unit = "bps";
+            }
+
+            // 右揃え幅10、少数2桁
+            return $"{scaled,10:F2} {unit}";
         }
     }
 }

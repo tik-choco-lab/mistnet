@@ -55,13 +55,17 @@ namespace MistNet
 
             var data = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            MistDebug.Log($"[Debug] SendObjectInstantiateInfo: {id}");
+            MistLogger.Debug($"[Sync] SendObjectInstantiateInfo: {id}");
         }
 
         private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
-            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId))) return;
+            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId)))
+            {
+                MistLogger.Warning($"[Sync] Object with id {instantiateData.ObjId} already exists!");
+                return;
+            }
 
             // -----------------
             // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
@@ -81,7 +85,7 @@ namespace MistNet
             syncObject.Init(new ObjectId(instantiateData.ObjId), true, instantiateData.PrefabAddress, sourceId);
 
             MistManager.I.OnSpawned(sourceId);
-            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfo {sourceId}");
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
         /// <summary>
@@ -93,7 +97,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
-            MistDebug.Log($"[Debug] RequestObjectInstantiateInfo: {id}");
+            MistLogger.Log($"[Sync] RequestObjectInstantiateInfo: {id}");
         }
 
         /// <summary>
@@ -103,13 +107,13 @@ namespace MistNet
         /// <param name="sourceId"></param>
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
-            MistDebug.Log($"[Debug] ReceiveObjectInstantiateInfoRequest {sourceId}");
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfoRequest {sourceId}");
             SendObjectInstantiateInfo(sourceId);
         }
 
         public void RemoveObject(NodeId targetId)
         {
-            MistDebug.Log($"[Debug] RemoveObject: {targetId}");
+            MistLogger.Debug($"[Sync] RemoveObject: {targetId}");
             if (DestroyMyObjectsOnDisconnect) DestroyBySenderId(targetId);
             else DestroyPlayerObject(targetId);
         }
@@ -118,7 +122,7 @@ namespace MistNet
         {
             if (!ObjectIdsByOwnerId.ContainsKey(targetId))
             {
-                MistDebug.LogWarning($"No objects found for ownerId: {targetId}");
+                MistLogger.Warning($"No objects found for ownerId: {targetId}");
                 return;
             }
 
@@ -127,7 +131,7 @@ namespace MistNet
 
             if (playerObjectId == null)
             {
-                MistDebug.LogWarning($"No player object found for ownerId: {targetId}");
+                MistLogger.Warning($"No player object found for ownerId: {targetId}");
                 return;
             }
 
@@ -148,7 +152,7 @@ namespace MistNet
         {
             if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
-                MistDebug.LogError($"Sync object with id {syncObject.Id} already exists!");
+                MistLogger.Error($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -184,14 +188,14 @@ namespace MistNet
         {
             if (!_syncObjects.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogWarning($"Sync object with id {syncObject.Id} does not exist!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} does not exist!");
                 return;
             }
 
             _syncObjects.Remove(syncObject.Id);
             if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
             {
-                MistDebug.LogWarning($"No objects found for ownerId: {syncObject.OwnerId}");
+                MistLogger.Warning($"No objects found for ownerId: {syncObject.OwnerId}");
                 return;
             }
             ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
@@ -200,11 +204,23 @@ namespace MistNet
             MistManager.I.OnDestroyed(syncObject.OwnerId);
         }
 
+        public MistSyncObject GetSyncObject(NodeId id)
+        {
+            var objectId = ObjectIdsByOwnerId
+                .FirstOrDefault(pair => pair.Key == id).Value?.FirstOrDefault();
+            if (objectId == null || !_syncObjects.ContainsKey(objectId))
+            {
+                return null;
+            }
+
+            return _syncObjects[objectId];
+        }
+
         public MistSyncObject GetSyncObject(ObjectId id)
         {
             if (!_syncObjects.ContainsKey(id))
             {
-                MistDebug.LogWarning($"Sync object with id {id} does not exist!");
+                MistLogger.Warning($"Sync object with id {id} does not exist!");
                 return null;
             }
 
@@ -215,7 +231,7 @@ namespace MistNet
         {
             if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {
-                MistDebug.LogWarning("Already destroyed");
+                MistLogger.Warning("Already destroyed");
                 return;
             }
 
@@ -233,7 +249,7 @@ namespace MistNet
         {
             if (_syncAnimators.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogError($"Sync animator with id {syncObject.Id} already exists!");
+                MistLogger.Error($"Sync animator with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -245,7 +261,7 @@ namespace MistNet
         {
             if (!_syncAnimators.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogWarning($"Sync animator with id {syncObject.Id} does not exist!");
+                MistLogger.Warning($"Sync animator with id {syncObject.Id} does not exist!");
                 return;
             }
 

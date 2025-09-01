@@ -23,22 +23,22 @@ namespace MistNet.Evaluation
 
         private void OnClose(object sender, CloseEventArgs e)
         {
-            MistDebug.Log($"[WebSocket] Closed: {e.Reason}");
+            MistLogger.Info($"[WebSocket] Closed: {e.Reason}");
         }
 
         private void OnOpen(object sender, EventArgs e)
         {
-            MistDebug.Log("[WebSocket] Opened");
+            MistLogger.Info("[WebSocket] Opened");
         }
 
         private void OnError(object sender, ErrorEventArgs e)
         {
-            MistDebug.LogError($"[WebSocket] Error: {e.Message}");
+            MistLogger.Error($"[WebSocket] Error: {e.Message}");
         }
 
         private void OnMessage(object sender, MessageEventArgs e)
         {
-            MistDebug.Log($"[WebSocket] Received: {e.Data}");
+            MistLogger.Trace($"[WebSocket] Received: {e.Data}");
             _syncContext.Post(_ => OnMessageReceived?.Invoke(e.Data), null);
         }
 
@@ -52,12 +52,12 @@ namespace MistNet.Evaluation
         {
             if (_webSocket.ReadyState == WebSocketState.Open)
             {
-                MistDebug.Log($"[WebSocket] Sending: {message}");
+                MistLogger.Trace($"[WebSocket] Sending: {message}");
                 _webSocket.Send(message);
             }
             else
             {
-                MistDebug.LogWarning("WebSocket is not open.");
+                MistLogger.Warning("WebSocket is not open.");
             }
         }
 

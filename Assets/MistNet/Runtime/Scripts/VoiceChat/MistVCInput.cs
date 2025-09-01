@@ -14,7 +14,7 @@ namespace MistNet.VC
         {
             if (audioSource == null) audioSource = GetComponent<AudioSource>();
 
-            Debug.Log($"[Debug][MistVC] add input audio source");
+            MistLogger.Info($"[Debug][MistVC] add input audio source");
             PeerRepository.I.AddInputAudioSource(audioSource);
 
             if (string.IsNullOrEmpty(selectedMicDevice))
@@ -23,7 +23,7 @@ namespace MistNet.VC
                 selectedMicDevice = Microphone.devices.Length > 0 ? Microphone.devices[0] : null;
             }
 
-            MistDebug.Log($"[MistMicSettings] Selected microphone: {selectedMicDevice}");
+            MistLogger.Info($"[MistMicSettings] Selected microphone: {selectedMicDevice}");
 
             if (!string.IsNullOrEmpty(selectedMicDevice))
             {
@@ -31,7 +31,7 @@ namespace MistNet.VC
             }
             else
             {
-                MistDebug.LogError("No microphone devices found.");
+                MistLogger.Error("No microphone devices found.");
             }
         }
 
@@ -71,7 +71,7 @@ namespace MistNet.VC
             }
             else
             {
-                MistDebug.LogError("Selected microphone device not found.");
+                MistLogger.Error("Selected microphone device not found.");
             }
         }
     }
