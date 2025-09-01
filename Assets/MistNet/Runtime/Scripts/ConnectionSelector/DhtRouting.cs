@@ -8,8 +8,6 @@ namespace MistNet
     /// </summary>
     public class DhtRouting : IRouting
     {
-        private readonly Dictionary<NodeId, NodeId> _routingTable = new();
-
         public IReadOnlyList<IReadOnlyCollection<Node>> Buckets => _buckets;
         private readonly List<HashSet<Node>> _buckets = new();
         private readonly Dictionary<NodeId, int> _bucketIndexByNodeId = new();
@@ -19,7 +17,7 @@ namespace MistNet
             if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
-            MistLogger.Log($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistLogger.Debug($"[RoutingTable] Add {sourceId} from {fromId}");
             if (_routingTable.TryAdd(sourceId, fromId))
             {
                 return;
@@ -32,19 +30,19 @@ namespace MistNet
         {
             if (ConnectedNodes.Count == 0)
             {
-                MistLogger.LogWarning("[RoutingTable] Not found connected peer");
+                MistLogger.Warning("[RoutingTable] Not found connected peer");
                 return null;
             }
 
             if (ConnectedNodes.Contains(targetId)) return targetId;
 
-            MistLogger.Log($"[RoutingTable] Get {targetId}");
+            MistLogger.Debug($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;
             }
 
-            MistLogger.LogWarning($"[RoutingTable] Not found {targetId}");
+            MistLogger.Warning($"[RoutingTable] Not found {targetId}");
 
             if (_bucketIndexByNodeId.TryGetValue(targetId, out var bucketIndex))
             {
@@ -66,12 +64,12 @@ namespace MistNet
                 var node = bucket.FirstOrDefault();
                 if (node != null)
                 {
-                    MistLogger.LogWarning($"[RoutingTable] Using first node from bucket");
+                    MistLogger.Warning($"[RoutingTable] Using first node from bucket");
                     return node.Id;
                 }
             }
 
-            MistLogger.LogWarning($"[RoutingTable] Not found bucket index {targetId}");
+            MistLogger.Warning($"[RoutingTable] Not found bucket index {targetId}");
             return null;
         }
 
@@ -104,7 +102,7 @@ namespace MistNet
             {
                 if (i < _buckets.Count) continue;
                 _buckets.Add(new HashSet<Node>());
-                MistLogger.Log($"[RoutingTable] InitBucket {i}");
+                MistLogger.Debug($"[RoutingTable] InitBucket {i}");
             }
         }
 
@@ -133,7 +131,7 @@ namespace MistNet
         {
             if (!_routingTable.ContainsKey(id)) return;
 
-            MistLogger.Log($"[RoutingTable] Remove {id}");
+            MistLogger.Debug($"[RoutingTable] Remove {id}");
             _routingTable.Remove(id);
             // _buckets[_bucketIndexByNodeId[id]].RemoveWhere(n => n.Id == id);
             // _bucketIndexByNodeId.Remove(id);
@@ -142,7 +140,7 @@ namespace MistNet
         public override void OnDisconnected(NodeId id)
         {
             base.OnDisconnected(id);
-            MistLogger.Log($"[RoutingTable] Remove {id}");
+            MistLogger.Debug($"[RoutingTable] Remove {id}");
             _routingTable.Remove(id);
         }
 

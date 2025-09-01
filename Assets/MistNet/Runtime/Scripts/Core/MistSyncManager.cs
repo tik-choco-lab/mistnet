@@ -14,7 +14,6 @@ namespace MistNet
         public bool DestroyMyObjectsOnDisconnect { get; set; } // 自身のSyncObject
 
         private readonly Dictionary<ObjectId, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
-        private readonly Dictionary<ObjectId, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
 
         // ユーザーが退出した際のGameObjectの削除に使用している Instantiateで生成されたObjectに限る
         public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
@@ -32,7 +31,6 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
             MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
-            MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
             MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
@@ -97,7 +95,7 @@ namespace MistNet
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
             MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
-            MistLogger.Log($"[Sync] RequestObjectInstantiateInfo: {id}");
+            MistLogger.Debug($"[Sync] RequestObjectInstantiateInfo: {id}");
         }
 
         /// <summary>
@@ -180,8 +178,6 @@ namespace MistNet
                 ObjectIdsByOwnerId[syncObject.OwnerId] = new List<ObjectId>();
             }
             ObjectIdsByOwnerId[syncObject.OwnerId].Add(syncObject.Id);
-
-            RegisterSyncAnimator(syncObject);
         }
 
         public void UnregisterSyncObject(MistSyncObject syncObject)
@@ -200,7 +196,6 @@ namespace MistNet
             }
             ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
             
-            UnregisterSyncAnimator(syncObject);
             MistManager.I.OnDestroyed(syncObject.OwnerId);
         }
 
@@ -243,36 +238,6 @@ namespace MistNet
             }
 
             ObjectIdsByOwnerId.Remove(senderId);
-        }
-
-        private void RegisterSyncAnimator(MistSyncObject syncObject)
-        {
-            if (_syncAnimators.ContainsKey(syncObject.Id))
-            {
-                MistLogger.Error($"Sync animator with id {syncObject.Id} already exists!");
-                return;
-            }
-
-            if (!syncObject.TryGetComponent(out MistAnimator syncAnimator)) return;
-            _syncAnimators.Add(syncObject.Id, syncAnimator);
-        }
-
-        private void UnregisterSyncAnimator(MistSyncObject syncObject)
-        {
-            if (!_syncAnimators.ContainsKey(syncObject.Id))
-            {
-                MistLogger.Warning($"Sync animator with id {syncObject.Id} does not exist!");
-                return;
-            }
-
-            _syncAnimators.Remove(syncObject.Id);
-        }
-        
-        private void ReceiveAnimation(byte[] data, NodeId sourceId)
-        {
-            var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
-            if (!_syncAnimators.TryGetValue(new ObjectId(receiveData.ObjId), out var syncAnimator)) return;
-            syncAnimator.ReceiveAnimState(receiveData);
         }
 
         private void ReceiveRequestProperty(byte[] data, NodeId sourceId)

@@ -67,7 +67,7 @@ namespace MistNet
                 GetAllPeer.Remove(id);
             }
 
-            MistLogger.Log($"[MistPeerData] Add {id}");
+            MistLogger.Debug($"[MistPeerData] Add {id}");
             GetAllPeer.Add(id, new MistPeerDataElement(id));
             GetAllPeer[id].PeerEntity.AddInputAudioSource(_selfAudioSource);
 
@@ -83,7 +83,7 @@ namespace MistNet
         {
             if (string.IsNullOrEmpty(id))
             {
-                MistLogger.LogError("GetPeerData id is null");
+                MistLogger.Error("GetPeerData id is null");
             }
 
             MistLogger.Debug($"[GetPeerData] {id}");

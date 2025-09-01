@@ -33,6 +33,19 @@ namespace MistNet
             SendRequest();
         }
 
+        public void SendOffer(NodeId receiverId)
+        {
+            if (receiverId == null) return;
+            var sendData = new SignalingData
+            {
+                Type = SignalingType.Request,
+                ReceiverId = PeerRepository.I.SelfId,
+                RoomId = MistConfig.Data.RoomId,
+                SenderId = receiverId,
+            };
+            _functions[SignalingType.Request](sendData);
+        }
+
         private void SendRequest()
         {
             var sendData = new SignalingData

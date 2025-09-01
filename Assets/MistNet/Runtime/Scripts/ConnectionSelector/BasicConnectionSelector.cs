@@ -10,12 +10,12 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            MistLogger.Log($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
+            MistLogger.Debug($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
         }
 
         public override void OnConnected(NodeId id)
         {
-            MistLogger.Log($"[ConnectionSelector] OnConnected: {id}");
+            MistLogger.Debug($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
             routing.AddMessageNode(id);
 
@@ -26,7 +26,7 @@ namespace MistNet
 
         public override void OnDisconnected(NodeId id)
         {
-            MistLogger.Log($"[ConnectionSelector] OnDisconnected: {id}");
+            MistLogger.Debug($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
             routing.AddMessageNode(id);
         }
@@ -34,7 +34,7 @@ namespace MistNet
         protected override void OnMessage(string data, NodeId id)
         {
             var nodes = data.Split(',');
-            MistLogger.Log($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
+            MistLogger.Debug($"[ConnectionSelector] ({nodes.Length}) Nodes: {data}");
 
             foreach (var nodeIdStr in nodes)
             {
@@ -42,7 +42,7 @@ namespace MistNet
                 if (nodeId == PeerRepository.I.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
 
-                MistLogger.Log($"[ConnectionSelector] Connecting: {nodeId}");
+                MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");
 
                 // idの大きさを比較
                 if (MistManager.I.CompareId(nodeId))

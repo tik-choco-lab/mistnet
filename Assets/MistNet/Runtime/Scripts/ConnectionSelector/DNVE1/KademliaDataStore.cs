@@ -25,7 +25,7 @@ namespace MistNet
 
     public class ByteArrayComparer : IEqualityComparer<byte[]>
     {
-        public bool Equals(byte[]? x, byte[]? y)
+        public bool Equals(byte[] x, byte[] y)
         {
             if (x == null || y == null)
             {
@@ -37,10 +37,6 @@ namespace MistNet
 
         public int GetHashCode(byte[] obj)
         {
-            if (obj == null)
-            {
-                return 0;
-            }
             // 配列の内容に基づいてハッシュコードを計算
             unchecked
             {

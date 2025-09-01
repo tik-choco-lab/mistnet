@@ -1,6 +1,7 @@
 ﻿using MemoryPack;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 using UnityEngine;
@@ -195,7 +196,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            routing.Add(new NodeId(message.Id), senderId);
+            routing.AddRouting(new NodeId(message.Id), senderId);
             _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 
@@ -213,6 +214,16 @@ namespace MistNet
             routing.RemoveMessageNode(id);
             routing.Remove(id);
             OnDisconnected(id);
+        }
+
+        public void DisconnectAll()
+        {
+            MistLogger.Info("[DisconnectAll] All peers will be disconnected.");
+            var peerIds = routing.ConnectedNodes.ToArray();
+            foreach (var peerId in peerIds)
+            {
+                Disconnect(peerId);
+            }
         }
 
         public void OnConnected(NodeId id)
@@ -337,7 +348,7 @@ namespace MistNet
             return result;
         }
 
-        private static RpcArgBase[] WrapArgs(params object?[] args)
+        private static RpcArgBase[] WrapArgs(params object[] args)
         {
             if (args == null || args.Length == 0)
                 return Array.Empty<RpcArgBase>();

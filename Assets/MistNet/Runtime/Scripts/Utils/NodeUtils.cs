@@ -12,59 +12,37 @@ namespace MistNet.Utils
             return node;
         }
 
-        public static Node[] GetAllNodeData()
-        {
-            var objects = MistSyncManager.I.ObjectIdsByOwnerId;
-            var nodes = new Node[objects.Count];
-
-            var i = 0;
-            foreach (var (nodeId, objectList) in objects)
-            {
-                var firstObjectId = objectList[0];
-                var firstObject = MistSyncManager.I.GetSyncObject(firstObjectId);
-                nodes[i] = new Node(
-                    nodeId: nodeId,
-                    position: new Position(firstObject.transform.position)
-                );
-                i++;
-            }
-
-            return nodes;
-        }
-
         public static Node[] GetOtherNodeData()
         {
+            var nodes = MistManager.I.routing.Nodes;
             var connectedNodes = MistManager.I.routing.ConnectedNodes;
-            var objects = MistSyncManager.I.ObjectIdsByOwnerId;
+            var visibleNodes = MistSyncManager.I.ObjectIdsByOwnerId;
 
+            var nodeArray = new Node[nodes.Count];
             var i = 0;
-            var nodes = new Node[connectedNodes.Count];
-            foreach (var nodeId in connectedNodes)
+            foreach (var node in nodes.Values)
             {
-                if (nodeId == PeerRepository.I.SelfId) continue;
-                var node = MistManager.I.routing.GetNode(nodeId);
-                var position = node?.Position ?? new Position(0, 0, 0);
-                var state = EvalNodeState.Connected;
-                if (objects.TryGetValue(nodeId, out var obj))
+                if (node.Id == PeerRepository.I.SelfId) continue; // Skip self node
+                if (connectedNodes.Contains(node.Id))
                 {
-                    var firstObjectId = obj[0];
-                    var firstObject = MistSyncManager.I.GetSyncObject(firstObjectId);
-                    if (firstObject != null)
+                    node.State = EvalNodeState.Connected;
+                    if (visibleNodes.TryGetValue(node.Id, out var objectList) && objectList.Count > 0)
                     {
-                        position = new Position(firstObject.transform.position);
-                        state = EvalNodeState.Visible;
+                        var firstObjectId = objectList[0];
+                        var firstObject = MistSyncManager.I.GetSyncObject(firstObjectId);
+                        if (firstObject != null)
+                        {
+                            node.Position = new Position(firstObject.transform.position);
+                            node.State = EvalNodeState.Visible;
+                        }
                     }
                 }
-                nodes[i] = new Node(
-                    nodeId: nodeId,
-                    position: position,
-                    state: state
-                );
+                else node.State = EvalNodeState.Disconnected;
 
+                nodeArray[i] = node;
                 i++;
             }
-
-            return nodes;
+            return nodeArray;
         }
     }
 }

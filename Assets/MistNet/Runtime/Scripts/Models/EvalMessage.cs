@@ -17,6 +17,7 @@ namespace MistNet
         NodeState,
         NodeLocation,
         NodeRequest,
+        NodeReset,
     }
 
     public class EvalNodeSettings
@@ -44,5 +45,20 @@ namespace MistNet
     {
         [JsonProperty("node")] public Node Node;
         [JsonProperty("nodes")] public Node[] Nodes;
+    }
+
+    public class NodeRequest
+    {
+        [JsonProperty("nodeId")] public NodeId NodeId;
+        [JsonProperty("targetNodeId")] public NodeId TargetNodeId;
+        [JsonProperty("action")] public RequestActionType Action;
+    }
+
+    [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
+    public enum RequestActionType
+    {
+        Connect,
+        Disconnect,
+        SendNodeInfo,
     }
 }
