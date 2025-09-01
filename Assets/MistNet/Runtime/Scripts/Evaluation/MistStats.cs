@@ -9,8 +9,8 @@ namespace MistNet
     public class MistStats : MonoBehaviour
     {
         public static MistStats I { get; private set; }
-        private static readonly float IntervalPingDistanceTimeSec = 1;
-        private static readonly float IntervalSendSizeTimeSec = 1;
+        private static readonly float IntervalPingDistanceTimeSec = 1f;
+        private static readonly float IntervalSendSizeTimeSec = 1f;
         
         public int TotalSendBytes { get; set; }
         public int TotalReceiveBytes { get; set; }
