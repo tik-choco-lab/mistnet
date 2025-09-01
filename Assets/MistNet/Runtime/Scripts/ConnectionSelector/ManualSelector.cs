@@ -47,13 +47,11 @@ namespace MistNet
             {
                 case RequestActionType.Connect:
                     if (nodeId == PeerRepository.I.SelfId) return;
-                    // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
                     MistLogger.Info($"[Action] Connect {nodeId}");
                     MistManager.I.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
                     if (nodeId == PeerRepository.I.SelfId) return;
-                    // if (!MistManager.I.CompareId(nodeId)) return; // idの大きさを比較
                     MistLogger.Info($"[Action] Disconnect {nodeId}");
                     MistManager.I.Disconnect(nodeId);
                     break;
