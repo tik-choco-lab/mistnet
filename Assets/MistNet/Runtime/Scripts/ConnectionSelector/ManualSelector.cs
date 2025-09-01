@@ -35,7 +35,9 @@ namespace MistNet
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
             if (_initialNodeIds.Count >= 1) signalingWebSocket.SendOffer(_initialNodeIds[0]);
             if (_initialNodeIds.Count >= 2) signalingWebSocket.SendOffer(_initialNodeIds[1]);
-            EventLogger.I.LogEvent(EventType.ConnectionReset);
+
+            var nodes = string.Join(", ", _initialNodeIds);
+            EventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
             _initialNodeIds.Clear();
         }
 
