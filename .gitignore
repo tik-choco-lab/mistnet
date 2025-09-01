@@ -90,7 +90,6 @@ __pycache__/
 .env
 config.yml
 
-BuildScripts/build/*
 mistnet_config.json
 mistnet_opt_config.json
 
