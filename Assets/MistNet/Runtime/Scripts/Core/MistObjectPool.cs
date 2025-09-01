@@ -26,6 +26,7 @@ namespace MistNet
 
         public void Destroy(GameObject obj)
         {
+            if (obj == null) return;
             obj.SetActive(false);
         }
 
