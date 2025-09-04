@@ -10,10 +10,10 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class EventLogger : IDisposable
+    public class MistEventLogger : IDisposable
     {
         private const float SendIntervalSeconds = 10f;
-        public static EventLogger I { get; private set; }
+        public static MistEventLogger I { get; private set; }
         private const string Key = "6TdW05^r4F*bvAre$hv^&E8Z";
         private readonly List<EventData> _logQueue = new();
         private EventData _templateEventData;
@@ -22,7 +22,7 @@ namespace MistNet
         private readonly bool _enableLogging;
         private readonly CancellationTokenSource _cts = new();
 
-        public EventLogger(bool enableLogging)
+        public MistEventLogger(bool enableLogging)
         {
             _enableLogging = enableLogging;
             if (I != null)
