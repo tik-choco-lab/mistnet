@@ -18,8 +18,8 @@ namespace MistNet.Evaluation
         private async void Start()
         {
             EvalConfig.ReadConfig();
-            EventLogger logger = new(Data.EnableEventLog);
-            EventLogger.I.LogEvent(EventType.GameStarted);
+            MistEventLogger logger = new(Data.EnableEventLog);
+            MistEventLogger.I.LogEvent(EventType.GameStarted);
 
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
             _webSocketHandler.OnMessageReceived += OnMessage;

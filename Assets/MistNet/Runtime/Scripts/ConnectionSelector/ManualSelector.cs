@@ -37,7 +37,7 @@ namespace MistNet
             if (_initialNodeIds.Count >= 2) signalingWebSocket.SendOffer(_initialNodeIds[1]);
 
             var nodes = string.Join(", ", _initialNodeIds);
-            EventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
+            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
         }
 
         private void OnRequest(string payload)
