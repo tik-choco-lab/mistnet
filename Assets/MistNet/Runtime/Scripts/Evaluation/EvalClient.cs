@@ -18,6 +18,9 @@ namespace MistNet.Evaluation
         private async void Start()
         {
             EvalConfig.ReadConfig();
+            EventLogger logger = new(Data.EnableEventLog);
+            EventLogger.I.LogEvent(EventType.GameStarted);
+
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
             _webSocketHandler.OnMessageReceived += OnMessage;
             await _webSocketHandler.ConnectAsync();
@@ -30,6 +33,7 @@ namespace MistNet.Evaluation
 
             Send(EvalMessageType.NodeSettings, nodeSettings);
             UpdateSendNodeState(this.GetCancellationTokenOnDestroy()).Forget();
+
         }
 
         public void RegisterMessageHandler(EvalMessageType type, Action<string> func)

@@ -33,9 +33,11 @@ namespace MistNet
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
-            signalingWebSocket.SendOffer(_initialNodeIds[0]);
-            signalingWebSocket.SendOffer(_initialNodeIds[1]);
-            _initialNodeIds.Clear();
+            if (_initialNodeIds.Count >= 1) signalingWebSocket.SendOffer(_initialNodeIds[0]);
+            if (_initialNodeIds.Count >= 2) signalingWebSocket.SendOffer(_initialNodeIds[1]);
+
+            var nodes = string.Join(", ", _initialNodeIds);
+            EventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
         }
 
         private void OnRequest(string payload)
