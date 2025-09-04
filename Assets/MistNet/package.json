@@ -1,8 +1,8 @@
 {
     "name": "com.tik-choco.mistnet",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "displayName": "MistNet",
-    "author": { "name": "fog", "url": "https://tik-choco.com" },
+    "author": { "name": "tik-choco", "url": "https://tik-choco.com" },
     "description": "分散ネットワークライブラリ",
     "unity": "2022.3", 
     "dependencies": {        
