@@ -159,7 +159,7 @@ namespace MistNet
         {
             if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
-                MistLogger.Error($"Sync object with id {syncObject.Id} already exists!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 

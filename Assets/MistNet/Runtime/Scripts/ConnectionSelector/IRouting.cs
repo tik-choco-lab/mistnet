@@ -54,7 +54,7 @@ namespace MistNet
 
         public virtual void Add(NodeId sourceId, NodeId fromId)
         {
-            Debug.LogError($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
         }
 
         public virtual NodeId Get(NodeId targetId)
