@@ -40,8 +40,11 @@ namespace MistNet
             _objectPool.Dispose();
         }
 
-        private void SendObjectInstantiateInfo(NodeId id)
+        private async UniTask SendObjectInstantiateInfo(NodeId id)
         {
+            // _myPlayerObjectが確実に入るまで待機
+            await UniTask.WaitUntil(() => _myPlayerObject != null);
+            
             var objTransform = _myPlayerObject.transform;
             var sendData = new P_ObjectInstantiate
             {
