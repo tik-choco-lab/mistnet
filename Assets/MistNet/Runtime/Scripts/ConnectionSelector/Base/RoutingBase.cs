@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public abstract class IRouting : MonoBehaviour
+    public abstract class RoutingBase : MonoBehaviour
     {
         public IReadOnlyDictionary<NodeId, Node> Nodes => _nodes;
         protected readonly Dictionary<NodeId, Node> _nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
@@ -54,7 +54,7 @@ namespace MistNet
 
         public virtual void Add(NodeId sourceId, NodeId fromId)
         {
-            Debug.LogError($"[RoutingTable] Add {sourceId} from {fromId}");
+            MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
         }
 
         public virtual NodeId Get(NodeId targetId)

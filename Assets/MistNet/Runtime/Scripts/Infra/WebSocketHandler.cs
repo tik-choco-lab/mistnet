@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using WebSocketSharp;
 
 namespace MistNet
@@ -28,67 +29,33 @@ namespace MistNet
 
         private void HandleOnOpen(object sender, EventArgs e)
         {
-            if (_syncContext != null)
-            {
-                _syncContext.Post(state =>
-                {
-                    OnOpen?.Invoke();
-                }, null);
-            }
-            else
-            {
-                OnOpen?.Invoke();
-            }
+            _syncContext.Post(state => { OnOpen?.Invoke(); }, null);
         }
 
         private void HandleOnMessage(object sender, MessageEventArgs e)
         {
-            if (_syncContext != null)
-            {
-                _syncContext.Post(state =>
-                {
-                    OnMessage?.Invoke(e.Data);
-                }, null);
-            }
-            else
-            {
-                OnMessage?.Invoke(e.Data);
-            }
+            _syncContext.Post(state => { OnMessage?.Invoke(e.Data); }, null);
         }
 
         private void HandleOnClose(object sender, CloseEventArgs e)
         {
-            if (_syncContext != null)
-            {
-                _syncContext.Post(state =>
-                {
-                    OnClose?.Invoke(e.Reason);
-                }, null);
-            }
-            else
-            {
-                OnClose?.Invoke(e.Reason);
-            }
+            _syncContext.Post(state => { OnClose?.Invoke(e.Reason); }, null);
         }
 
         private void HandleOnError(object sender, ErrorEventArgs e)
         {
-            if (_syncContext != null)
-            {
-                _syncContext.Post(state =>
-                {
-                    OnError?.Invoke(e.Message);
-                }, null);
-            }
-            else
-            {
-                OnError?.Invoke(e.Message);
-            }
+            _syncContext.Post(state => { OnError?.Invoke(e.Message); }, null);
         }
 
         public void Connect()
         {
             _ws.Connect();
+        }
+
+        public async UniTask ConnectAsync()
+        {
+            _ws.ConnectAsync();
+            await UniTask.WaitUntil(() => _ws.ReadyState == WebSocketState.Open);
         }
 
         public void Send(string message)

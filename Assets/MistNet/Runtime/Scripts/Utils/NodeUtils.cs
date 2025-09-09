@@ -14,8 +14,8 @@ namespace MistNet.Utils
 
         public static Node[] GetOtherNodeData()
         {
-            var nodes = MistManager.I.routing.Nodes;
-            var connectedNodes = MistManager.I.routing.ConnectedNodes;
+            var nodes = MistManager.I.Routing.Nodes;
+            var connectedNodes = MistManager.I.Routing.ConnectedNodes;
             var visibleNodes = MistSyncManager.I.ObjectIdsByOwnerId;
 
             var nodeArray = new Node[nodes.Count];

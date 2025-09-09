@@ -8,19 +8,18 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class ManualSelector : IConnectionSelector
+    public class RlSelector : SelectorBase
     {
         private readonly HashSet<string> _connectedNodes = new();
-        [SerializeField] private ManualRouting routing;
+        [SerializeField] private RlRouting routing;
         [SerializeField] private EvalClient evalClient;
-        [SerializeField] private MistSignalingWebSocket signalingWebSocket;
         private const int InitialNodeCount = 2;
         private readonly List<NodeId> _initialNodeIds = new(InitialNodeCount);
 
         protected override void Start()
         {
             base.Start();
-            OptConfigLoader.ReadConfig();
+            OptConfig.ReadConfig();
             MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
             evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
             evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
@@ -33,8 +32,8 @@ namespace MistNet
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
-            if (_initialNodeIds.Count >= 1) signalingWebSocket.SendOffer(_initialNodeIds[0]);
-            if (_initialNodeIds.Count >= 2) signalingWebSocket.SendOffer(_initialNodeIds[1]);
+            if (_initialNodeIds.Count >= 1) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[0]);
+            if (_initialNodeIds.Count >= 2) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[1]);
 
             var nodes = string.Join(", ", _initialNodeIds);
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");

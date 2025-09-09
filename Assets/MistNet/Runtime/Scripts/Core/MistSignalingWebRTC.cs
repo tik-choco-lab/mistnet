@@ -3,16 +3,15 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 
 namespace MistNet
 {
-    public class MistSignalingWebRTC : MonoBehaviour
+    public class MistSignalingWebRTC : IDisposable
     {
-        private MistSignalingHandler _mistSignalingHandler;
-        private Dictionary<SignalingType, Action<SignalingData>> _functions;
-        
-        private void Start()
+        private readonly MistSignalingHandler _mistSignalingHandler;
+        private readonly Dictionary<SignalingType, Action<SignalingData>> _functions;
+
+        public MistSignalingWebRTC()
         {
             _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC);
             _mistSignalingHandler.Send += SendSignalingMessage;
@@ -25,15 +24,8 @@ namespace MistNet
             };
             
             MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
-            MistManager.I.ConnectAction += Connect;
         }
 
-        private void OnDestroy()
-        {
-            MistManager.I.ConnectAction -= Connect;
-            _mistSignalingHandler.Dispose();
-        }
-        
         /// <summary>
         /// 送信
         /// NOTE: 切断した相手にすぐに接続を試みると、nullになることがある
@@ -62,10 +54,15 @@ namespace MistNet
             _functions[type](response);
         }
 
-        private void Connect(NodeId id)
+        public void Connect(NodeId id)
         {
             MistLogger.Trace($"[Signaling][WebRTC] Connecting: {id}");
             _mistSignalingHandler.SendOffer(id).Forget();
+        }
+
+        public void Dispose()
+        {
+            _mistSignalingHandler?.Dispose();
         }
     }
 }

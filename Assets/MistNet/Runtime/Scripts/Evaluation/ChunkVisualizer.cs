@@ -7,6 +7,7 @@ namespace MistNet
         private const int ChunkCountX = 50;
         private const int ChunkCountZ = 50;
         private static float ChunkSize => Area.ChunkSize;
+        private static readonly Color LineColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
         private void Start()
         {
@@ -34,8 +35,8 @@ namespace MistNet
 
             // 線が見えるようにマテリアルを設定
             lr.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            lr.startColor = lr.endColor = Color.yellow;
-            lr.material.color = Color.yellow;
+            lr.startColor = lr.endColor = LineColor;
+            lr.material.color = LineColor;
             lr.useWorldSpace = true;
 
             var half = size / 2f;

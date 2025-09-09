@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace MistNet
 {
-    public class BasicRouting : IRouting
+    public class DefaultRouting : RoutingBase
     {
         public override void AddRouting(NodeId sourceId, NodeId fromId)
         {

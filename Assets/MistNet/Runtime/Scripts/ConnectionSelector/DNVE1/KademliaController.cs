@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace MistNet
 {
-    public class KademliaController : IConnectionSelector, IDisposable
+    public class KademliaController : SelectorBase, IDisposable
     {
         private const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
@@ -12,21 +12,21 @@ namespace MistNet
         private KademliaRoutingTable _routingTable;
         private KademliaDataStore _dataStore;
         private AreaTracker _areaTracker;
-        private IRouting _routing;
+        private RoutingBase _routingBase;
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
 
         protected override void Start()
         {
-            OptConfigLoader.ReadConfig();
+            OptConfig.ReadConfig();
 
             base.Start();
 
-            _routing = MistManager.I.routing;
+            _routingBase = MistManager.I.Routing;
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
             _kademlia = new Kademlia(SendInternal, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, _routing, this);
+            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, _routingBase, this);
             _connectionBalancer = new ConnectionBalancer(SendInternal, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
@@ -38,7 +38,7 @@ namespace MistNet
         {
             var message = JsonConvert.DeserializeObject<KademliaMessage>(data);
             _routingTable.AddNode(message.Sender);
-            _routing.Add(message.Sender.Id, id);
+            _routingBase.Add(message.Sender.Id, id);
 
             if (_onMessageReceived.TryGetValue(message.Type, out var handler))
             {

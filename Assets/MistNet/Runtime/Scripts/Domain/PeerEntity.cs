@@ -199,6 +199,9 @@ namespace MistNet
             {
                 case { ReadyState: RTCDataChannelState.Closed }:
                 case { ReadyState: RTCDataChannelState.Closing }:
+                case { ReadyState: RTCDataChannelState.Connecting }:
+                    MistLogger.Error($"[Send] DataChannel is not open {Id} {_dataChannel.ReadyState}");
+                    if (_dataChannel.ReadyState == RTCDataChannelState.Closed) Close();
                     return;
             }
 

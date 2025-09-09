@@ -16,12 +16,14 @@ namespace MistNet
     {
         public static MistManager I;
         public PeerRepository PeerRepository;
-        public Action<NodeId> ConnectAction;
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
 
-        [SerializeField] private IConnectionSelector connectionSelector;
-        [SerializeField] public IRouting routing;
+        [field:SerializeField] public Selector Selector { get; private set; }
+        public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
+        private MistSignalingWebRTC _mistSignalingWebRtc;
+        private MistSyncManager _mistSyncManager;
+        public RoutingBase Routing => Selector.RoutingBase;
 
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
         private readonly Dictionary<string, Delegate> _methods = new();
@@ -31,6 +33,7 @@ namespace MistNet
         {
             MistConfig.ReadConfig();
             PeerRepository = new();
+            _mistSyncManager = new MistSyncManager();
             PeerRepository.Init();
             I = this;
         }
@@ -38,6 +41,9 @@ namespace MistNet
         private void Start()
         {
             AddRPC(MistNetMessageType.RPC, OnRPC);
+            _mistSignalingWebRtc = new MistSignalingWebRTC();
+            MistSignalingWebSocket = new MistSignalingWebSocket();
+            _mistSyncManager.Start();
         }
 
         public void OnDestroy()
@@ -45,6 +51,8 @@ namespace MistNet
             _onMessageDict.Clear();
             PeerRepository.Dispose();
             MistConfig.WriteConfig();
+            _mistSignalingWebRtc.Dispose();
+            _mistSyncManager.Dispose();
         }
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
@@ -60,7 +68,7 @@ namespace MistNet
 
             if (!PeerRepository.IsConnected(targetId))
             {
-                targetId = routing.Get(targetId);
+                targetId = Routing.Get(targetId);
                 if (targetId == null) return; // メッセージの破棄
                 MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
@@ -81,7 +89,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in routing.MessageNodes)
+            foreach (var peerId in Routing.MessageNodes)
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -110,7 +118,6 @@ namespace MistNet
 
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            // var argsString = string.Join(Separator, args);
             var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
@@ -123,7 +130,6 @@ namespace MistNet
 
         public void RPCOther(string key, params object[] args)
         {
-            // var argsString = string.Join(Separator, args);
             var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
@@ -168,7 +174,7 @@ namespace MistNet
             var targetId = new NodeId(message.TargetId);
             if (!PeerRepository.IsConnected(targetId))
             {
-                targetId = routing.Get(targetId);
+                targetId = Routing.Get(targetId);
             }
 
             if (!string.IsNullOrEmpty(targetId))
@@ -196,7 +202,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            routing.AddRouting(new NodeId(message.Id), senderId);
+            Routing.AddRouting(new NodeId(message.Id), senderId);
             _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 
@@ -204,22 +210,22 @@ namespace MistNet
         {
             if (id == PeerRepository.I.SelfId) return;
 
-            ConnectAction.Invoke(id);
+            _mistSignalingWebRtc.Connect(id);
         }
 
         public void Disconnect(NodeId id)
         {
             if (id == PeerRepository.I.SelfId) return;
 
-            routing.RemoveMessageNode(id);
-            routing.Remove(id);
+            Routing.RemoveMessageNode(id);
+            Routing.Remove(id);
             OnDisconnected(id);
         }
 
         public void DisconnectAll()
         {
             MistLogger.Info("[DisconnectAll] All peers will be disconnected.");
-            var peerIds = routing.ConnectedNodes.ToArray();
+            var peerIds = Routing.ConnectedNodes.ToArray();
             foreach (var peerId in peerIds)
             {
                 Disconnect(peerId);
@@ -229,19 +235,19 @@ namespace MistNet
         public void OnConnected(NodeId id)
         {
             MistLogger.Info($"[Connected] {id}");
-            connectionSelector.OnConnected(id);
+            Selector.SelectorBase.OnConnected(id);
             _onConnectedAction?.Invoke(id);
-            routing.OnConnected(id);
+            Routing.OnConnected(id);
         }
 
         public void OnDisconnected(NodeId id)
         {
             MistLogger.Info($"[Disconnected] {id}");
             MistSyncManager.I.RemoveObject(id);
-            connectionSelector.OnDisconnected(id);
+            Selector.SelectorBase.OnDisconnected(id);
             PeerRepository.I.OnDisconnected(id);
             _onDisconnectedAction?.Invoke(id);
-            routing.OnDisconnected(id);
+            Routing.OnDisconnected(id);
         }
 
         public void OnSpawned(NodeId id)

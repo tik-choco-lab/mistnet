@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 using Newtonsoft.Json;
 
 namespace MistNet
 {
-    public class MistSignalingWebSocket : MonoBehaviour
+    public class MistSignalingWebSocket : IDisposable
     {
         private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
 
-        private async void Start()
+        public MistSignalingWebSocket()
+        {
+            Init().Forget();
+        }
+
+        private async UniTask Init()
         {
             _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket);
             _mistSignalingHandler.Send += Send;
@@ -58,11 +62,6 @@ namespace MistNet
             Send(sendData, null);
         }
 
-        private void OnDestroy()
-        {
-            _mistSignalingHandler.Dispose();
-            _ws?.Dispose();
-        }
 
         private int _currentAddressIndex;
 
@@ -116,6 +115,12 @@ namespace MistNet
             MistLogger.Trace($"[Signaling][WebSocket] Send: {sendData.Type} {sendData.ReceiverId}");
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);
+        }
+
+        public void Dispose()
+        {
+            _ws?.Dispose();
+            _mistSignalingHandler?.Dispose();
         }
     }
 }

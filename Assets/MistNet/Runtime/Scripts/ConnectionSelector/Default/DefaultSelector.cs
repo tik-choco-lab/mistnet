@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class BasicConnectionSelector : IConnectionSelector
+    public class DefaultSelector : SelectorBase
     {
         private readonly HashSet<string> _connectedNodes = new();
-        [SerializeField] private IRouting routing;
+        [SerializeField] private RoutingBase routingBase;
         protected override void Start()
         {
             base.Start();
@@ -17,7 +17,7 @@ namespace MistNet
         {
             MistLogger.Debug($"[ConnectionSelector] OnConnected: {id}");
             if (!_connectedNodes.Add(id)) return;
-            routing.AddMessageNode(id);
+            routingBase.AddMessageNode(id);
 
             var dataStr = string.Join(",", _connectedNodes);
             SendAll(dataStr);
@@ -28,7 +28,7 @@ namespace MistNet
         {
             MistLogger.Debug($"[ConnectionSelector] OnDisconnected: {id}");
             _connectedNodes.Remove(id);
-            routing.AddMessageNode(id);
+            routingBase.AddMessageNode(id);
         }
 
         protected override void OnMessage(string data, NodeId id)

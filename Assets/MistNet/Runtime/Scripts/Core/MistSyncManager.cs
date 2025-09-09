@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -7,7 +8,7 @@ using UnityEngine.AddressableAssets;
 
 namespace MistNet
 {
-    public class MistSyncManager : MonoBehaviour
+    public class MistSyncManager : IDisposable
     {
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }
@@ -21,12 +22,12 @@ namespace MistNet
 
         private readonly MistObjectPool _objectPool = new();
 
-        private void Awake()
+        public MistSyncManager()
         {
             I = this;
         }
 
-        private void Start()
+        public void Start()
         {
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
@@ -35,13 +36,16 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
 
-        private void OnDestroy()
+        public void Dispose()
         {
-            _objectPool.Dispose();
+            _objectPool?.Dispose();
         }
 
-        private void SendObjectInstantiateInfo(NodeId id)
+        private async UniTask SendObjectInstantiateInfo(NodeId id)
         {
+            // _myPlayerObjectが確実に入るまで待機
+            await UniTask.WaitUntil(() => _myPlayerObject != null);
+
             var objTransform = _myPlayerObject.transform;
             var sendData = new P_ObjectInstantiate
             {
@@ -72,6 +76,12 @@ namespace MistNet
             if (!_objectPool.TryGetObject(objId, out var obj))
             {
                 obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
+                if (_objectPool.TryGetObject(objId, out _))
+                {
+                    MistLogger.Warning($"[Sync] Object with id {instantiateData.ObjId} already exists!");
+                    return;
+                }
+
                 _objectPool.AddObject(objId, obj);
             }
 
@@ -106,7 +116,7 @@ namespace MistNet
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
             MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfoRequest {sourceId}");
-            SendObjectInstantiateInfo(sourceId);
+            SendObjectInstantiateInfo(sourceId).Forget();
         }
 
         public void RemoveObject(NodeId targetId)
@@ -150,7 +160,7 @@ namespace MistNet
         {
             if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
-                MistLogger.Error($"Sync object with id {syncObject.Id} already exists!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
@@ -222,7 +232,7 @@ namespace MistNet
             return _syncObjects[id];
         }
 
-        public void DestroyBySenderId(NodeId senderId)
+        private void DestroyBySenderId(NodeId senderId)
         {
             if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {
@@ -246,5 +256,7 @@ namespace MistNet
             if (!_syncObjects.TryGetValue(new ObjectId(requestData.ObjId), out var syncObject)) return;
             syncObject.SendAllProperties(sourceId);
         }
+
+
     }
 }
