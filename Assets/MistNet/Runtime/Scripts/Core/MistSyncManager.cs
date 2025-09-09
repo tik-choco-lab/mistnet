@@ -116,7 +116,7 @@ namespace MistNet
         private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
         {
             MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfoRequest {sourceId}");
-            SendObjectInstantiateInfo(sourceId);
+            SendObjectInstantiateInfo(sourceId).Forget();
         }
 
         public void RemoveObject(NodeId targetId)
@@ -232,7 +232,7 @@ namespace MistNet
             return _syncObjects[id];
         }
 
-        public void DestroyBySenderId(NodeId senderId)
+        private void DestroyBySenderId(NodeId senderId)
         {
             if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {

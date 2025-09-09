@@ -1,85 +1,88 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using WebSocketSharp;
 
-namespace MistNet.Evaluation
+namespace MistNet
 {
     public class WebSocketHandler : IDisposable
     {
-        private readonly WebSocket _webSocket;
+        private WebSocket _ws;
         private readonly SynchronizationContext _syncContext;
-        public Action<string> OnMessageReceived;
+
+        public Action OnOpen { get; set; }
+        public Action<string> OnMessage { get; set; }
+        public Action<string> OnClose { get; set; }
+        public Action<string> OnError { get; set; }
 
         public WebSocketHandler(string url)
         {
+            _ws = new WebSocket(url);
             _syncContext = SynchronizationContext.Current;
-            _webSocket = new WebSocket(url);
-            _webSocket.OnMessage += OnMessage;
-            _webSocket.OnError += OnError;
-            _webSocket.OnOpen += OnOpen;
-            _webSocket.OnClose += OnClose;
+
+            // Set up WebSocket event handlers
+            _ws.OnOpen += HandleOnOpen;
+            _ws.OnMessage += HandleOnMessage;
+            _ws.OnClose += HandleOnClose;
+            _ws.OnError += HandleOnError;
         }
 
-        private void OnClose(object sender, CloseEventArgs e)
+        private void HandleOnOpen(object sender, EventArgs e)
         {
-            MistLogger.Info($"[WebSocket] Closed: {e.Reason}");
+            _syncContext.Post(state => { OnOpen?.Invoke(); }, null);
         }
 
-        private void OnOpen(object sender, EventArgs e)
+        private void HandleOnMessage(object sender, MessageEventArgs e)
         {
-            MistLogger.Info("[WebSocket] Opened");
+            _syncContext.Post(state => { OnMessage?.Invoke(e.Data); }, null);
         }
 
-        private void OnError(object sender, ErrorEventArgs e)
+        private void HandleOnClose(object sender, CloseEventArgs e)
         {
-            MistLogger.Error($"[WebSocket] Error: {e.Message}");
+            _syncContext.Post(state => { OnClose?.Invoke(e.Reason); }, null);
         }
 
-        private void OnMessage(object sender, MessageEventArgs e)
+        private void HandleOnError(object sender, ErrorEventArgs e)
         {
-            MistLogger.Trace($"[WebSocket] Received: {e.Data}");
-            _syncContext.Post(_ => OnMessageReceived?.Invoke(e.Data), null);
+            _syncContext.Post(state => { OnError?.Invoke(e.Message); }, null);
+        }
+
+        public void Connect()
+        {
+            _ws.Connect();
         }
 
         public async UniTask ConnectAsync()
         {
-            _webSocket.ConnectAsync();
-            await UniTask.WaitUntil(() => _webSocket.ReadyState == WebSocketState.Open);
+            _ws.ConnectAsync();
+            await UniTask.WaitUntil(() => _ws.ReadyState == WebSocketState.Open);
         }
 
         public void Send(string message)
         {
-            if (_webSocket.ReadyState == WebSocketState.Open)
-            {
-                MistLogger.Trace($"[WebSocket] Sending: {message}");
-                _webSocket.Send(message);
-            }
-            else
-            {
-                MistLogger.Warning("WebSocket is not open.");
-            }
+            _ws.Send(message);
         }
 
         public void Close()
         {
-            if (_webSocket.ReadyState == WebSocketState.Open)
-            {
-                _webSocket.Close();
-            }
+            _ws.Close();
         }
 
         public void Dispose()
         {
-            if (_webSocket.ReadyState == WebSocketState.Open)
-            {
-                _webSocket.Close();
-            }
-            _webSocket.OnMessage -= OnMessage;
-            _webSocket.OnError -= OnError;
-            _webSocket.OnOpen -= OnOpen;
-            _webSocket.OnClose -= OnClose;
-            ((IDisposable)_webSocket)?.Dispose();
+            if (_ws == null) return;
+            _ws.OnOpen -= HandleOnOpen;
+            _ws.OnMessage -= HandleOnMessage;
+            _ws.OnClose -= HandleOnClose;
+            _ws.OnError -= HandleOnError;
+
+            Close();
+            _ws = null;
+        }
+
+        public bool IsConnected()
+        {
+            return _ws is { IsAlive: true };
         }
     }
 }

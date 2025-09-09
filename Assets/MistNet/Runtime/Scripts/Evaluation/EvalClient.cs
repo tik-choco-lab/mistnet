@@ -22,7 +22,7 @@ namespace MistNet.Evaluation
             MistEventLogger.I.LogEvent(EventType.GameStarted);
 
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
-            _webSocketHandler.OnMessageReceived += OnMessage;
+            _webSocketHandler.OnMessage += OnMessage;
             await _webSocketHandler.ConnectAsync();
 
             var nodeSettings = new EvalNodeSettings
@@ -81,7 +81,7 @@ namespace MistNet.Evaluation
 
         private void OnDestroy()
         {
-            _webSocketHandler.OnMessageReceived -= OnMessage;
+            _webSocketHandler.OnMessage -= OnMessage;
             _webSocketHandler?.Dispose();
             EvalConfig.WriteConfig();
         }

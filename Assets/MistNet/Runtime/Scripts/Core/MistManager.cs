@@ -118,7 +118,6 @@ namespace MistNet
 
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            // var argsString = string.Join(Separator, args);
             var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
@@ -131,7 +130,6 @@ namespace MistNet
 
         public void RPCOther(string key, params object[] args)
         {
-            // var argsString = string.Join(Separator, args);
             var rpcArgs = WrapArgs(args);
             var sendData = new P_RPC
             {
