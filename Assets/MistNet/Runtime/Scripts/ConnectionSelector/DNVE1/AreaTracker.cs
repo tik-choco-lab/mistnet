@@ -19,15 +19,13 @@ namespace MistNet
         public IReadOnlyCollection<Area> SurroundingChunks => _surroundingChunks;
         private readonly HashSet<Area> _surroundingChunks = new();
         private readonly HashSet<Area> _unloadedChunks = new();
-        private readonly RoutingBase _routingBase;
 
-        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable, RoutingBase routingBase,
+        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable,
             KademliaController kademliaController)
         {
             _kademlia = kademlia;
             _dataStore = dataStore;
             _routingTable = routingTable;
-            _routingBase = routingBase;
             _kademliaController = kademliaController;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
@@ -47,22 +45,35 @@ namespace MistNet
 
                 foreach (var area in _surroundingChunks)
                 {
-                    if (previousChunk.Contains(area)) continue;
+                    if (previousChunk.Contains(area)) {continue;}
                     _unloadedChunks.Add(area);
                 }
 
+                MistLogger.Debug($"[LoopFindMyAreaInfo] CurrentChunks={_surroundingChunks.Count}, PreviousChunks={previousChunk.Count}");
+
                 // 前と同じ場合は何もしない 新しくChunkに来たものがConnectionRequestを送ることを期待する
-                if (previousChunk.SetEquals(_surroundingChunks)) continue;
+                if (previousChunk.SetEquals(_surroundingChunks))
+                {
+                    MistLogger.Debug("[LoopFindMyAreaInfo] No change in surrounding chunks.");
+                    // continue;
+                }
+
+                MistLogger.Debug("[LoopFindMyAreaInfo] Change in surrounding chunks detected.");
 
                 FindMyAreaInfo(_surroundingChunks);
 
                 foreach (var areaChunk in _surroundingChunks)
                 {
+                    if (!previousChunk.Contains(areaChunk)) // New chunk
+                    {
+                        MistLogger.Debug($"[LoopFindMyAreaInfo] New chunk detected: {areaChunk}");
+                    }
                     AddNodeToArea(areaChunk, _routingTable.SelfNode);
                 }
 
                 foreach (var areaChunk in _unloadedChunks)
                 {
+                    MistLogger.Debug($"[LoopFindMyAreaInfo] Removing node from unloaded chunk {areaChunk}");
                     RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
                 }
             }
