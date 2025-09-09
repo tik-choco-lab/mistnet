@@ -1369,6 +1369,16 @@ PrefabInstance:
       propertyPath: <Selector>k__BackingField
       value: 
       objectReference: {fileID: 739739914}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: <MistSignalingWebRTC>k__BackingField
+      value: 
+      objectReference: {fileID: 5615826333483994239}
+    - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+        type: 3}
+      propertyPath: <MistSignalingWebRtc>k__BackingField
+      value: 
+      objectReference: {fileID: 5615826333483994239}
     - target: {fileID: 2588248874455966691, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: evalClient
@@ -1452,6 +1462,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 701c67af5a70dfc45bd6ed39e5d18584, type: 3}
+--- !u!114 &5615826333483994239 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6538681537652314171, guid: 701c67af5a70dfc45bd6ed39e5d18584,
+    type: 3}
+  m_PrefabInstance: {fileID: 5615826333483994237}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bf1fa48a17cc6d4e8ff16849772df92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
