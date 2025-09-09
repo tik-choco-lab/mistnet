@@ -5,11 +5,14 @@ namespace MistNet
     [RequireComponent(typeof(MistSyncObject))]
     public class MistBehaviour : MonoBehaviour
     {
-        protected MistSyncObject SyncObject { get; private set; }
+        [field:SerializeField] protected MistSyncObject SyncObject { get; private set; }
 
         protected virtual void Awake()
         {
-            SyncObject = transform.root.GetComponent<MistSyncObject>();
+            if (SyncObject == null)
+            {
+                SyncObject = GetComponent<MistSyncObject>();
+            }
 
             if (SyncObject.IsOwner)
             {

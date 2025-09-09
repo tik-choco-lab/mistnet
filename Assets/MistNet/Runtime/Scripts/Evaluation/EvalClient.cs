@@ -28,7 +28,7 @@ namespace MistNet.Evaluation
             var nodeSettings = new EvalNodeSettings
             {
                 NodeId = MistConfig.Data.NodeId,
-                Config = OptConfigLoader.Data,
+                ConfigData = OptConfig.Data,
             };
 
             Send(EvalMessageType.NodeSettings, nodeSettings);

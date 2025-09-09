@@ -23,7 +23,7 @@ namespace MistNet
     public class EvalNodeSettings
     {
         [JsonProperty("nodeId")] public NodeId NodeId;
-        [JsonProperty("config")] public MistOptConfig Config;
+        [JsonProperty("config")] public MistOptConfigData ConfigData;
     }
 
     [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
