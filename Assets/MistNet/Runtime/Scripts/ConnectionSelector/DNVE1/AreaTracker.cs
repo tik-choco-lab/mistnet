@@ -55,7 +55,7 @@ namespace MistNet
                 if (previousChunk.SetEquals(_surroundingChunks))
                 {
                     MistLogger.Debug("[LoopFindMyAreaInfo] No change in surrounding chunks.");
-                    // continue;
+                    continue;
                 }
 
                 MistLogger.Debug("[LoopFindMyAreaInfo] Change in surrounding chunks detected.");

@@ -55,6 +55,15 @@ namespace MistNet
         {
             return HashCode.Combine(X, Y, Z);
         }
+
+        public static Vector3Int ToChunk(Vector3 position)
+        {
+            return new Vector3Int(
+                Mathf.FloorToInt(position.x / ChunkSize),
+                0,
+                Mathf.FloorToInt(position.z / ChunkSize)
+            );
+        }
     }
 
     public class AreaInfo
