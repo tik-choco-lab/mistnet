@@ -12,10 +12,12 @@ namespace MistNet
 
         private const float UpdateInterval = 1.0f;
         private float _count;
+        private Transform _nodeTransform;
 
         private void Start()
         {
             idText.text = syncObject.OwnerId;
+            _nodeTransform = transform.root;
         }
 
 #if UNITY_EDITOR
@@ -25,7 +27,7 @@ namespace MistNet
             if (_count < UpdateInterval) return;
             _count = 0;
 
-            var chunkPos = Area.ToChunk(transform.position);
+            var chunkPos = Area.ToChunk(_nodeTransform.position);
             chunkText.text = $"({chunkPos.x}, {chunkPos.y}, {chunkPos.z})";
         }
 #endif

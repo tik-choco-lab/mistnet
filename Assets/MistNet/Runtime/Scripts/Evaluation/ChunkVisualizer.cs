@@ -16,17 +16,22 @@ namespace MistNet
             {
                 for (int z = -ChunkCountX; z <= ChunkCountZ; z++)
                 {
-                    var center = new Vector3(x * ChunkSize, 0, z * ChunkSize);
-                    CreateChunkLines(center, ChunkSize);
+                    var origin = new Vector3(x * ChunkSize, 0, z * ChunkSize);
+                    CreateChunkLines(origin, ChunkSize);
                 }
             }
 #endif
         }
 
-        private void CreateChunkLines(Vector3 center, float size)
+        private void CreateChunkLines(Vector3 origin, float size)
         {
-            var lineObj = new GameObject($"ChunkLine_{center.x}_{center.z}");
-            lineObj.transform.parent = this.transform;
+            var lineObj = new GameObject($"ChunkLine_{origin.x}_{origin.z}")
+            {
+                transform =
+                {
+                    parent = this.transform
+                }
+            };
 
             var lr = lineObj.AddComponent<LineRenderer>();
             lr.positionCount = 5;
@@ -39,14 +44,13 @@ namespace MistNet
             lr.material.color = LineColor;
             lr.useWorldSpace = true;
 
-            var half = size / 2f;
             var corners = new Vector3[]
             {
-                center + new Vector3(-half, 0, -half),
-                center + new Vector3(-half, 0, half),
-                center + new Vector3(half, 0, half),
-                center + new Vector3(half, 0, -half),
-                center + new Vector3(-half, 0, -half),
+                origin,
+                origin + new Vector3(0, 0, size),
+                origin + new Vector3(size, 0, size),
+                origin + new Vector3(size, 0, 0),
+                origin
             };
             lr.SetPositions(corners);
         }
