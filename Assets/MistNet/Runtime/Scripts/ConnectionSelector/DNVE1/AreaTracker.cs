@@ -19,15 +19,15 @@ namespace MistNet
         public IReadOnlyCollection<Area> SurroundingChunks => _surroundingChunks;
         private readonly HashSet<Area> _surroundingChunks = new();
         private readonly HashSet<Area> _unloadedChunks = new();
-        private readonly IRouting _routing;
+        private readonly RoutingBase _routingBase;
 
-        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable, IRouting routing,
+        public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable, RoutingBase routingBase,
             KademliaController kademliaController)
         {
             _kademlia = kademlia;
             _dataStore = dataStore;
             _routingTable = routingTable;
-            _routing = routing;
+            _routingBase = routingBase;
             _kademliaController = kademliaController;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
@@ -37,12 +37,12 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfigLoader.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
                 var selfNodePosition = MistSyncManager.I.SelfSyncObject.transform.position;
                 var chunk = new Area(selfNodePosition);
 
                 var previousChunk = new HashSet<Area>(_surroundingChunks);
-                GetSurroundingChunks(OptConfigLoader.Data.ChunkLoadSize, chunk);
+                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, chunk);
                 _unloadedChunks.Clear();
 
                 foreach (var area in _surroundingChunks)

@@ -10,14 +10,14 @@ namespace MistNet
     public class VisibleNodesController : IDisposable
     {
         private readonly ConnectionBalancer _connectionBalancer;
-        private readonly IRouting _routing;
+        private readonly RoutingBase _routingBase;
         private readonly CancellationTokenSource _cts = new();
         // 表示中のNode List
 
         public VisibleNodesController(ConnectionBalancer connectionBalancer)
         {
             _connectionBalancer = connectionBalancer;
-            _routing = MistManager.I.routing;
+            _routingBase = MistManager.I.Routing;
             LoopVisibleNodes(_cts.Token).Forget();
         }
 
@@ -25,7 +25,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfigLoader.Data.VisibleNodesIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.VisibleNodesIntervalSeconds), cancellationToken: token);
                 UpdateVisibleNodes();
             }
         }
@@ -38,12 +38,12 @@ namespace MistNet
             // 表示すべきNode一覧
             var visibleTargetNodes = nodes
                 .OrderBy(kvp => Vector3.Distance(MistSyncManager.I.SelfSyncObject.transform.position, kvp.Value))
-                .Take(OptConfigLoader.Data.VisibleCount)
+                .Take(OptConfig.Data.VisibleCount)
                 .Select(kvp => kvp.Key)
                 .ToHashSet();
 
-            var addVisibleNodes = visibleTargetNodes.Except(_routing.MessageNodes);
-            var removeVisibleNodes = _routing.MessageNodes.Except(visibleTargetNodes);
+            var addVisibleNodes = visibleTargetNodes.Except(_routingBase.MessageNodes);
+            var removeVisibleNodes = _routingBase.MessageNodes.Except(visibleTargetNodes);
 
             RequestObject(addVisibleNodes);
             RemoveObject(removeVisibleNodes);
@@ -53,9 +53,9 @@ namespace MistNet
         {
             foreach (var nodeId in nodeIds)
             {
-                if (!_routing.ConnectedNodes.Contains(nodeId)) continue; // 既に表示中のNodeはスキップ
+                if (!_routingBase.ConnectedNodes.Contains(nodeId)) continue; // 既に表示中のNodeはスキップ
                 MistSyncManager.I.RequestObjectInstantiateInfo(nodeId);
-                _routing.AddMessageNode(nodeId);
+                _routingBase.AddMessageNode(nodeId);
             }
         }
 
@@ -65,7 +65,7 @@ namespace MistNet
             foreach (var nodeId in nodeIdsList)
             {
                 MistSyncManager.I.RemoveObject(nodeId);
-                _routing.RemoveMessageNode(nodeId);
+                _routingBase.RemoveMessageNode(nodeId);
             }
         }
 

@@ -2,21 +2,21 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public static class OptConfigLoader
+    public static class OptConfig
     {
         private static readonly string ConfigPath = $"{Application.dataPath}/../mistnet_opt_config.json";
-        public static MistOptConfig Data { get; private set; }
+        public static MistOptConfigData Data { get; private set; }
 
         public static void ReadConfig()
         {
             if (System.IO.File.Exists(ConfigPath))
             {
                 var json = System.IO.File.ReadAllText(ConfigPath);
-                Data = Newtonsoft.Json.JsonConvert.DeserializeObject<MistOptConfig>(json);
+                Data = Newtonsoft.Json.JsonConvert.DeserializeObject<MistOptConfigData>(json);
                 if (Data != null) return;
             }
 
-            Data = new MistOptConfig();
+            Data = new MistOptConfigData();
             WriteConfig();
         }
 

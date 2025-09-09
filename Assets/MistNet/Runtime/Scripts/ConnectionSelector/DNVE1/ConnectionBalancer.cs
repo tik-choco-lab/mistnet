@@ -11,7 +11,7 @@ namespace MistNet
 {
     public class ConnectionBalancer : IDisposable
     {
-        private readonly IRouting _routing;
+        private readonly RoutingBase _routingBase;
         private readonly KademliaDataStore _dataStore;
         private readonly AreaTracker _areaTracker;
         private readonly CancellationTokenSource _cts = new();
@@ -27,7 +27,7 @@ namespace MistNet
             _send = send;
             _dataStore = dataStore;
             _areaTracker = areaTracker;
-            _routing = MistManager.I.routing;
+            _routingBase = MistManager.I.Routing;
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
         }
@@ -42,7 +42,7 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfigLoader.Data.ConnectionBalancerIntervalSeconds),
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds),
                     cancellationToken: token);
 
                 SelectConnection();
@@ -53,7 +53,7 @@ namespace MistNet
 
         private void SendLocation()
         {
-            var connectedNodes = _routing.ConnectedNodes;
+            var connectedNodes = _routingBase.ConnectedNodes;
             if (connectedNodes.Count == 0) return;
             _message ??= new KademliaMessage
             {
@@ -71,8 +71,8 @@ namespace MistNet
 
         private void SelectConnection()
         {
-            if (_routing.ConnectedNodes.Count >= OptConfigLoader.Data.MaxConnectionCount) return;
-            var requestCount = OptConfigLoader.Data.MaxConnectionCount - _routing.ConnectedNodes.Count;
+            if (_routingBase.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount) return;
+            var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
 
             if (requestCount <= 0) return;
             var i = 0;
@@ -122,12 +122,12 @@ namespace MistNet
         private void SelectDisconnection()
         {
             // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
-            if (_routing.ConnectedNodes.Count <= OptConfigLoader.Data.MaxConnectionCount) return;
+            if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
-            var requestCount = _routing.ConnectedNodes.Count - OptConfigLoader.Data.MaxConnectionCount;
+            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
             var i = 0;
 
-            var connectedNodes = _routing.ConnectedNodes;
+            var connectedNodes = _routingBase.ConnectedNodes;
             foreach (var nodeId in connectedNodes)
             {
                 if (!_nodeLocations.TryGetValue(nodeId, out var position)) continue;

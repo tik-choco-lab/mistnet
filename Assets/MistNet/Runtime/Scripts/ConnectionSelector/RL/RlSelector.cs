@@ -8,10 +8,10 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class ManualSelector : IConnectionSelector
+    public class RlSelector : SelectorBase
     {
         private readonly HashSet<string> _connectedNodes = new();
-        [SerializeField] private ManualRouting routing;
+        [SerializeField] private RlRouting routing;
         [SerializeField] private EvalClient evalClient;
         [SerializeField] private MistSignalingWebSocket signalingWebSocket;
         private const int InitialNodeCount = 2;
@@ -20,7 +20,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            OptConfigLoader.ReadConfig();
+            OptConfig.ReadConfig();
             MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
             evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
             evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);

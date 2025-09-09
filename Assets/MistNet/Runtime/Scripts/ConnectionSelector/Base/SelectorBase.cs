@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public abstract class IConnectionSelector : MonoBehaviour
+    public abstract class SelectorBase : MonoBehaviour
     {
         protected virtual void Start()
         {

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public abstract class IRouting : MonoBehaviour
+    public abstract class RoutingBase : MonoBehaviour
     {
         public IReadOnlyDictionary<NodeId, Node> Nodes => _nodes;
         protected readonly Dictionary<NodeId, Node> _nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
