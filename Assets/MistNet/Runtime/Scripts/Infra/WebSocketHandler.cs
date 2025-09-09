@@ -63,9 +63,10 @@ namespace MistNet
             _ws.Send(message);
         }
 
-        public void Close()
+        public async UniTask CloseAsync()
         {
-            _ws.Close();
+            _ws.CloseAsync();
+            await UniTask.WaitUntil(() => _ws.ReadyState == WebSocketState.Closed);
         }
 
         public void Dispose()
@@ -76,7 +77,7 @@ namespace MistNet
             _ws.OnClose -= HandleOnClose;
             _ws.OnError -= HandleOnError;
 
-            Close();
+            CloseAsync().Forget();
             _ws = null;
         }
 

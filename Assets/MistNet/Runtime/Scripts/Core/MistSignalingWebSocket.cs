@@ -50,6 +50,13 @@ namespace MistNet
             _functions[SignalingType.Request](sendData);
         }
 
+        public async UniTask ReconnectToSignalingServer()
+        {
+            await _ws.CloseAsync();
+            await _ws.ConnectAsync();
+            SendRequest();
+        }
+
         private void SendRequest()
         {
             var sendData = new SignalingData

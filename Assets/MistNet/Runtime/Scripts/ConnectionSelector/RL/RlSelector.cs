@@ -32,11 +32,16 @@ namespace MistNet
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
-            if (_initialNodeIds.Count >= 1) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[0]);
-            if (_initialNodeIds.Count >= 2) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[1]);
-
-            var nodes = string.Join(", ", _initialNodeIds);
-            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
+            // if (_initialNodeIds.Count >= 1) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[0]);
+            // if (_initialNodeIds.Count >= 2) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[1]);
+            //
+            // var nodes = string.Join(", ", _initialNodeIds);
+            // MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"接続試行相手: {nodes}");
+            // if (_initialNodeIds.Count == 0)
+            // {
+            //     MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"接続試行相手が存在しないため初期化できません");
+            // }
+            await MistManager.I.MistSignalingWebSocket.ReconnectToSignalingServer();
         }
 
         private void OnRequest(string payload)
@@ -57,6 +62,7 @@ namespace MistNet
                     MistManager.I.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
+                    MistLogger.Info($"[Action] SendNodeInfo {nodeId}");
                     SendNodeInfo(nodeId);
                     break;
             }
