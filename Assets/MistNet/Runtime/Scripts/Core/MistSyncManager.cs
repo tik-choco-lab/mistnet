@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -7,7 +8,7 @@ using UnityEngine.AddressableAssets;
 
 namespace MistNet
 {
-    public class MistSyncManager : MonoBehaviour
+    public class MistSyncManager : IDisposable
     {
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }
@@ -21,12 +22,12 @@ namespace MistNet
 
         private readonly MistObjectPool _objectPool = new();
 
-        private void Awake()
+        public MistSyncManager()
         {
             I = this;
         }
 
-        private void Start()
+        public void Start()
         {
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
@@ -35,9 +36,9 @@ namespace MistNet
             MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
 
-        private void OnDestroy()
+        public void Dispose()
         {
-            _objectPool.Dispose();
+            _objectPool?.Dispose();
         }
 
         private async UniTask SendObjectInstantiateInfo(NodeId id)
@@ -255,5 +256,7 @@ namespace MistNet
             if (!_syncObjects.TryGetValue(new ObjectId(requestData.ObjId), out var syncObject)) return;
             syncObject.SendAllProperties(sourceId);
         }
+
+
     }
 }

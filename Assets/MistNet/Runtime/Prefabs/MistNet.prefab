@@ -10,9 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5898994104393881841}
   - component: {fileID: 2003660962140733667}
-  - component: {fileID: 8809256604049318856}
-  - component: {fileID: 8278323095259074780}
-  - component: {fileID: 6538681537652314171}
   m_Layer: 0
   m_Name: MistNet
   m_TagString: Untagged
@@ -48,39 +45,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Selector>k__BackingField: {fileID: 0}
---- !u!114 &8809256604049318856
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccc9ebdbb8d89af4496b6d0806570371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &8278323095259074780
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 792e8e857ff797c439e5e9ba408a5418, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6538681537652314171
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bf1fa48a17cc6d4e8ff16849772df92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

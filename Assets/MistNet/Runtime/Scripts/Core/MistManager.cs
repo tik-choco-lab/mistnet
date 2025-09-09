@@ -22,6 +22,7 @@ namespace MistNet
         [field:SerializeField] public Selector Selector { get; private set; }
         public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
         private MistSignalingWebRTC _mistSignalingWebRtc;
+        private MistSyncManager _mistSyncManager;
         public RoutingBase Routing => Selector.RoutingBase;
 
         private readonly Dictionary<MistNetMessageType, Action<byte[], NodeId>> _onMessageDict = new();
@@ -32,6 +33,7 @@ namespace MistNet
         {
             MistConfig.ReadConfig();
             PeerRepository = new();
+            _mistSyncManager = new MistSyncManager();
             PeerRepository.Init();
             I = this;
         }
@@ -41,6 +43,7 @@ namespace MistNet
             AddRPC(MistNetMessageType.RPC, OnRPC);
             _mistSignalingWebRtc = new MistSignalingWebRTC();
             MistSignalingWebSocket = new MistSignalingWebSocket();
+            _mistSyncManager.Start();
         }
 
         public void OnDestroy()
@@ -49,6 +52,7 @@ namespace MistNet
             PeerRepository.Dispose();
             MistConfig.WriteConfig();
             _mistSignalingWebRtc.Dispose();
+            _mistSyncManager.Dispose();
         }
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
