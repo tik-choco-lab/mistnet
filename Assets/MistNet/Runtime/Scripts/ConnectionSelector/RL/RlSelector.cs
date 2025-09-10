@@ -13,8 +13,6 @@ namespace MistNet
         private readonly HashSet<string> _connectedNodes = new();
         [SerializeField] private RlRouting routing;
         [SerializeField] private EvalClient evalClient;
-        private const int InitialNodeCount = 2;
-        private readonly List<NodeId> _initialNodeIds = new(InitialNodeCount);
 
         protected override void Start()
         {
@@ -33,15 +31,6 @@ namespace MistNet
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
-            // if (_initialNodeIds.Count >= 1) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[0]);
-            // if (_initialNodeIds.Count >= 2) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[1]);
-            //
-            // var nodes = string.Join(", ", _initialNodeIds);
-            // MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"接続試行相手: {nodes}");
-            // if (_initialNodeIds.Count == 0)
-            // {
-            //     MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"接続試行相手が存在しないため初期化できません");
-            // }
             await MistManager.I.MistSignalingWebSocket.ReconnectToSignalingServer();
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"Signaling Server Reconnect");
         }
@@ -92,11 +81,6 @@ namespace MistNet
         public override void OnConnected(NodeId id)
         {
             MistLogger.Info($"[ConnectionSelector] OnConnected: {id}");
-
-            if (_initialNodeIds.Count < InitialNodeCount)
-            {
-                _initialNodeIds.Add(id);
-            }
 
             if (!_connectedNodes.Add(id)) return;
             routing.AddMessageNode(id);

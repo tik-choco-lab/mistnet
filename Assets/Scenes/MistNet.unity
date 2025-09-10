@@ -1192,7 +1192,7 @@ PrefabInstance:
     - target: {fileID: 1356439322518889549, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
       propertyPath: maxLogLines
-      value: 5
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4416884298952503070, guid: abb203be92da0fd47b5814dfd39149e6,
         type: 3}
