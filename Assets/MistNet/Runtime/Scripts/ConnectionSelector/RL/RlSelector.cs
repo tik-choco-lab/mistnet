@@ -28,6 +28,7 @@ namespace MistNet
         private async void OnReset(string payload)
         {
             MistLogger.Info("[ConnectionSelector] Resetting connections...");
+            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"全切断");
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
@@ -42,6 +43,7 @@ namespace MistNet
             //     MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"接続試行相手が存在しないため初期化できません");
             // }
             await MistManager.I.MistSignalingWebSocket.ReconnectToSignalingServer();
+            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"Signaling Server Reconnect");
         }
 
         private void OnRequest(string payload)
