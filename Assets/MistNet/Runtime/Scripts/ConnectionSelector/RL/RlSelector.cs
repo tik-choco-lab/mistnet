@@ -40,6 +40,8 @@ namespace MistNet
             var nodeRequest = JsonConvert.DeserializeObject<NodeRequest>(payload);
             var nodeId = new NodeId(nodeRequest.TargetNodeId);
 
+            MistEventLogger.I.LogEvent(EventType.Request, $"action: {nodeRequest.Action} targetId: {nodeId}");
+
             switch (nodeRequest.Action)
             {
                 case RequestActionType.Connect:

@@ -132,5 +132,6 @@ namespace MistNet
         GameEnded,
         Error,
         ConnectionReset,
+        Request,
     }
 }
