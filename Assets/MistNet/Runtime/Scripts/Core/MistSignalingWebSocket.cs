@@ -7,7 +7,6 @@ namespace MistNet
 {
     public class MistSignalingWebSocket : IDisposable
     {
-        private const float ReconnectDelaySeconds = 3.0f;
         private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
@@ -36,19 +35,6 @@ namespace MistNet
             await UniTask.Yield(); // SignalingServerが立ち上がるのを待つ
             ConnectToSignalingServer();
             SendRequest();
-        }
-
-        public void SendOffer(NodeId receiverId)
-        {
-            if (receiverId == null) return;
-            var sendData = new SignalingData
-            {
-                Type = SignalingType.Request,
-                ReceiverId = PeerRepository.I.SelfId,
-                RoomId = MistConfig.Data.RoomId,
-                SenderId = receiverId,
-            };
-            _functions[SignalingType.Request](sendData);
         }
 
         public async UniTask ReconnectToSignalingServer()
@@ -83,7 +69,7 @@ namespace MistNet
             {
                 MistLogger.Info($"[Signaling][WebSocket] Closed {message}");
                 // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
-                TryNextAddress().Forget();
+                TryNextAddress();
             };
 
             _ws.OnMessage += OnMessage;
@@ -92,22 +78,21 @@ namespace MistNet
             {
                 MistLogger.Error($"[Signaling][WebSocket] Error {message}");
                 // エラーが発生した場合も再接続を試みる
-                TryNextAddress().Forget();
+                TryNextAddress();
             };
 
             _ws.Connect();
         }
 
-        private async UniTask TryNextAddress()
+        private void TryNextAddress()
         {
             _currentAddressIndex++;
             if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
             {
                 MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
                 _currentAddressIndex = 0; // Reset for future attempts
+                return;
             }
-
-            await UniTask.Delay(TimeSpan.FromSeconds(ReconnectDelaySeconds));
 
             ConnectToSignalingServer();
         }
