@@ -7,6 +7,7 @@ namespace MistNet
 {
     public class MistSignalingWebSocket : IDisposable
     {
+        private const float ReconnectDelaySeconds = 3.0f;
         private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
@@ -74,12 +75,6 @@ namespace MistNet
 
         private void ConnectToSignalingServer()
         {
-            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
-            {
-                MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
-                return;
-            }
-
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
@@ -88,7 +83,7 @@ namespace MistNet
             {
                 MistLogger.Info($"[Signaling][WebSocket] Closed {message}");
                 // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
-                TryNextAddress();
+                TryNextAddress().Forget();
             };
 
             _ws.OnMessage += OnMessage;
@@ -97,15 +92,23 @@ namespace MistNet
             {
                 MistLogger.Error($"[Signaling][WebSocket] Error {message}");
                 // エラーが発生した場合も再接続を試みる
-                TryNextAddress();
+                TryNextAddress().Forget();
             };
 
             _ws.Connect();
         }
 
-        private void TryNextAddress()
+        private async UniTask TryNextAddress()
         {
             _currentAddressIndex++;
+            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
+            {
+                MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
+                _currentAddressIndex = 0; // Reset for future attempts
+            }
+
+            await UniTask.Delay(TimeSpan.FromSeconds(ReconnectDelaySeconds));
+
             ConnectToSignalingServer();
         }
 
