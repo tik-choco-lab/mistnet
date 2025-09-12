@@ -2,12 +2,11 @@
 - [English Documents](README_EN.md)
 - [中文文件](README_CN.md)
 
-完全分散型ネットワークライブラリです
+WebRTCを利用したUnity用ネットワークライブラリです。
 
 **実装例**
 
 https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
-
 
 
 # 特徴
@@ -52,8 +51,13 @@ Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
 
 ![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
+画像のように接続先選択方法を設定してください。
+フルメッシュ型で接続する場合はDefaultを設定してください。
 
-# 接続設定
+<img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
+
+
+# [Obsolete] 接続設定
 - SignalingServerAddress
     - Signalingをどこで行うか
 - MinConnection (現在は未使用)
@@ -82,17 +86,9 @@ Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
 - 「MistTransform」を Add Componentします。
 
 ## Animation同期方法
-- 「MistAnimator」を Add Componentします。
-- 同期対象とするParameterを下記のように設定してください。
+- 「MistAnimatorState」を Add Componentします。
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/6a52670a-ff8e-4346-9329-32a90db26904)
-
-## 同期GameObjectの設定例
-
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/ed16052a-2bae-4dea-bf0f-a7ce367f10b7)
-
-
-## Instantiate
+## Playerの生成
 - 最初からSceneに同期するGameObjectを配置するのではなく、
 MistNetを経由してInstantiateする必要があります。
 
