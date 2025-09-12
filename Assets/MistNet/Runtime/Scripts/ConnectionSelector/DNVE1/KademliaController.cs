@@ -26,7 +26,7 @@ namespace MistNet
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
             _kademlia = new Kademlia(SendInternal, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, _routingBase, this);
+            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, this);
             _connectionBalancer = new ConnectionBalancer(SendInternal, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
@@ -63,7 +63,6 @@ namespace MistNet
         private void OnFindNodeResponse(KademliaMessage message)
         {
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
-            var key = closestNodes.Key;
             foreach (var node in closestNodes.Nodes)
             {
                 _routingTable.AddNode(node);
@@ -74,12 +73,6 @@ namespace MistNet
                 // OK 既にroutingTableに登録されている
                 MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
-            // else
-            // {
-            //     MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes, but more are needed.");
-            //     // さらに絞り込む
-            //     FindNode(closestNodes.Nodes, key);
-            // }
         }
 
         private void OnFindValueResponse(KademliaMessage message)

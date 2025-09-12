@@ -13,8 +13,6 @@ namespace MistNet
         private readonly HashSet<string> _connectedNodes = new();
         [SerializeField] private RlRouting routing;
         [SerializeField] private EvalClient evalClient;
-        private const int InitialNodeCount = 2;
-        private readonly List<NodeId> _initialNodeIds = new(InitialNodeCount);
 
         protected override void Start()
         {
@@ -28,21 +26,21 @@ namespace MistNet
         private async void OnReset(string payload)
         {
             MistLogger.Info("[ConnectionSelector] Resetting connections...");
+            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"全切断");
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
-            if (_initialNodeIds.Count >= 1) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[0]);
-            if (_initialNodeIds.Count >= 2) MistManager.I.MistSignalingWebSocket.SendOffer(_initialNodeIds[1]);
-
-            var nodes = string.Join(", ", _initialNodeIds);
-            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"nodes: {nodes}");
+            await MistManager.I.MistSignalingWebSocket.ReconnectToSignalingServer();
+            MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"Signaling Server Reconnect");
         }
 
         private void OnRequest(string payload)
         {
             var nodeRequest = JsonConvert.DeserializeObject<NodeRequest>(payload);
             var nodeId = new NodeId(nodeRequest.TargetNodeId);
+
+            MistEventLogger.I.LogEvent(EventType.Request, $"action: {nodeRequest.Action} targetId: {nodeId}");
 
             switch (nodeRequest.Action)
             {
@@ -57,6 +55,7 @@ namespace MistNet
                     MistManager.I.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
+                    MistLogger.Info($"[Action] SendNodeInfo {nodeId}");
                     SendNodeInfo(nodeId);
                     break;
             }
@@ -84,11 +83,6 @@ namespace MistNet
         public override void OnConnected(NodeId id)
         {
             MistLogger.Info($"[ConnectionSelector] OnConnected: {id}");
-
-            if (_initialNodeIds.Count < InitialNodeCount)
-            {
-                _initialNodeIds.Add(id);
-            }
 
             if (!_connectedNodes.Add(id)) return;
             routing.AddMessageNode(id);

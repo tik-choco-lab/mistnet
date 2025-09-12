@@ -37,17 +37,11 @@ namespace MistNet
             SendRequest();
         }
 
-        public void SendOffer(NodeId receiverId)
+        public async UniTask ReconnectToSignalingServer()
         {
-            if (receiverId == null) return;
-            var sendData = new SignalingData
-            {
-                Type = SignalingType.Request,
-                ReceiverId = PeerRepository.I.SelfId,
-                RoomId = MistConfig.Data.RoomId,
-                SenderId = receiverId,
-            };
-            _functions[SignalingType.Request](sendData);
+            await _ws.CloseAsync();
+            await _ws.ConnectAsync();
+            SendRequest();
         }
 
         private void SendRequest()
@@ -67,12 +61,6 @@ namespace MistNet
 
         private void ConnectToSignalingServer()
         {
-            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
-            {
-                MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
-                return;
-            }
-
             var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
             _ws = new WebSocketHandler(address);
 
@@ -99,6 +87,13 @@ namespace MistNet
         private void TryNextAddress()
         {
             _currentAddressIndex++;
+            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
+            {
+                MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
+                _currentAddressIndex = 0; // Reset for future attempts
+                return;
+            }
+
             ConnectToSignalingServer();
         }
 

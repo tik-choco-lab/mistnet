@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace MistNet
 {
@@ -92,7 +91,7 @@ namespace MistNet
             var parts = message.Payload.Split(':');
             if (parts.Length == 2)
             {
-                MistLogger.Debug($"[Debug][Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
+                MistLogger.Info($"[Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
                 var key = Convert.FromBase64String(parts[0]);
                 var value = parts[1];
 
