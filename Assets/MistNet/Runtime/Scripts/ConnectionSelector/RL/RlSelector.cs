@@ -56,28 +56,9 @@ namespace MistNet
                     break;
                 case RequestActionType.SendNodeInfo:
                     MistLogger.Info($"[Action] SendNodeInfo {nodeId}");
-                    SendNodeInfo(nodeId);
+                    SendRequestNodeList(nodeId);
                     break;
             }
-        }
-
-        private void SendNodeInfo(NodeId nodeId)
-        {
-            var selfNode = NodeUtils.GetSelfNodeData();
-            var allNodes = NodeUtils.GetOtherNodeData();
-            var nodeState = new NodeState
-            {
-                Node = selfNode,
-                Nodes = allNodes
-            };
-            var octreeMessage = new OptMessage
-            {
-                Type = OptMessageType.NodeState,
-                Payload = nodeState
-            };
-            var json = JsonConvert.SerializeObject(octreeMessage);
-            MistLogger.Info($"[Action] SendNodeInfo to {nodeId}: {json}");
-            Send(json, nodeId);
         }
 
         public override void OnConnected(NodeId id)
@@ -101,6 +82,45 @@ namespace MistNet
             var message = JsonConvert.DeserializeObject<OptMessage>(data);
             MistLogger.Info($"[Action][OnMessage] {message.Type} {data}");
             if (message.Type == OptMessageType.NodeState) OnNodeStateReceived(message);
+            else if (message.Type == OptMessageType.RequestNodeList) OnRequestNodeInfoReceived(message);
+        }
+
+        private void SendRequestNodeList(NodeId nodeId)
+        {
+            var message = new OptMessage
+            {
+                Type = OptMessageType.RequestNodeList,
+                Payload = PeerRepository.I.SelfId,
+            };
+
+            var json = JsonConvert.SerializeObject(message);
+            Send(json, nodeId);
+        }
+
+        private void OnRequestNodeInfoReceived(OptMessage message)
+        {
+            var nodeId = new NodeId(message.Payload.ToString());
+            SendNodeInfo(nodeId);
+            MistEventLogger.I.LogEvent(EventType.Request, $"Send node list to {nodeId}");
+        }
+
+        private void SendNodeInfo(NodeId nodeId)
+        {
+            var selfNode = NodeUtils.GetSelfNodeData();
+            var allNodes = NodeUtils.GetOtherNodeData();
+            var nodeState = new NodeState
+            {
+                Node = selfNode,
+                Nodes = allNodes
+            };
+            var octreeMessage = new OptMessage
+            {
+                Type = OptMessageType.NodeState,
+                Payload = nodeState
+            };
+            var json = JsonConvert.SerializeObject(octreeMessage);
+            MistLogger.Info($"[Action] SendNodeInfo to {nodeId}: {json}");
+            Send(json, nodeId);
         }
 
         private void OnNodeStateReceived(OptMessage message)
