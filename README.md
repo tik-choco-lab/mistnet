@@ -2,18 +2,16 @@
 - [English Documents](README_EN.md)
 - [中文文件](README_CN.md)
 
-WebRTCを利用したUnity用ネットワークライブラリです。
+
+# 特徴
+Unity向けのWebRTCベースのネットワークライブラリです。
+初回の接続確立時のみシグナリングサーバーを利用し、それ以降は基本的にサーバー不要でマルチプレイ通信を実現します。必要に応じてTURNサーバーも利用可能です。
 
 **実装例**
 
 https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
 
-# 特徴
-- パーシャルメッシュ型P2Pで接続を行います
-- 中央となるサーバーが存在しません
-- 通信にはWebRTCを使用します
-- 仮想空間の座標に基づいて接続先が自動的に決定されます (不安定)
 
 # 導入方法
 UPM Package
