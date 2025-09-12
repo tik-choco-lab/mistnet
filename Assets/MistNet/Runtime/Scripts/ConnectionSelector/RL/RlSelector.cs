@@ -23,7 +23,13 @@ namespace MistNet
             evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
         }
 
-        private async void OnReset(string payload)
+        private void OnReset(string payload)
+        {
+            MistLogger.Info("[ConnectionSelector] Reset command received");
+            NodeStart().Forget();
+        }
+
+        private async UniTask NodeStart()
         {
             MistLogger.Info("[ConnectionSelector] Resetting connections...");
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"全切断");
@@ -44,6 +50,10 @@ namespace MistNet
 
             switch (nodeRequest.Action)
             {
+                case RequestActionType.Join:
+                    MistLogger.Info($"[Action] Join {nodeId}");
+                    NodeStart().Forget();
+                    break;
                 case RequestActionType.Connect:
                     if (nodeId == PeerRepository.I.SelfId) return;
                     MistLogger.Info($"[Action] Connect {nodeId}");
