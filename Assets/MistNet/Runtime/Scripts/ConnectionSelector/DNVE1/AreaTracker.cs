@@ -45,7 +45,7 @@ namespace MistNet
 
                 foreach (var area in _surroundingChunks)
                 {
-                    if (previousChunk.Contains(area)) {continue;}
+                    if (previousChunk.Contains(area)) continue;
                     _unloadedChunks.Add(area);
                 }
 
