@@ -14,5 +14,6 @@ namespace MistNet
     public enum OptMessageType
     {
         NodeState,
+        RequestNodeList,
     }
 }

@@ -60,5 +60,6 @@ namespace MistNet
         Connect,
         Disconnect,
         SendNodeInfo,
+        Join,
     }
 }
