@@ -36,7 +36,7 @@ namespace MistNet
             MistManager.I.DisconnectAll();
             routing.ClearNodes();
 
-            await UniTask.Delay(TimeSpan.FromSeconds(0.75f));
+            await UniTask.Delay(TimeSpan.FromSeconds(EvalConfig.Data.NodeResetIntervalSeconds));
             await MistManager.I.MistSignalingWebSocket.ReconnectToSignalingServer();
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"Signaling Server Reconnect");
         }
