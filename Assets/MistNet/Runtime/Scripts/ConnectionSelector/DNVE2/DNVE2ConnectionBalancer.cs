@@ -10,14 +10,7 @@ namespace MistNet.DNVE2
 
         public DNVE2ConnectionBalancer(IDNVE2MessageSender messageSender)
         {
-            messageSender.RegisterReceive(DNVE2MessageType.NodeList, OnNodeListReceived);
             LoopBalanceConnections(_cts.Token).Forget();
-        }
-
-        private void OnNodeListReceived(DNVE2Message message)
-        {
-            MistLogger.Debug($"[DNVE2ConnectionBalancer] OnNodeListReceived: {message.Payload} from {message.Sender}");
-            // Handle the node list message
         }
 
         private async UniTask LoopBalanceConnections(CancellationToken token)

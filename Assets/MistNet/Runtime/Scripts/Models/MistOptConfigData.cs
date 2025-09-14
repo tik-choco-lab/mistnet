@@ -20,5 +20,8 @@ namespace MistNet
         [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 5f;
         [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f;
         [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
+
+        [JsonProperty("nodeListExchangeIntervalSeconds")] public float NodeListExchangeIntervalSeconds = 3f;
+        [JsonProperty("nodeListExchangeMaxCount")] public int NodeListExchangeMaxCount = 10;
     }
 }
