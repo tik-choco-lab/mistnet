@@ -7,6 +7,8 @@ namespace MistNet.DNVE2
     {
         private static readonly Dictionary<DNVE2MessageType, DNVE2MessageReceivedHandler> Receivers = new();
         private RoutingBase _routingBase;
+        private DNVE2NodeListExchanger _exchanger;
+        private DNVE2ConnectionBalancer _balancer;
 
         protected override void Start()
         {
@@ -14,8 +16,14 @@ namespace MistNet.DNVE2
             base.Start();
             _routingBase = MistManager.I.Routing;
             var dataStore = new DNVE2NodeListStore();
-            _ = new DNVE2NodeListExchanger(this, dataStore);
-            _ = new DNVE2ConnectionBalancer(this, dataStore);
+            _exchanger = new DNVE2NodeListExchanger(this, dataStore);
+            _balancer = new DNVE2ConnectionBalancer(this, dataStore);
+        }
+
+        private void OnDestroy()
+        {
+            _exchanger.Dispose();
+            _balancer.Dispose();
         }
 
         protected override void OnMessage(string data, NodeId id)
