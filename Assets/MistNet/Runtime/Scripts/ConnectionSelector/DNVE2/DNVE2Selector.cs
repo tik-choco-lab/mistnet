@@ -9,6 +9,7 @@ namespace MistNet.DNVE2
         private RoutingBase _routingBase;
         private DNVE2NodeListExchanger _exchanger;
         private DNVE2ConnectionBalancer _balancer;
+        private DNVE2VisibleNodesController _visibleController;
 
         protected override void Start()
         {
@@ -18,12 +19,14 @@ namespace MistNet.DNVE2
             var dataStore = new DNVE2NodeListStore();
             _exchanger = new DNVE2NodeListExchanger(this, dataStore);
             _balancer = new DNVE2ConnectionBalancer(this, dataStore);
+            _visibleController = new DNVE2VisibleNodesController(dataStore);
         }
 
         private void OnDestroy()
         {
             _exchanger.Dispose();
             _balancer.Dispose();
+            _visibleController.Dispose();
         }
 
         protected override void OnMessage(string data, NodeId id)
