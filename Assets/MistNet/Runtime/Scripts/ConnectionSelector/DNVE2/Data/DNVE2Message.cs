@@ -6,7 +6,8 @@ namespace MistNet.DNVE2
 {
     public class DNVE2Message
     {
-        [JsonProperty("sender")] public NodeInfo Sender;
+        [JsonProperty("sender")] public NodeId Sender;
+        [JsonProperty("receiver")] public NodeId Receiver;
         [JsonProperty("type")] public DNVE2MessageType Type;
         [JsonProperty("payload")] public string Payload;
     }
