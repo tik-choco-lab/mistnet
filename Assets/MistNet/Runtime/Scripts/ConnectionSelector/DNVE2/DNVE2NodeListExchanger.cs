@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace MistNet.DNVE2
 {
@@ -12,8 +11,9 @@ namespace MistNet.DNVE2
     {
         private readonly IDNVE2MessageSender _sender;
         private readonly IDNVE2NodeListStore _store;
-        private CancellationTokenSource _cts = new();
+        private readonly CancellationTokenSource _cts = new();
         private DNVE2Message _message;
+        private NodeId _selfId;
 
         public DNVE2NodeListExchanger(IDNVE2MessageSender sender, IDNVE2NodeListStore store)
         {
@@ -40,33 +40,43 @@ namespace MistNet.DNVE2
                 await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.NodeListExchangeIntervalSeconds),
                     cancellationToken: token);
 
+                UpdateSelfNode();
+
                 var allNodes = _store.GetAllNodes().ToHashSet();
                 foreach (var connectedNode in MistManager.I.Routing.ConnectedNodes)
                 {
                     if (!_store.TryGet(connectedNode, out var node))
                         continue;
 
-                    var nodeList = GetNodeList(allNodes, node);
+                    var nodeList = DNVE2Util.GetNodeList(allNodes, node, OptConfig.Data.NodeListExchangeMaxCount);
                     var payload = JsonConvert.SerializeObject(nodeList);
 
                     _message ??= new DNVE2Message
                     {
+                        Type = DNVE2MessageType.NodeList,
                         Receiver = connectedNode,
                         Payload = payload
                     };
 
+                    _sender.Send(_message);
                 }
             }
         }
 
-        private IEnumerable<Node> GetNodeList(IEnumerable<Node> allNodes, Node node)
+        private void UpdateSelfNode()
         {
-            // nodeに近いノードを最大n件取得する
-            var nodeList = allNodes
-                .OrderBy(kvp => Vector3.Distance(node.Position.ToVector3(), kvp.Position.ToVector3()))
-                .Take(OptConfig.Data.NodeListExchangeMaxCount);
+            _selfId ??= PeerRepository.I.SelfId;
+            var position = MistSyncManager.I.SelfSyncObject.transform.position;
 
-            return nodeList;
+            if (!_store.TryGet(_selfId, out var node))
+            {
+                node = new Node
+                {
+                    Id = _selfId,
+                };
+                _store.AddOrUpdate(node);
+            }
+            node.Position = new Position(position);
         }
 
         public void Dispose()

@@ -13,6 +13,9 @@ namespace MistNet.DNVE2
             OptConfig.ReadConfig();
             base.Start();
             _routingBase = MistManager.I.Routing;
+            var dataStore = new DNVE2NodeListStore();
+            _ = new DNVE2NodeListExchanger(this, dataStore);
+            _ = new DNVE2ConnectionBalancer(this, dataStore);
         }
 
         protected override void OnMessage(string data, NodeId id)

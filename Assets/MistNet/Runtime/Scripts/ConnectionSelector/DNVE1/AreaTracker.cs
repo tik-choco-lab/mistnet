@@ -79,6 +79,10 @@ namespace MistNet
             }
         }
 
+        /// <summary>
+        /// NOTE: ConnectionBalancerで自身の位置を周りに送信している
+        /// </summary>
+        /// <param name="surroundingChunks"></param>
         private void FindMyAreaInfo(HashSet<Area> surroundingChunks)
         {
             foreach (var area in surroundingChunks)
