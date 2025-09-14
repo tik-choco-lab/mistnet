@@ -66,7 +66,7 @@ namespace MistNet.Evaluation
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(3.0f), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(EvalConfig.Data.SendStateIntervalSeconds), cancellationToken: token);
                 SendNodeState();
             }
         }
