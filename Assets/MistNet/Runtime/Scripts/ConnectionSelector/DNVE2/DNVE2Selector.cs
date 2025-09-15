@@ -32,9 +32,8 @@ namespace MistNet.DNVE2
 
         protected override void OnMessage(string data, NodeId id)
         {
-            MistLogger.Debug($"[DNVE2Selector] OnMessage: {data} from {id}");
             var message = JsonConvert.DeserializeObject<DNVE2Message>(data);
-            _routingBase.AddRouting(message.Sender, id);
+            MistLogger.Debug($"[DNVE2Selector] OnMessage: sender {message.Sender} from {id}");
 
             if (!Receivers.TryGetValue(message.Type, out var handler))
             {

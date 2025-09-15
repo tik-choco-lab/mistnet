@@ -14,6 +14,7 @@ namespace MistNet.DNVE2
         private readonly CancellationTokenSource _cts = new();
         private DNVE2Message _message;
         private NodeId _selfId;
+        private readonly RoutingBase _routingBase;
 
         public DNVE2NodeListExchanger(IDNVE2MessageSender sender, IDNVE2NodeListStore store)
         {
@@ -21,6 +22,7 @@ namespace MistNet.DNVE2
             _store = store;
             _sender.RegisterReceive(DNVE2MessageType.NodeList, OnNodeListReceived);
             _sender.RegisterOnConnected(OnConnected);
+            _routingBase = MistManager.I.Routing;
             LoopExchangeNodeList(_cts.Token).Forget();
         }
 
@@ -30,6 +32,7 @@ namespace MistNet.DNVE2
             var nodes = JsonConvert.DeserializeObject<List<Node>>(message.Payload);
             foreach (var node in nodes)
             {
+                _routingBase.AddRouting(node.Id, message.Sender);
                 _store.AddOrUpdate(node);
             }
         }
@@ -95,6 +98,7 @@ namespace MistNet.DNVE2
                 };
                 _store.AddOrUpdate(node);
             }
+
             node.Position = new Position(position);
         }
 
