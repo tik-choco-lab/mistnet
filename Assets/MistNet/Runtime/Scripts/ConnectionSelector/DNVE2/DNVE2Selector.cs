@@ -34,7 +34,7 @@ namespace MistNet.DNVE2
         {
             MistLogger.Debug($"[DNVE2Selector] OnMessage: {data} from {id}");
             var message = JsonConvert.DeserializeObject<DNVE2Message>(data);
-            _routingBase.Add(message.Sender, id);
+            _routingBase.AddRouting(message.Sender, id);
 
             if (!Receivers.TryGetValue(message.Type, out var handler))
             {
