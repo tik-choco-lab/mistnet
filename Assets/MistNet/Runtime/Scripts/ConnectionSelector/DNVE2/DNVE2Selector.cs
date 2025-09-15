@@ -6,6 +6,7 @@ namespace MistNet.DNVE2
     public class DNVE2Selector : SelectorBase, IDNVE2MessageSender
     {
         private static readonly Dictionary<DNVE2MessageType, DNVE2MessageReceivedHandler> Receivers = new();
+        private static readonly List<DNVE2OnConnectedHandler> OnConnectedHandlers = new();
         private RoutingBase _routingBase;
         private DNVE2NodeListExchanger _exchanger;
         private DNVE2ConnectionBalancer _balancer;
@@ -43,6 +44,14 @@ namespace MistNet.DNVE2
             handler(message);
         }
 
+        public override void OnConnected(NodeId id)
+        {
+            foreach (var handler in OnConnectedHandlers)
+            {
+                handler(id);
+            }
+        }
+
         public void Send(DNVE2Message message)
         {
             message.Sender = PeerRepository.I.SelfId;
@@ -54,6 +63,11 @@ namespace MistNet.DNVE2
         public void RegisterReceive(DNVE2MessageType type, DNVE2MessageReceivedHandler receiver)
         {
             Receivers[type] = receiver;
+        }
+
+        public void RegisterOnConnected(DNVE2OnConnectedHandler handler)
+        {
+            OnConnectedHandlers.Add(handler);
         }
     }
 }

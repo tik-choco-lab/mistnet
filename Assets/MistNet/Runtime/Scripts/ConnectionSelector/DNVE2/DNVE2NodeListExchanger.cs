@@ -20,17 +20,36 @@ namespace MistNet.DNVE2
             _sender = sender;
             _store = store;
             _sender.RegisterReceive(DNVE2MessageType.NodeList, OnNodeListReceived);
+            _sender.RegisterOnConnected(OnConnected);
             LoopExchangeNodeList(_cts.Token).Forget();
         }
 
         private void OnNodeListReceived(DNVE2Message message)
         {
-            MistLogger.Debug($"[DNVE2ConnectionBalancer] OnNodeListReceived: {message.Payload} from {message.Sender}");
+            MistLogger.Info($"[DNVE2ConnectionBalancer] OnNodeListReceived: {message.Payload} from {message.Sender}");
             var nodes = JsonConvert.DeserializeObject<List<Node>>(message.Payload);
             foreach (var node in nodes)
             {
                 _store.AddOrUpdate(node);
             }
+        }
+
+        private void OnConnected(NodeId id)
+        {
+            MistLogger.Info($"[DNVE2ConnectionBalancer] OnConnected: {id}");
+            UpdateSelfNode();
+
+            _store.TryGet(_selfId, out var selfNode);
+            var payload = JsonConvert.SerializeObject(new List<Node> { selfNode });
+
+            _message ??= new DNVE2Message
+            {
+                Type = DNVE2MessageType.NodeList,
+            };
+            _message.Receiver = id;
+            _message.Payload = payload;
+
+            _sender.Send(_message);
         }
 
         private async UniTask LoopExchangeNodeList(CancellationToken token)
@@ -54,9 +73,9 @@ namespace MistNet.DNVE2
                     _message ??= new DNVE2Message
                     {
                         Type = DNVE2MessageType.NodeList,
-                        Receiver = connectedNode,
-                        Payload = payload
                     };
+                    _message.Receiver = connectedNode;
+                    _message.Payload = payload;
 
                     _sender.Send(_message);
                 }
