@@ -15,16 +15,16 @@ namespace MistNet
         private readonly KademliaDataStore _dataStore;
         private readonly AreaTracker _areaTracker;
         private readonly CancellationTokenSource _cts = new();
-        private readonly Action<NodeId, KademliaMessage> _send;
+        private readonly IDNVE1MessageSender _sender;
         public IReadOnlyDictionary<NodeId, Vector3> NodeLocations => _nodeLocations;
         private readonly Dictionary<NodeId, Vector3> _nodeLocations = new();
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
 
-        public ConnectionBalancer(Action<NodeId, KademliaMessage> send, KademliaDataStore dataStore,
+        public ConnectionBalancer(IDNVE1MessageSender sender, KademliaDataStore dataStore,
             KademliaRoutingTable routingTable, AreaTracker areaTracker)
         {
-            _send = send;
+            _sender = sender;
             _dataStore = dataStore;
             _areaTracker = areaTracker;
             _routingBase = MistManager.I.Routing;
@@ -65,7 +65,7 @@ namespace MistNet
 
             foreach (var nodeId in connectedNodes)
             {
-                _send?.Invoke(nodeId, _message);
+                _sender?.Send(nodeId, _message);
             }
         }
 

@@ -12,7 +12,7 @@ namespace MistNet
         private readonly Kademlia _kademlia;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
-        private readonly KademliaController _kademliaController;
+        private readonly DNVE1Selector _dnve1Selector;
         private readonly CancellationTokenSource _cts;
 
         public Area MyArea => new(MistSyncManager.I.SelfSyncObject.transform.position);
@@ -21,12 +21,12 @@ namespace MistNet
         private readonly HashSet<Area> _unloadedChunks = new();
 
         public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable,
-            KademliaController kademliaController)
+            DNVE1Selector dnve1Selector)
         {
             _kademlia = kademlia;
             _dataStore = dataStore;
             _routingTable = routingTable;
-            _kademliaController = kademliaController;
+            _dnve1Selector = dnve1Selector;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
         }
@@ -94,7 +94,7 @@ namespace MistNet
                     continue;
                 }
                 var closestNodes = _routingTable.FindClosestNodes(target);
-                _kademliaController.FindValue(closestNodes, target);
+                _dnve1Selector.FindValue(closestNodes, target);
             }
         }
 

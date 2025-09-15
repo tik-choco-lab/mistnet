@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace MistNet
 {
-    public class KademliaController : SelectorBase, IDisposable
+    public class DNVE1Selector : SelectorBase, IDisposable, IDNVE1MessageSender
     {
         private const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
@@ -15,6 +15,7 @@ namespace MistNet
         private RoutingBase _routingBase;
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
+        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
 
         protected override void Start()
         {
@@ -25,9 +26,9 @@ namespace MistNet
             _routingBase = MistManager.I.Routing;
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
-            _kademlia = new Kademlia(SendInternal, _dataStore, _routingTable);
+            _kademlia = new Kademlia(this, _dataStore, _routingTable);
             _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, this);
-            _connectionBalancer = new ConnectionBalancer(SendInternal, _dataStore, _routingTable, _areaTracker);
+            _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
             _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
@@ -39,24 +40,34 @@ namespace MistNet
             var message = JsonConvert.DeserializeObject<KademliaMessage>(data);
             _routingTable.AddNode(message.Sender);
 
-            if (_onMessageReceived.TryGetValue(message.Type, out var handler))
+            if (Receivers.TryGetValue(message.Type, out var handler))
             {
                 handler(message);
+            }
+
+            if (_onMessageReceived.TryGetValue(message.Type, out var handlerOld))
+            {
+                handlerOld(message);
             }
 
             _kademlia.OnMessage(message);
             _connectionBalancer.OnMessage(message);
         }
 
-        private void SendInternal(NodeInfo node, KademliaMessage message)
+        public void Send(NodeId targetId, KademliaMessage message)
         {
-            SendInternal(node.Id, message);
+            SendInternal(targetId, message);
         }
 
         private void SendInternal(NodeId nodeId, KademliaMessage message)
         {
             message.Sender = _routingTable.SelfNode;
             Send(JsonConvert.SerializeObject(message), nodeId);
+        }
+
+        public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)
+        {
+            Receivers[type] = receiver;
         }
 
         private void OnFindNodeResponse(KademliaMessage message)
