@@ -50,7 +50,7 @@ namespace MistNet.DNVE2
             {
                 if (nodeId == _selfId) continue;
                 if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                if (MistManager.I.CompareId(nodeId)) continue;
+                // if (MistManager.I.CompareId(nodeId)) continue;
                 MistManager.I.Disconnect(nodeId);
             }
         }
@@ -61,7 +61,7 @@ namespace MistNet.DNVE2
             {
                 if (node.Id == _selfId) continue;
                 if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
-                if (MistManager.I.CompareId(node.Id)) continue;
+                // if (MistManager.I.CompareId(node.Id)) continue;
                 MistManager.I.Connect(node.Id);
             }
         }
