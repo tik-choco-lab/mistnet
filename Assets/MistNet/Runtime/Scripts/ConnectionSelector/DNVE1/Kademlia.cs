@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using MistNet.DNVE2;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -9,7 +7,6 @@ namespace MistNet
     {
         private const char SplitChar = '|';
         private readonly IDNVE1MessageSender _sender;
-        private readonly Dictionary<KademliaMessageType, Action<KademliaMessage>> _onMessageReceived = new();
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
         private readonly RoutingBase _routingBase;
@@ -19,21 +16,13 @@ namespace MistNet
             _routingTable = routingTable;
             routingTable.Init(this);
             _dataStore = dataStore;
-            sender = sender;
+            _sender = sender;
             _routingBase = MistManager.I.Routing;
 
-            _onMessageReceived[KademliaMessageType.Ping] = OnPing;
-            _onMessageReceived[KademliaMessageType.Store] = OnStore;
-            _onMessageReceived[KademliaMessageType.FindNode] = OnFindNode;
-            _onMessageReceived[KademliaMessageType.FindValue] = OnFindValue;
-        }
-
-        public void OnMessage(KademliaMessage message)
-        {
-            if (_onMessageReceived.TryGetValue(message.Type, out var handler))
-            {
-                handler(message);
-            }
+            _sender.RegisterReceive(KademliaMessageType.Ping, OnPing);
+            _sender.RegisterReceive(KademliaMessageType.Store, OnStore);
+            _sender.RegisterReceive(KademliaMessageType.FindNode, OnFindNode);
+            _sender.RegisterReceive(KademliaMessageType.FindValue, OnFindValue);
         }
 
         public void Ping(NodeInfo node)

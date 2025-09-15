@@ -30,11 +30,11 @@ namespace MistNet
             _routingBase = MistManager.I.Routing;
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
+            _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }
 
-        public void OnMessage(KademliaMessage message)
+        private void OnLocation(KademliaMessage message)
         {
-            if (message.Type != KademliaMessageType.Location) return;
             _nodeLocations[message.Sender.Id] = JsonUtility.FromJson<Vector3>(message.Payload);
         }
 

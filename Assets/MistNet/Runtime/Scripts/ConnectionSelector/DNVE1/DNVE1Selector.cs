@@ -8,11 +8,9 @@ namespace MistNet
     {
         private const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
-        private readonly Dictionary<KademliaMessageType, Action<KademliaMessage>> _onMessageReceived = new();
         private KademliaRoutingTable _routingTable;
         private KademliaDataStore _dataStore;
         private AreaTracker _areaTracker;
-        private RoutingBase _routingBase;
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
@@ -23,7 +21,6 @@ namespace MistNet
 
             base.Start();
 
-            _routingBase = MistManager.I.Routing;
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
             _kademlia = new Kademlia(this, _dataStore, _routingTable);
@@ -31,8 +28,8 @@ namespace MistNet
             _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
-            _onMessageReceived[KademliaMessageType.ResponseNode] = OnFindNodeResponse;
-            _onMessageReceived[KademliaMessageType.ResponseValue] = OnFindValueResponse;
+            RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
+            RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -44,14 +41,6 @@ namespace MistNet
             {
                 handler(message);
             }
-
-            if (_onMessageReceived.TryGetValue(message.Type, out var handlerOld))
-            {
-                handlerOld(message);
-            }
-
-            _kademlia.OnMessage(message);
-            _connectionBalancer.OnMessage(message);
         }
 
         public void Send(NodeId targetId, KademliaMessage message)
