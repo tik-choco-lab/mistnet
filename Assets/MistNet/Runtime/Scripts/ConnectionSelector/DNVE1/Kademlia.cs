@@ -6,10 +6,12 @@ namespace MistNet
 {
     public class Kademlia
     {
+        private const char SplitChar = '|';
         private readonly Action<NodeInfo, KademliaMessage> _send;
         private readonly Dictionary<KademliaMessageType, Action<KademliaMessage>> _onMessageReceived = new();
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
+        private readonly RoutingBase _routingBase;
 
         public Kademlia(Action<NodeInfo, KademliaMessage> send, KademliaDataStore dataStore, KademliaRoutingTable routingTable)
         {
@@ -17,6 +19,7 @@ namespace MistNet
             routingTable.Init(this);
             _dataStore = dataStore;
             _send = send;
+            _routingBase = MistManager.I.Routing;
 
             _onMessageReceived[KademliaMessageType.Ping] = OnPing;
             _onMessageReceived[KademliaMessageType.Store] = OnStore;
@@ -48,7 +51,7 @@ namespace MistNet
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
-                Payload = $"{Convert.ToBase64String(key)}:{value}"
+                Payload = $"{Convert.ToBase64String(key)}{SplitChar}{value}"
             };
 
             _send?.Invoke(node, message);
@@ -88,7 +91,7 @@ namespace MistNet
 
         private void OnStore(KademliaMessage message)
         {
-            var parts = message.Payload.Split(':');
+            var parts = message.Payload.Split(SplitChar);
             if (parts.Length != 2)
             {
                 MistLogger.Error($"[Error][Kademlia] Invalid store message format: {message.Payload}");
@@ -109,6 +112,7 @@ namespace MistNet
                 foreach (var node in newAreaInfo.Nodes)
                 {
                     areaInfo.Nodes.Add(node);
+                    _routingBase.AddRouting(node, message.Sender.Id);
                 }
 
                 // 削除されている場合は、Senderに限り削除を行う

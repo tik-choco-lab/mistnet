@@ -7,7 +7,6 @@ namespace MistNet.DNVE2
     {
         private static readonly Dictionary<DNVE2MessageType, DNVE2MessageReceivedHandler> Receivers = new();
         private static readonly List<DNVE2OnConnectedHandler> OnConnectedHandlers = new();
-        private RoutingBase _routingBase;
         private DNVE2NodeListExchanger _exchanger;
         private DNVE2ConnectionBalancer _balancer;
         private DNVE2VisibleNodesController _visibleController;
@@ -16,7 +15,7 @@ namespace MistNet.DNVE2
         {
             OptConfig.ReadConfig();
             base.Start();
-            _routingBase = MistManager.I.Routing;
+
             var dataStore = new DNVE2NodeListStore();
             _exchanger = new DNVE2NodeListExchanger(this, dataStore);
             _balancer = new DNVE2ConnectionBalancer(this, dataStore);
