@@ -38,7 +38,6 @@ namespace MistNet
         {
             var message = JsonConvert.DeserializeObject<KademliaMessage>(data);
             _routingTable.AddNode(message.Sender);
-            _routingBase.Add(message.Sender.Id, id);
 
             if (_onMessageReceived.TryGetValue(message.Type, out var handler))
             {

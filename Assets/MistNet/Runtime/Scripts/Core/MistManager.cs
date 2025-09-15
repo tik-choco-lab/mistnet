@@ -19,7 +19,7 @@ namespace MistNet
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
 
-        [field:SerializeField] public Selector Selector { get; private set; }
+        [field: SerializeField] public Selector Selector { get; private set; }
         public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
         private MistSignalingWebRTC _mistSignalingWebRtc;
         private MistSyncManager _mistSyncManager;
@@ -69,9 +69,15 @@ namespace MistNet
             if (!PeerRepository.IsConnected(targetId))
             {
                 targetId = Routing.Get(targetId);
-                if (targetId == null) return; // メッセージの破棄
+                if (targetId == null)
+                {
+                    MistLogger.Error($"[Error] No route to {message.TargetId}");
+                    return; // メッセージの破棄
+                }
+
                 MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
+
             if (PeerRepository.IsConnected(targetId))
             {
                 MistLogger.Trace($"[SEND][{type.ToString()}] {type} {targetId}");
@@ -149,6 +155,7 @@ namespace MistNet
                 MistLogger.Warning($"Unknown RPC method: {key}");
                 return;
             }
+
             del.DynamicInvoke(args);
         }
 
@@ -277,14 +284,16 @@ namespace MistNet
             return await InstantiatePlayerAsync(prefabAddress, position, rotation, objId);
         }
 
-        public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position, Quaternion rotation, ObjectId objId = null)
+        public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position,
+            Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
             InstantiatePlayerObject(prefabAddress, position, rotation, obj, objId);
             return obj;
         }
 
-        private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation, GameObject obj, ObjectId objId)
+        private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation,
+            GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
             objId ??= new ObjectId(PeerRepository.SelfId);
@@ -371,7 +380,8 @@ namespace MistNet
                     string sVal => new RpcArgString(sVal),
                     bool bVal => new RpcArgBool(bVal),
                     byte[] bytes => new RpcArgByteArray(bytes),
-                    _ => throw new InvalidOperationException($"Unsupported RPC argument type: {arg?.GetType().FullName}")
+                    _ => throw new InvalidOperationException(
+                        $"Unsupported RPC argument type: {arg?.GetType().FullName}")
                 };
             }
 
