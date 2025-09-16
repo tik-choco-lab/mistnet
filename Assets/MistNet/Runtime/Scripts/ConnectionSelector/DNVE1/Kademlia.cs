@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -7,32 +6,23 @@ namespace MistNet
     public class Kademlia
     {
         private const char SplitChar = '|';
-        private readonly Action<NodeInfo, KademliaMessage> _send;
-        private readonly Dictionary<KademliaMessageType, Action<KademliaMessage>> _onMessageReceived = new();
+        private readonly IDNVE1MessageSender _sender;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
         private readonly RoutingBase _routingBase;
 
-        public Kademlia(Action<NodeInfo, KademliaMessage> send, KademliaDataStore dataStore, KademliaRoutingTable routingTable)
+        public Kademlia(IDNVE1MessageSender sender, KademliaDataStore dataStore, KademliaRoutingTable routingTable)
         {
             _routingTable = routingTable;
             routingTable.Init(this);
             _dataStore = dataStore;
-            _send = send;
+            _sender = sender;
             _routingBase = MistManager.I.Routing;
 
-            _onMessageReceived[KademliaMessageType.Ping] = OnPing;
-            _onMessageReceived[KademliaMessageType.Store] = OnStore;
-            _onMessageReceived[KademliaMessageType.FindNode] = OnFindNode;
-            _onMessageReceived[KademliaMessageType.FindValue] = OnFindValue;
-        }
-
-        public void OnMessage(KademliaMessage message)
-        {
-            if (_onMessageReceived.TryGetValue(message.Type, out var handler))
-            {
-                handler(message);
-            }
+            _sender.RegisterReceive(KademliaMessageType.Ping, OnPing);
+            _sender.RegisterReceive(KademliaMessageType.Store, OnStore);
+            _sender.RegisterReceive(KademliaMessageType.FindNode, OnFindNode);
+            _sender.RegisterReceive(KademliaMessageType.FindValue, OnFindValue);
         }
 
         public void Ping(NodeInfo node)
@@ -42,7 +32,7 @@ namespace MistNet
                 Type = KademliaMessageType.Ping,
             };
 
-            _send?.Invoke(node, message);
+            _sender?.Send(node.Id, message);
         }
 
         public void Store(NodeInfo node, byte[] key, string value)
@@ -54,7 +44,7 @@ namespace MistNet
                 Payload = $"{Convert.ToBase64String(key)}{SplitChar}{value}"
             };
 
-            _send?.Invoke(node, message);
+            _sender?.Send(node.Id, message);
         }
 
         public void FindNode(NodeInfo node, byte[] target)
@@ -65,7 +55,7 @@ namespace MistNet
                 Payload = Convert.ToBase64String(target)
             };
 
-            _send?.Invoke(node, message);
+            _sender?.Send(node.Id, message);
         }
 
         public void FindValue(NodeInfo node, byte[] key)
@@ -76,7 +66,7 @@ namespace MistNet
                 Payload = Convert.ToBase64String(key)
             };
 
-            _send?.Invoke(node, message);
+            _sender?.Send(node.Id, message);
         }
 
         private void OnPing(KademliaMessage message)
@@ -86,7 +76,7 @@ namespace MistNet
                 Type = KademliaMessageType.Pong,
                 Payload = ""
             };
-            _send?.Invoke(message.Sender, response);
+            _sender?.Send(message.Sender.Id, response);
         }
 
         private void OnStore(KademliaMessage message)
@@ -163,7 +153,7 @@ namespace MistNet
                 Type = KademliaMessageType.ResponseValue,
                 Payload = json
             };
-            _send?.Invoke(sender, response);
+            _sender?.Send(sender.Id, response);
         }
 
         private void SendClosestNodes(NodeInfo sender, byte[] target)
@@ -180,7 +170,7 @@ namespace MistNet
                 Type = KademliaMessageType.ResponseNode,
                 Payload = JsonConvert.SerializeObject(responseFindNode)
             };
-            _send?.Invoke(sender, response);
+            _sender?.Send(sender.Id, response);
         }
     }
 }

@@ -19,5 +19,6 @@ public enum MistNetMessageType
     Pong,
     PropertyRequest,
     LeaderNotify,
+    Gossip,
     Error,
 }

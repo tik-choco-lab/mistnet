@@ -15,26 +15,27 @@ namespace MistNet
         private readonly KademliaDataStore _dataStore;
         private readonly AreaTracker _areaTracker;
         private readonly CancellationTokenSource _cts = new();
-        private readonly Action<NodeId, KademliaMessage> _send;
+        private readonly IDNVE1MessageSender _sender;
         public IReadOnlyDictionary<NodeId, Vector3> NodeLocations => _nodeLocations;
         private readonly Dictionary<NodeId, Vector3> _nodeLocations = new();
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
 
-        public ConnectionBalancer(Action<NodeId, KademliaMessage> send, KademliaDataStore dataStore,
+        public ConnectionBalancer(IDNVE1MessageSender sender, KademliaDataStore dataStore,
             KademliaRoutingTable routingTable, AreaTracker areaTracker)
         {
-            _send = send;
+            _sender = sender;
             _dataStore = dataStore;
             _areaTracker = areaTracker;
             _routingBase = MistManager.I.Routing;
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
+            _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }
 
-        public void OnMessage(KademliaMessage message)
+        private void OnLocation(KademliaMessage message)
         {
-            if (message.Type != KademliaMessageType.Location) return;
+            MistLogger.Info($"[ConnectionBalancer] OnLocation: {message.Sender.Id} {message.Payload}");
             _nodeLocations[message.Sender.Id] = JsonUtility.FromJson<Vector3>(message.Payload);
         }
 
@@ -55,17 +56,17 @@ namespace MistNet
         {
             var connectedNodes = _routingBase.ConnectedNodes;
             if (connectedNodes.Count == 0) return;
+
             _message ??= new KademliaMessage
             {
                 Type = KademliaMessageType.Location,
-                Sender = _routingTable.SelfNode
             };
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
             _message.Payload = JsonUtility.ToJson(position);
 
             foreach (var nodeId in connectedNodes)
             {
-                _send?.Invoke(nodeId, _message);
+                _sender?.Send(nodeId, _message);
             }
         }
 

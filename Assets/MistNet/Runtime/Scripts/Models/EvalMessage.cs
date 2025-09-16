@@ -18,6 +18,8 @@ namespace MistNet
         NodeLocation,
         NodeRequest,
         NodeReset,
+        NetworkPartitionCheck,
+        NetworkPartitionCheckResponse,
     }
 
     public class EvalNodeSettings
@@ -61,5 +63,11 @@ namespace MistNet
         Disconnect,
         SendNodeInfo,
         Join,
+    }
+
+    public class NetworkPartitionCheckData
+    {
+        [JsonProperty("id")] public string Id;
+        [JsonProperty("nodeId")] public NodeId NodeId { get; set; }
     }
 }
