@@ -35,6 +35,7 @@ namespace MistNet
 
         private void OnLocation(KademliaMessage message)
         {
+            MistLogger.Info($"[ConnectionBalancer] OnLocation: {message.Sender.Id} {message.Payload}");
             _nodeLocations[message.Sender.Id] = JsonUtility.FromJson<Vector3>(message.Payload);
         }
 
@@ -55,10 +56,10 @@ namespace MistNet
         {
             var connectedNodes = _routingBase.ConnectedNodes;
             if (connectedNodes.Count == 0) return;
+
             _message ??= new KademliaMessage
             {
                 Type = KademliaMessageType.Location,
-                Sender = _routingTable.SelfNode
             };
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
             _message.Payload = JsonUtility.ToJson(position);
