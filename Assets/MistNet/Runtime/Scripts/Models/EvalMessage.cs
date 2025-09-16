@@ -64,4 +64,10 @@ namespace MistNet
         SendNodeInfo,
         Join,
     }
+
+    public class NetworkPartitionCheckData
+    {
+        [JsonProperty("id")] public string Id;
+        [JsonProperty("nodeId")] public NodeId NodeId { get; set; }
+    }
 }
