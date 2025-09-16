@@ -8,7 +8,7 @@ namespace MistNet.Runtime.Evaluation
     {
         private const int MaxQueueSize = 100; // 固定サイズ
         private P_Gossip _message;
-        private readonly Queue<string> _receivedMessages = new Queue<string>();
+        private readonly Queue<string> _receivedMessages = new();
         private EvalMessage _evalMessage;
 
         public NetworkPartitionCheck(IEvalMessageSender sender)
