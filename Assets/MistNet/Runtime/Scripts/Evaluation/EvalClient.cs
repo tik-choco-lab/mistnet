@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using MistNet.Runtime.Evaluation;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -24,6 +25,7 @@ namespace MistNet.Evaluation
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
             _webSocketHandler.OnMessage += OnMessage;
             await _webSocketHandler.ConnectAsync();
+            _ = new NetworkPartitionCheck(this);
 
             var nodeSettings = new EvalNodeSettings
             {
@@ -33,7 +35,6 @@ namespace MistNet.Evaluation
 
             Send(EvalMessageType.NodeSettings, nodeSettings);
             UpdateSendNodeState(this.GetCancellationTokenOnDestroy()).Forget();
-
         }
 
         public void RegisterReceive(EvalMessageType type, EvalMessageReceivedHandler receiver)
