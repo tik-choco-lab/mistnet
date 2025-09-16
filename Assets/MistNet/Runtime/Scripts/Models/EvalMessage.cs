@@ -18,6 +18,7 @@ namespace MistNet
         NodeLocation,
         NodeRequest,
         NodeReset,
+        NetworkPartitionCheck,
     }
 
     public class EvalNodeSettings

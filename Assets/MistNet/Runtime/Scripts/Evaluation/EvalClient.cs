@@ -8,12 +8,12 @@ using UnityEngine;
 
 namespace MistNet.Evaluation
 {
-    public class EvalClient : MonoBehaviour
+    public class EvalClient : MonoBehaviour, IEvalMessageSender
     {
         private WebSocketHandler _webSocketHandler;
         private NodeState _nodeStateData;
         private static MistEvalConfigData Data => EvalConfig.Data;
-        private readonly Dictionary<EvalMessageType, Action<string>> _onMessageFunc = new();
+        private readonly Dictionary<EvalMessageType, EvalMessageReceivedHandler> _onMessageFunc = new();
 
         private async void Start()
         {
@@ -36,10 +36,9 @@ namespace MistNet.Evaluation
 
         }
 
-        public void RegisterMessageHandler(EvalMessageType type, Action<string> func)
+        public void RegisterReceive(EvalMessageType type, EvalMessageReceivedHandler receiver)
         {
-            if (_onMessageFunc.TryAdd(type, func)) return;
-            MistLogger.Warning($"[EvalClient] Message handler already registered for type: {type}");
+            if (_onMessageFunc.TryAdd(type, receiver)) return;
         }
 
         private NodeState GetNodeStateData()
@@ -51,7 +50,7 @@ namespace MistNet.Evaluation
             };
         }
 
-        private void Send(EvalMessageType type, object payload)
+        public void Send(EvalMessageType type, object payload)
         {
             var sendData = new EvalMessage
             {
@@ -97,7 +96,7 @@ namespace MistNet.Evaluation
                 return;
             }
 
-            func.Invoke(data.Payload == null ? string.Empty : data.Payload.ToString());
+            func(data.Payload.ToString());
         }
     }
 }

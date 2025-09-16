@@ -13,14 +13,15 @@ namespace MistNet
         private readonly HashSet<string> _connectedNodes = new();
         [SerializeField] private RlRouting routing;
         [SerializeField] private EvalClient evalClient;
-
+        private IEvalMessageSender _evalSender;
         protected override void Start()
         {
             base.Start();
             OptConfig.ReadConfig();
             MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
-            evalClient.RegisterMessageHandler(EvalMessageType.NodeRequest, OnRequest);
-            evalClient.RegisterMessageHandler(EvalMessageType.NodeReset, OnReset);
+            _evalSender = evalClient;
+            evalClient.RegisterReceive(EvalMessageType.NodeRequest, OnRequest);
+            evalClient.RegisterReceive(EvalMessageType.NodeReset, OnReset);
         }
 
         private void OnReset(string payload)
