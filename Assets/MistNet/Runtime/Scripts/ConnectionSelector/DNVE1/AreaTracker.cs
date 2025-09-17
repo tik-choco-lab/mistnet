@@ -19,6 +19,7 @@ namespace MistNet
         public IReadOnlyCollection<Area> SurroundingChunks => _surroundingChunks;
         private readonly HashSet<Area> _surroundingChunks = new();
         private readonly HashSet<Area> _unloadedChunks = new();
+        private Area _prevSelfChunk;
 
         public AreaTracker(Kademlia kademlia, KademliaDataStore dataStore, KademliaRoutingTable routingTable,
             DNVE1Selector dnve1Selector)
@@ -37,19 +38,19 @@ namespace MistNet
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
                 var selfNodePosition = MistSyncManager.I.SelfSyncObject.transform.position;
-                var chunk = new Area(selfNodePosition);
+                var selfChunk = new Area(selfNodePosition);
 
-                var previousChunk = new HashSet<Area>(_surroundingChunks);
-                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, chunk);
-                _unloadedChunks.Clear();
+                // var previousChunk = new HashSet<Area>(_surroundingChunks);
+                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, selfChunk);
+                // _unloadedChunks.Clear();
 
-                foreach (var area in _surroundingChunks)
-                {
-                    if (previousChunk.Contains(area)) continue;
-                    _unloadedChunks.Add(area);
-                }
+                // foreach (var area in _surroundingChunks)
+                // {
+                //     if (previousChunk.Contains(area)) continue;
+                //     _unloadedChunks.Add(area);
+                // }
 
-                MistLogger.Debug($"[LoopFindMyAreaInfo] CurrentChunks={_surroundingChunks.Count}, PreviousChunks={previousChunk.Count}");
+                // MistLogger.Debug($"[LoopFindMyAreaInfo] CurrentChunks={_surroundingChunks.Count}, PreviousChunks={previousChunk.Count}");
 
                 // 前と同じ場合は何もしない 新しくChunkに来たものがConnectionRequestを送ることを期待する
                 // if (previousChunk.SetEquals(_surroundingChunks))
@@ -58,24 +59,30 @@ namespace MistNet
                 //     continue;
                 // }
 
-                MistLogger.Debug("[LoopFindMyAreaInfo] Change in surrounding chunks detected.");
+                // MistLogger.Debug("[LoopFindMyAreaInfo] Change in surrounding chunks detected.");
 
-                FindMyAreaInfo(_surroundingChunks);
-
-                foreach (var areaChunk in _surroundingChunks)
+                FindMyAreaNodes(_surroundingChunks);
+                AddNodeToArea(selfChunk, _routingTable.SelfNode);
+                if (!selfChunk.Equals(_prevSelfChunk))
                 {
-                    if (!previousChunk.Contains(areaChunk)) // New chunk
-                    {
-                        MistLogger.Debug($"[LoopFindMyAreaInfo] New chunk detected: {areaChunk}");
-                    }
-                    AddNodeToArea(areaChunk, _routingTable.SelfNode);
+                    if (_prevSelfChunk != null) RemoveNodeFromArea(_prevSelfChunk, _routingTable.SelfNode);
+                    _prevSelfChunk = selfChunk;
                 }
 
-                foreach (var areaChunk in _unloadedChunks)
-                {
-                    MistLogger.Debug($"[LoopFindMyAreaInfo] Removing node from unloaded chunk {areaChunk}");
-                    RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
-                }
+                // foreach (var areaChunk in _surroundingChunks)
+                // {
+                //     if (!previousChunk.Contains(areaChunk)) // New chunk
+                //     {
+                //         MistLogger.Debug($"[LoopFindMyAreaInfo] New chunk detected: {areaChunk}");
+                //     }
+                //     AddNodeToArea(areaChunk, _routingTable.SelfNode);
+                // }
+                //
+                // foreach (var areaChunk in _unloadedChunks)
+                // {
+                //     MistLogger.Debug($"[LoopFindMyAreaInfo] Removing node from unloaded chunk {areaChunk}");
+                //     RemoveNodeFromArea(areaChunk, _routingTable.SelfNode);
+                // }
             }
         }
 
@@ -83,7 +90,7 @@ namespace MistNet
         /// NOTE: ConnectionBalancerで自身の位置を周りに送信している
         /// </summary>
         /// <param name="surroundingChunks"></param>
-        private void FindMyAreaInfo(HashSet<Area> surroundingChunks)
+        private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
             foreach (var area in surroundingChunks)
             {
