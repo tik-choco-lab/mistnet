@@ -125,7 +125,7 @@ namespace MistNet
             // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
             if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
-            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount + 3;
+            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount + 5;
             var i = 0;
 
             var connectedNodes = _routingBase.ConnectedNodes;
@@ -135,7 +135,7 @@ namespace MistNet
                 var area = new Area(position);
 
                 if (_areaTracker.SurroundingChunks.Contains(area)) continue;
-                // エリア外のノード && Chunkデータ格納ノード以外　を切断
+                // エリア外のノードを切断
                 if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                 // if (MistManager.I.CompareId(nodeId))
                 {
