@@ -11,6 +11,8 @@ namespace MistNet
         private readonly KBucket[] _buckets = new KBucket[IdUtil.BitLength];
         private byte[] _selfId;
         private Kademlia _kademlia;
+        private PriorityQueue<NodeInfo, byte[]> _pq;
+        private ByteArrayDistanceComparer _comparer;
 
         public void Init(Kademlia kademlia)
         {
@@ -37,27 +39,58 @@ namespace MistNet
 
         public HashSet<NodeInfo> FindClosestNodes(byte[] targetId)
         {
-            var allNodes = new List<NodeInfo>();
+            _comparer ??= new ByteArrayDistanceComparer();
+            _pq ??= new PriorityQueue<NodeInfo, byte[]>(_comparer);
+
             foreach (var bucket in _buckets)
             {
-                if (bucket != null)
+                if (bucket == null) continue;
+                foreach (var node in bucket.Nodes)
                 {
-                    allNodes.AddRange(bucket.Nodes);
+                    var dist = IdUtil.Xor(targetId, IdUtil.ToBytes(node.Id.ToString()));
+                    _pq.Enqueue(node, dist);
+                    if (_pq.Count > KBucket.K)
+                        _pq.Dequeue(); // 常にK個以内に保つ
                 }
             }
 
-            if (allNodes.Count == 0)
+            if (_pq.Count == 0)
             {
                 MistLogger.Warning("[KademliaRoutingTable] No nodes found in routing table.");
                 return new HashSet<NodeInfo>();
             }
 
-            return allNodes
-                .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
-                .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
-                .Take(KBucket.K)
-                .Select(tuple => tuple.Node)
-                .ToHashSet();
+            var orderedList = _pq.UnorderedItems()
+                .OrderBy(x => x.Priority, _comparer) // 近い順
+                .Select(x => x.Element)
+                .ToList(); // Listに変換
+
+            var orderedSet = new HashSet<NodeInfo>(orderedList); // HashSetを作る
+            return orderedSet;
         }
+        // public HashSet<NodeInfo> FindClosestNodes(byte[] targetId)
+        // {
+        //     var allNodes = new List<NodeInfo>();
+        //     foreach (var bucket in _buckets)
+        //     {
+        //         if (bucket != null)
+        //         {
+        //             allNodes.AddRange(bucket.Nodes);
+        //         }
+        //     }
+        //
+        //     if (allNodes.Count == 0)
+        //     {
+        //         MistLogger.Warning("[KademliaRoutingTable] No nodes found in routing table.");
+        //         return new HashSet<NodeInfo>();
+        //     }
+        //
+        //     return allNodes
+        //         .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
+        //         .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
+        //         .Take(KBucket.K)
+        //         .Select(tuple => tuple.Node)
+        //         .ToHashSet();
+        // }
     }
 }
