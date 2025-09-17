@@ -101,35 +101,35 @@ namespace MistNet
         private void AddNodeToArea(Area chunk, NodeInfo node)
         {
             var target = IdUtil.ToBytes(chunk.ToString());
-            var areaInfo = GetAreaInfo(chunk, target);
+            // var areaInfo = GetAreaInfo(chunk, target);
 
-            if (!areaInfo.Nodes.Add(node.Id)) return; // Node already exists
-
-            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
-            _dataStore.Store(target, areaInfoStr);
+            // if (!areaInfo.Nodes.Add(node.Id)) return; // Node already exists
+            //
+            // var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            // _dataStore.Store(target, areaInfoStr);
 
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
-                _kademlia.Store(closestNode, target, areaInfoStr);
+                _kademlia.Store(closestNode, target, $"add{Kademlia.SplitChar}{node.Id}");
             }
         }
 
         private void RemoveNodeFromArea(Area chunk, NodeInfo node)
         {
             var target = IdUtil.ToBytes(chunk.ToString());
-            var areaInfo = GetAreaInfo(chunk, target);
+            // var areaInfo = GetAreaInfo(chunk, target);
 
-            if (!areaInfo.Nodes.Contains(node.Id)) return; // Node does not exist
+            // if (!areaInfo.Nodes.Contains(node.Id)) return; // Node does not exist
 
-            areaInfo.Nodes.Remove(node.Id);
-            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
-            _dataStore.Store(target, areaInfoStr);
+            // areaInfo.Nodes.Remove(node.Id);
+            // var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            // _dataStore.Store(target, areaInfoStr);
 
             var closestNodes = _routingTable.FindClosestNodes(target);
             foreach (var closestNode in closestNodes)
             {
-                _kademlia.Store(closestNode, target, areaInfoStr);
+                _kademlia.Store(closestNode, target, $"remove{Kademlia.SplitChar}{node.Id}");
             }
         }
 

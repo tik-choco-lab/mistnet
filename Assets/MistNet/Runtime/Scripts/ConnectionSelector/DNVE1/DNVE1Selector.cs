@@ -76,9 +76,9 @@ namespace MistNet
 
         private void OnFindValueResponse(KademliaMessage message)
         {
-            MistLogger.Debug($"[Debug][KademliaController] Received FindValue {message.Payload} from {message.Sender.Id}");
-
             var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
+            MistLogger.Debug($"[FindValue][RES] {message.Payload} from {message.Sender.Id}");
+
             if (string.IsNullOrEmpty(response.Value))
             {
                 MistLogger.Error(
