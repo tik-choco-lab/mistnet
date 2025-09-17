@@ -52,11 +52,11 @@ namespace MistNet
                 MistLogger.Debug($"[LoopFindMyAreaInfo] CurrentChunks={_surroundingChunks.Count}, PreviousChunks={previousChunk.Count}");
 
                 // 前と同じ場合は何もしない 新しくChunkに来たものがConnectionRequestを送ることを期待する
-                if (previousChunk.SetEquals(_surroundingChunks))
-                {
-                    MistLogger.Debug("[LoopFindMyAreaInfo] No change in surrounding chunks.");
-                    continue;
-                }
+                // if (previousChunk.SetEquals(_surroundingChunks))
+                // {
+                //     MistLogger.Debug("[LoopFindMyAreaInfo] No change in surrounding chunks.");
+                //     continue;
+                // }
 
                 MistLogger.Debug("[LoopFindMyAreaInfo] Change in surrounding chunks detected.");
 
@@ -88,11 +88,11 @@ namespace MistNet
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
-                if (_dataStore.TryGetValue(target, out var _))
-                {
-                    MistLogger.Debug($"[Debug][AreaTracker] Area {area} already exists in data store.");
-                    continue;
-                }
+                // if (_dataStore.TryGetValue(target, out var _))
+                // {
+                //     MistLogger.Debug($"[Debug][AreaTracker] Area {area} already exists in data store.");
+                //     continue;
+                // }
                 var closestNodes = _routingTable.FindClosestNodes(target);
                 _dnve1Selector.FindValue(closestNodes, target);
             }

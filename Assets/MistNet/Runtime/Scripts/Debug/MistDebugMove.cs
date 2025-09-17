@@ -10,7 +10,7 @@ namespace MistNet
     public class MistDebugMove : MonoBehaviour
     {
         private const float LoopDelaySeconds = 1.0f;
-        [SerializeField] MistSyncObject syncObject;
+        [SerializeField] private MistSyncObject syncObject;
         [SerializeField] private bool yFixed;
         private Vector3 _moveVector = Vector3.zero;
         private int _areaSize;
