@@ -137,7 +137,7 @@ namespace MistNet
                 if (_areaTracker.SurroundingChunks.Contains(area)) continue;
                 // エリア外のノードを切断
                 if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                if (MistManager.I.CompareId(nodeId))
+                // if (MistManager.I.CompareId(nodeId))
                 {
                     MistManager.I.Disconnect(nodeId);
                 }
