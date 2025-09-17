@@ -125,7 +125,7 @@ namespace MistNet
             // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
             if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
-            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
+            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount + 5;
             var i = 0;
 
             var connectedNodes = _routingBase.ConnectedNodes;
