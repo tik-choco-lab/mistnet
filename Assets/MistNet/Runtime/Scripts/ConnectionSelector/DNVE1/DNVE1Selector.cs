@@ -70,26 +70,33 @@ namespace MistNet
 
             if (string.IsNullOrEmpty(response.Value))
             {
-                MistLogger.Error(
-                    $"[Error][KademliaController] No value found for target {BitConverter.ToString(response.Key)}");
+                FindValue(response.Nodes, response.Key);
                 return;
             }
 
-            MistLogger.Debug($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
+            MistLogger.Debug(
+                $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
+
+            var targetKey = BitConverter.ToString(response.Key);
+            _alreadyQueried.Remove(targetKey);
         }
+
+        private readonly Dictionary<string, HashSet<NodeId>> _alreadyQueried = new();
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
         {
+            var targetKey = BitConverter.ToString(target);
+            _alreadyQueried.TryAdd(targetKey, new HashSet<NodeId>());
+
             var count = 0;
             foreach (var node in closestNodes)
             {
+                if (_alreadyQueried[targetKey].Contains(node.Id)) continue;
+                _alreadyQueried[targetKey].Add(node.Id);
+
                 count++;
-                if (!PeerRepository.I.IsConnectingOrConnected(node.Id))
-                {
-                    MistManager.I.Connect(node.Id);
-                }
-                else _kademlia.FindValue(node, target);
+                _kademlia.FindValue(node, target);
                 if (count >= Alpha) break;
             }
         }

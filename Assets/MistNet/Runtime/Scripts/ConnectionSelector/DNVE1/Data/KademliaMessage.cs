@@ -36,5 +36,6 @@ namespace MistNet
     {
         [JsonProperty("key")] public byte[] Key { get; set; }
         [JsonProperty("value")] public string Value { get; set; }
+        [JsonProperty("nodes")] public HashSet<NodeInfo> Nodes { get; set; }
     }
 }
