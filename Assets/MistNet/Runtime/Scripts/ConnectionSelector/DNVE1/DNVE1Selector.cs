@@ -46,7 +46,12 @@ namespace MistNet
         public void Send(NodeId targetId, KademliaMessage message)
         {
             message.Sender = _routingTable.SelfNode;
-            Send(JsonConvert.SerializeObject(message), targetId);
+            if (targetId == _routingTable.SelfNode.Id)
+            {
+                MistLogger.Debug($"[Debug][Send] Loopback {JsonConvert.SerializeObject(message)}");
+                OnMessage(JsonConvert.SerializeObject(message), targetId);
+            }
+            else Send(JsonConvert.SerializeObject(message), targetId);
         }
 
         public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)
@@ -70,31 +75,20 @@ namespace MistNet
 
             if (string.IsNullOrEmpty(response.Value))
             {
-                FindValue(response.Nodes, response.Key);
+                MistLogger.Error($"[FindValue] Value not found for target {BitConverter.ToString(response.Key)}");
                 return;
             }
 
             MistLogger.Debug(
                 $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
-
-            var targetKey = BitConverter.ToString(response.Key);
-            _alreadyQueried.Remove(targetKey);
         }
-
-        private readonly Dictionary<string, HashSet<NodeId>> _alreadyQueried = new();
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
         {
-            var targetKey = BitConverter.ToString(target);
-            _alreadyQueried.TryAdd(targetKey, new HashSet<NodeId>());
-
             var count = 0;
             foreach (var node in closestNodes)
             {
-                if (_alreadyQueried[targetKey].Contains(node.Id)) continue;
-                _alreadyQueried[targetKey].Add(node.Id);
-
                 count++;
                 _kademlia.FindValue(node, target);
                 if (count >= Alpha) break;

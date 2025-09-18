@@ -161,14 +161,14 @@ namespace MistNet
             var closestNodes = _routingTable.FindClosestNodes(target);
             MistLogger.Debug($"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
-            var responseFindNode = new ResponseFindValue()
+            var responseFindNode = new ResponseFindNode()
             {
                 Key = target,
                 Nodes = closestNodes,
             };
             var response = new KademliaMessage
             {
-                Type = KademliaMessageType.ResponseValue,
+                Type = KademliaMessageType.ResponseNode,
                 Payload = JsonConvert.SerializeObject(responseFindNode)
             };
             _sender?.Send(sender.Id, response);
