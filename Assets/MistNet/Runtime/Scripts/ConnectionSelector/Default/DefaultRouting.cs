@@ -20,7 +20,7 @@ namespace MistNet
 
         public override NodeId Get(NodeId targetId)
         {
-            MistLogger.Debug($"[RoutingTable] Get {targetId}");
+            MistLogger.Trace($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;

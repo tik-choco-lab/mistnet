@@ -48,6 +48,11 @@ namespace MistNet
 
             // 満杯 → 先頭を PING して置き換え判定
             var oldest = _nodes.First();
+            if (_pendingNodeList.ContainsKey(oldest))
+            {
+                // すでに PING 済みなら何もしない
+                return;
+            }
             _kademlia.Ping(oldest);
             _pendingNodeList[oldest] = newNode; // 置き換え候補を記録
             ReplaceByTimeout(oldest).Forget();  // タイムアウトで置き換えを実行

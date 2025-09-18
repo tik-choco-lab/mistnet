@@ -79,6 +79,7 @@ namespace MistNet
                 Payload = ""
             };
             _sender?.Send(message.Sender.Id, response);
+            // 相手はメソッドで受け取る必要はない　相手側のroutingTableに自動で更新され、pong待ちが削除されるため
         }
 
         private void OnStore(KademliaMessage message)
