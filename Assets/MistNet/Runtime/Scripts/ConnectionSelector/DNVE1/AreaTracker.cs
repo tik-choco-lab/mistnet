@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
+using UnityEngine;
 
 namespace MistNet
 {
@@ -18,6 +20,7 @@ namespace MistNet
         private readonly HashSet<Area> _surroundingChunks = new();
         private Area _prevSelfChunk;
         private Area _selfChunk;
+        private ConnectionBalancer _connectionBalancer;
 
         public AreaTracker(Kademlia kademlia, KademliaRoutingTable routingTable,
             DNVE1Selector dnve1Selector)
@@ -27,6 +30,11 @@ namespace MistNet
             _dnve1Selector = dnve1Selector;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
+        }
+
+        public void InitBalancer(ConnectionBalancer connectionBalancer)
+        {
+            _connectionBalancer = connectionBalancer;
         }
 
         private async UniTask LoopFindMyAreaInfo(CancellationToken token)
@@ -59,10 +67,25 @@ namespace MistNet
         /// <param name="surroundingChunks"></param>
         private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
+            // 自身との距離順でソートして、近い順に接続候補として通知
+            var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
+            var locations = _connectionBalancer.NodeLocations;
+
+            var sortedNodes = locations
+                .OrderBy(kvp => Vector3.Distance(selfPosition, kvp.Value))
+                .Select(kvp => kvp.Key)
+                .Take(KBucket.K)
+                .Select(id => _routingTable.GetNodeInfo(id))
+                .ToHashSet();
+
+            _dnve1Selector.FindValue(sortedNodes, IdUtil.ToBytes(_selfChunk.ToString()));
+
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
+                // 重複して送信しないように取り除く
+                if (sortedNodes.Count > 0) closestNodes.ExceptWith(sortedNodes);
                 _dnve1Selector.FindValue(closestNodes, target);
             }
         }

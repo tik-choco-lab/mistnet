@@ -86,6 +86,7 @@ namespace MistNet
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
         {
+            if (closestNodes == null) return;
             var count = 0;
             foreach (var node in closestNodes)
             {

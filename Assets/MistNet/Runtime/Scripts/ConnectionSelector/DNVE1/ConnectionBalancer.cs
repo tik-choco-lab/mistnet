@@ -31,6 +31,7 @@ namespace MistNet
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
+            _areaTracker.InitBalancer(this);
         }
 
         private void OnLocation(KademliaMessage message)
