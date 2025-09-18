@@ -74,7 +74,7 @@ namespace MistNet
             var sortedNodes = locations
                 .OrderBy(kvp => Vector3.Distance(selfPosition, kvp.Value))
                 .Select(kvp => kvp.Key)
-                .Take(KBucket.K)
+                .Take(OptConfig.Data.NodeListExchangeNeighborMaxCount)
                 .Select(id => _routingTable.GetNodeInfo(id))
                 .ToHashSet();
 
