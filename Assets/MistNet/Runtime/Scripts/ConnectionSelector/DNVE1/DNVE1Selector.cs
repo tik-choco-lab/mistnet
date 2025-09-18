@@ -14,6 +14,7 @@ namespace MistNet
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
+        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
         private RoutingBase _routingBase;
 
         protected override void Start()
@@ -43,6 +44,10 @@ namespace MistNet
             {
                 handler(message);
             }
+            else if (ReceiversWithId.TryGetValue(message.Type, out var handlerWithId))
+            {
+                handlerWithId(message, id);
+            }
         }
 
         public void Send(NodeId targetId, KademliaMessage message)
@@ -61,13 +66,18 @@ namespace MistNet
             Receivers[type] = receiver;
         }
 
-        private void OnFindNodeResponse(KademliaMessage message)
+        public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandlerWithFromId receiver)
+        {
+            ReceiversWithId[type] = receiver;
+        }
+
+        private void OnFindNodeResponse(KademliaMessage message, NodeId fromId)
         {
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
             foreach (var node in closestNodes.Nodes)
             {
+                _routingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
-                _routingBase.AddRouting(node.Id, message.Sender.Id);
             }
         }
 
