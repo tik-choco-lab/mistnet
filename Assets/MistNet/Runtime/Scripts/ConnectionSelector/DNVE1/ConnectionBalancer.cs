@@ -131,16 +131,26 @@ namespace MistNet
             var connectedNodes = _routingBase.ConnectedNodes;
             foreach (var nodeId in connectedNodes)
             {
-                if (!_nodeLocations.TryGetValue(nodeId, out var position)) continue;
+                if (!_nodeLocations.TryGetValue(nodeId, out var position))
+                {
+                    // 位置情報がないノードは危険なので切断対象にする
+                    MistManager.I.Disconnect(nodeId);
+                    i++;
+                    if (i >= requestCount) return;
+                    continue;
+                }
+
                 var area = new Area(position);
 
-                if (_areaTracker.SurroundingChunks.Contains(area)) continue;
-                // エリア外のノードを切断
-                if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                // if (MistManager.I.CompareId(nodeId))
+                if (_areaTracker.SurroundingChunks.Contains(area))
                 {
-                    MistManager.I.Disconnect(nodeId);
+                    if (_routingBase.ConnectedNodes.Count <=
+                        OptConfig.Data.MaxConnectionCount + OptConfig.Data.SafeMargin)
+                        continue; // 少しの超過なら残す
                 }
+
+                // エリア外のノードを切断
+                MistManager.I.Disconnect(nodeId);
 
                 i++;
                 if (i >= requestCount) return;

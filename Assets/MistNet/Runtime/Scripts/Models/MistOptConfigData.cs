@@ -6,6 +6,7 @@ namespace MistNet
     {
         [JsonProperty("visibleCount")] public int VisibleCount = 5;
         [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 20;
+        [JsonProperty("safeMargin")] public int SafeMargin = 3;
 
         [JsonProperty("bucketBase")] public int BucketBase = 4;
         [JsonProperty("bucketMax")] public int BucketMax = 5;
