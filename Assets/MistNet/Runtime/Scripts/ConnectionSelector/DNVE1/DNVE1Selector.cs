@@ -24,7 +24,7 @@ namespace MistNet
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
             _kademlia = new Kademlia(this, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, this);
+            _areaTracker = new AreaTracker(_kademlia, _routingTable, this);
             _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
@@ -45,13 +45,8 @@ namespace MistNet
 
         public void Send(NodeId targetId, KademliaMessage message)
         {
-            SendInternal(targetId, message);
-        }
-
-        private void SendInternal(NodeId nodeId, KademliaMessage message)
-        {
             message.Sender = _routingTable.SelfNode;
-            Send(JsonConvert.SerializeObject(message), nodeId);
+            Send(JsonConvert.SerializeObject(message), targetId);
         }
 
         public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)
@@ -65,12 +60,6 @@ namespace MistNet
             foreach (var node in closestNodes.Nodes)
             {
                 _routingTable.AddNode(node);
-            }
-
-            if (closestNodes.Nodes.Count < KBucket.K)
-            {
-                // OK 既にroutingTableに登録されている
-                MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
         }
 
@@ -95,8 +84,12 @@ namespace MistNet
             var count = 0;
             foreach (var node in closestNodes)
             {
-                _kademlia.FindValue(node, target);
                 count++;
+                if (!PeerRepository.I.IsConnectingOrConnected(node.Id))
+                {
+                    MistManager.I.Connect(node.Id);
+                }
+                else _kademlia.FindValue(node, target);
                 if (count >= Alpha) break;
             }
         }

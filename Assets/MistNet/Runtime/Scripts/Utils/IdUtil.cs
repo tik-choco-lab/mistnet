@@ -7,10 +7,17 @@ namespace MistNet.Utils
     public static class IdUtil
     {
         public const int BitLength = 160;
+        private static readonly Dictionary<string, byte[]> Cache = new();
         public static byte[] ToBytes(string id)
         {
+            if (Cache.TryGetValue(id, out var cachedBytes))
+            {
+                return cachedBytes;
+            }
             using var sha1 = SHA1.Create();
-            return sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(id));
+            var byteId = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(id));
+            Cache[id] = byteId;
+            return byteId;
         }
 
         public static int LeadingBitIndex(byte[] distance)

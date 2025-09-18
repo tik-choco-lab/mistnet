@@ -81,7 +81,7 @@ namespace MistNet
             // dataStoreから接続候補を探す
             // 自身のいるChunkを優先的に
             var surroundingChunks = _areaTracker.SurroundingChunks;
-            var selfChunk = _areaTracker.MyArea;
+            var selfChunk = AreaTracker.MyArea;
             var chunkId = IdUtil.ToBytes(selfChunk.ToString());
             if (_dataStore.TryGetValue(chunkId, out var data))
             {

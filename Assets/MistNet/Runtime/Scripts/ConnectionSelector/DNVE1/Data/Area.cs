@@ -32,6 +32,25 @@ namespace MistNet
             Z = z;
         }
 
+        public void Set(Vector3 position)
+        {
+            X = Mathf.FloorToInt(position.x / ChunkSize);
+            Y = 0;
+            Z = Mathf.FloorToInt(position.z / ChunkSize);
+        }
+
+        public void Set((int, int, int) chunk)
+        {
+            X = chunk.Item1;
+            Y = chunk.Item2;
+            Z = chunk.Item3;
+        }
+
+        public (int, int, int) GetChunk()
+        {
+            return (X, Y, Z);
+        }
+
         public override string ToString()
         {
             return $"{X},{Y},{Z}";
@@ -44,11 +63,6 @@ namespace MistNet
                 return X == other.X && Y == other.Y && Z == other.Z;
             }
             return false;
-        }
-
-        protected bool Equals(Area other)
-        {
-            return X == other.X && Y == other.Y && Z == other.Z;
         }
 
         public override int GetHashCode()
@@ -68,7 +82,7 @@ namespace MistNet
 
     public class AreaInfo
     {
-        [JsonProperty("chunk")] public Area Chunk { get; set; }
+        // [JsonProperty("chunk")] public Area Chunk { get; set; }
         [JsonProperty("nodes")] public HashSet<NodeId> Nodes { get; set; } = new ();
     }
 }

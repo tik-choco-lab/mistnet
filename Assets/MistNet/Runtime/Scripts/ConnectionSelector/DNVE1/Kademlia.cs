@@ -38,7 +38,7 @@ namespace MistNet
 
         public void Store(NodeInfo node, byte[] key, string value)
         {
-            MistLogger.Debug($"[Store][SND] {value}");
+            MistLogger.Debug($"[Store][SND] {node.Id}");
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
