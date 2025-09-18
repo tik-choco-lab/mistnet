@@ -14,6 +14,7 @@ namespace MistNet
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
+        private RoutingBase _routingBase;
 
         protected override void Start()
         {
@@ -23,6 +24,7 @@ namespace MistNet
 
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
+            _routingBase = MistManager.I.Routing;
             _kademlia = new Kademlia(this, _dataStore, _routingTable);
             _areaTracker = new AreaTracker(_kademlia, _routingTable, this);
             _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
@@ -65,6 +67,7 @@ namespace MistNet
             foreach (var node in closestNodes.Nodes)
             {
                 _routingTable.AddNode(node);
+                _routingBase.AddRouting(node.Id, message.Sender.Id);
             }
         }
 
