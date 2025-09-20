@@ -94,7 +94,7 @@ namespace MistNet
 
             var key = Convert.FromBase64String(parts[0]);
             var nodeId = new NodeId(parts[1]);
-            var expireTime = DateTime.UtcNow.AddMinutes(OptConfig.Data.ExpireSeconds);
+            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
 
             // ここはKademliaと異なる
             // NOTE: 上書きしてデータが失われないようにするための処理
@@ -144,6 +144,7 @@ namespace MistNet
                 {
                     areaInfo.Nodes.Remove(nodeId);
                     areaInfo.ExpireAt.Remove(nodeId);
+                    MistLogger.Debug($"[Kademlia] Removed expired node {nodeId} from AreaInfo");
                 }
             }
             value = JsonConvert.SerializeObject(areaInfo);

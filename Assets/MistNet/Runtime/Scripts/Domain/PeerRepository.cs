@@ -53,6 +53,10 @@ namespace MistNet
         public bool IsConnectingOrConnected(NodeId id)
         {
             if (!GetAllPeer.TryGetValue(id, out var data)) return false;
+
+            if (data.PeerEntity == null) return false;
+            if (data.PeerEntity.RtcPeer == null) return false;
+
             return data.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
                 or RTCPeerConnectionState.Connecting;
         }
@@ -88,6 +92,11 @@ namespace MistNet
 
             MistLogger.Debug($"[GetPeerData] {id}");
             return GetAllPeer.GetValueOrDefault(id);
+        }
+
+        public void RemovePeer(NodeId id)
+        {
+            OnDisconnected(id);
         }
 
         public void OnDisconnected(NodeId id)
@@ -130,7 +139,15 @@ namespace MistNet
             MistLogger.Debug($"[MistPeerData] Create Peer {id}");
         }
 
-        public bool IsConnected => PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;
+        public bool IsConnected
+        {
+            get
+            {
+                if (PeerEntity == null) return false;
+                if (PeerEntity.RtcPeer == null) return false;
+                return PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;
+            }
+        }
     }
 
     [Obsolete("Use PeerRepository instead. MistPeerData is deprecated and will be removed in future versions.")]

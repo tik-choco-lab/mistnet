@@ -87,8 +87,9 @@ namespace MistNet
             if (_dataStore.TryGetValue(chunkId, out var data))
             {
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
+                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                     MistManager.I.Connect(nodeId);
 
@@ -100,13 +101,15 @@ namespace MistNet
             // 周囲のChunkからも接続候補を探す
             foreach (var area in surroundingChunks)
             {
-                if (area.ToString() == selfChunk.ToString()) continue; // 自分のChunkはスキップ
+                if (area.Equals(selfChunk)) continue; // 自分のChunkはスキップ
                 var areaId = IdUtil.ToBytes(area.ToString());
                 if (!_dataStore.TryGetValue(areaId, out data)) continue;
 
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
+                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
+
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                     // if (MistManager.I.CompareId(nodeId))
                     {
@@ -121,6 +124,19 @@ namespace MistNet
             }
         }
 
+        private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
+        {
+            var time = areaInfo.ExpireAt[nodeId];
+            if (time >= DateTime.UtcNow) return false;
+
+            // 有効期限切れ
+            areaInfo.Nodes.Remove(nodeId);
+            areaInfo.ExpireAt.Remove(nodeId);
+
+            MistLogger.Debug($"[ConnectionBalancer] Removed expired node {nodeId} from AreaInfo");
+            return true;
+        }
+
         private void SelectDisconnection()
         {
             // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
@@ -130,7 +146,7 @@ namespace MistNet
             var i = 0;
 
             var connectedNodes = _routingBase.ConnectedNodes;
-            foreach (var nodeId in connectedNodes)
+            foreach (var nodeId in connectedNodes.ToList())
             {
                 if (!_nodeLocations.TryGetValue(nodeId, out var position))
                 {
