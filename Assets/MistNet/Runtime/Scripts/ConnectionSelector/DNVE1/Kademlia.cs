@@ -86,15 +86,15 @@ namespace MistNet
         {
             MistLogger.Debug($"[Store][RCV] {message.Payload}");
             var parts = message.Payload.Split(SplitChar);
-            if (parts.Length != 3)
+            if (parts.Length != 2)
             {
                 MistLogger.Error($"[Error][Kademlia] Invalid store message format: {message.Payload}");
                 return;
             }
 
             var key = Convert.FromBase64String(parts[0]);
-            var action = parts[1];
-            var nodeId = new NodeId(parts[2]);
+            var nodeId = new NodeId(parts[1]);
+            var expireTime = DateTime.UtcNow.AddMinutes(OptConfig.Data.ExpireSeconds);
 
             // ここはKademliaと異なる
             // NOTE: 上書きしてデータが失われないようにするための処理
@@ -105,17 +105,10 @@ namespace MistNet
             }
 
             var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
-            switch (action)
-            {
-                case "add":
-                    areaInfo.Nodes.Add(nodeId);
-                    break;
-                case "remove":
-                    areaInfo.Nodes.Remove(nodeId);
-                    break;
-            }
-
+            areaInfo.Nodes.Add(nodeId);
+            areaInfo.ExpireAt[nodeId] = expireTime;
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+
             _dataStore.Store(key, areaInfoStr);
         }
 
@@ -130,13 +123,31 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
+                value = RemoveExpiredNodes(value);
                 MistLogger.Debug($"[FindValue][RCV] found {value}");
+
                 SendValue(message.Sender, targetKey, value);
             }
             else
             {
                 SendClosestNodes(message.Sender, targetKey);
             }
+        }
+
+        private static string RemoveExpiredNodes(string value)
+        {
+            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
+            var now = DateTime.UtcNow;
+            foreach (var nodeId in areaInfo.ExpireAt.Keys.ToList())
+            {
+                if (areaInfo.ExpireAt[nodeId] < now)
+                {
+                    areaInfo.Nodes.Remove(nodeId);
+                    areaInfo.ExpireAt.Remove(nodeId);
+                }
+            }
+            value = JsonConvert.SerializeObject(areaInfo);
+            return value;
         }
 
         private void SendValue(NodeInfo sender, byte[] key, string value)

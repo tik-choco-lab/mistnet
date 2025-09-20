@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
-using UnityEngine;
 
 namespace MistNet
 {
@@ -52,12 +50,12 @@ namespace MistNet
                 FindMyAreaNodes(_surroundingChunks);
 
                 AddNodeToArea(_selfChunk, _routingTable.SelfNode);
-                if (!_selfChunk.Equals(_prevSelfChunk))
-                {
-                    if (_prevSelfChunk != null) RemoveNodeFromArea(_prevSelfChunk, _routingTable.SelfNode);
-                    _prevSelfChunk ??= new Area();
-                    _prevSelfChunk.Set(_selfChunk.GetChunk());
-                }
+                // if (!_selfChunk.Equals(_prevSelfChunk))
+                // {
+                //     if (_prevSelfChunk != null) RemoveNodeFromArea(_prevSelfChunk, _routingTable.SelfNode);
+                //     _prevSelfChunk ??= new Area();
+                //     _prevSelfChunk.Set(_selfChunk.GetChunk());
+                // }
             }
         }
 
@@ -67,25 +65,10 @@ namespace MistNet
         /// <param name="surroundingChunks"></param>
         private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
-            // 自身との距離順でソートして、近い順に接続候補として通知
-            // var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
-            // var locations = _connectionBalancer.NodeLocations;
-            //
-            // var sortedNodes = locations
-            //     .OrderBy(kvp => Vector3.Distance(selfPosition, kvp.Value))
-            //     .Select(kvp => kvp.Key)
-            //     .Take(OptConfig.Data.NodeListExchangeNeighborMaxCount)
-            //     .Select(id => _routingTable.GetNodeInfo(id))
-            //     .ToHashSet();
-            //
-            // _dnve1Selector.FindValue(sortedNodes, IdUtil.ToBytes(_selfChunk.ToString()));
-
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
-                // 重複して送信しないように取り除く
-                // if (sortedNodes.Count > 0) closestNodes.ExceptWith(sortedNodes);
                 _dnve1Selector.FindValue(closestNodes, target);
             }
         }
@@ -94,21 +77,11 @@ namespace MistNet
         {
             var target = IdUtil.ToBytes(chunk.ToString());
 
-            var closestNodes = _routingTable.FindClosestNodes(target);
-            foreach (var closestNode in closestNodes)
+            var closeNodes = _routingTable.FindClosestNodes(target);
+            foreach (var closeNode in closeNodes)
             {
-                _kademlia.Store(closestNode, target, $"add{Kademlia.SplitChar}{node.Id}");
-            }
-        }
-
-        private void RemoveNodeFromArea(Area chunk, NodeInfo node)
-        {
-            var target = IdUtil.ToBytes(chunk.ToString());
-
-            var closestNodes = _routingTable.FindClosestNodes(target);
-            foreach (var closestNode in closestNodes)
-            {
-                _kademlia.Store(closestNode, target, $"remove{Kademlia.SplitChar}{node.Id}");
+                // _kademlia.Store(closestNode, target, $"add{Kademlia.SplitChar}{node.Id}");
+                _kademlia.Store(closeNode, target, node.Id.ToString());
             }
         }
 

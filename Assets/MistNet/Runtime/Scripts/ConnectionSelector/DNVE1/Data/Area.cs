@@ -82,7 +82,7 @@ namespace MistNet
 
     public class AreaInfo
     {
-        // [JsonProperty("chunk")] public Area Chunk { get; set; }
         [JsonProperty("nodes")] public HashSet<NodeId> Nodes { get; set; } = new ();
+        [JsonProperty("expireAt")] public Dictionary<NodeId, DateTime> ExpireAt { get; set; } = new ();
     }
 }
