@@ -139,39 +139,71 @@ namespace MistNet
 
         private void SelectDisconnection()
         {
-            // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
+            // 表示しているNodeと情報交換Node以外の中から切断していく
             if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
-            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount + 5;
-            var i = 0;
+            var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
 
             var connectedNodes = _routingBase.ConnectedNodes;
-            foreach (var nodeId in connectedNodes.ToList())
+
+            // 保護すべきノード（情報交換ノード + 表示ノード）
+            var exchangeNodes = _areaTracker.ExchangeNodes;
+            var visibleNodes = _routingBase.MessageNodes;
+            var safeConnectedNodes = connectedNodes
+                .Where(n => exchangeNodes.Contains(n) || visibleNodes.Contains(n))
+                .ToList();
+
+            // 切断候補ノード（safe以外）
+            var candidateNodes = connectedNodes.Except(safeConnectedNodes).ToList();
+
+            if (candidateNodes.Count < requestCount)
             {
-                if (!_nodeLocations.TryGetValue(nodeId, out var position))
+                // 切断候補が足りない場合はexchangeNodesから ExchangeNodeCount分を残して切断する
+                // connectedNodes かつ exchangeNodes
+                var connectedExchangeNodes = connectedNodes.Intersect(exchangeNodes).ToList();
+                var targetCount = connectedExchangeNodes.Count - OptConfig.Data.ExchangeNodeCount;
+                if (targetCount <= 0) return; // 切断するノードがない場合は終了
+                var count = 0;
+                // candidateに追加していく
+                foreach (var nodeId in connectedExchangeNodes)
                 {
-                    // 位置情報がないノードは危険なので切断対象にする
-                    MistManager.I.Disconnect(nodeId);
-                    i++;
-                    if (i >= requestCount) return;
-                    continue;
+                    if (count >= targetCount) break;
+                    candidateNodes.Add(nodeId);
+                    count++;
                 }
-
-                var area = new Area(position);
-
-                if (_areaTracker.SurroundingChunks.Contains(area))
-                {
-                    if (_routingBase.ConnectedNodes.Count <=
-                        OptConfig.Data.MaxConnectionCount + OptConfig.Data.SafeMargin)
-                        continue; // 少しの超過なら残す
-                }
-
-                // エリア外のノードを切断
-                MistManager.I.Disconnect(nodeId);
-
-                i++;
-                if (i >= requestCount) return;
             }
+
+            foreach (var nodeId in candidateNodes)
+            {
+                MistManager.I.Disconnect(nodeId);
+            }
+
+            // foreach (var nodeId in connectedNodes.ToList())
+            // {
+            //     if (!_nodeLocations.TryGetValue(nodeId, out var position))
+            //     {
+            //         // 位置情報がないノードは危険なので切断対象にする
+            //         MistManager.I.Disconnect(nodeId);
+            //         i++;
+            //         if (i >= requestCount) return;
+            //         continue;
+            //     }
+            //
+            //     var area = new Area(position);
+            //
+            //     if (_areaTracker.SurroundingChunks.Contains(area))
+            //     {
+            //         if (_routingBase.ConnectedNodes.Count <=
+            //             OptConfig.Data.MaxConnectionCount + OptConfig.Data.SafeMargin)
+            //             continue; // 少しの超過なら残す
+            //     }
+            //
+            //     // エリア外のノードを切断
+            //     MistManager.I.Disconnect(nodeId);
+            //
+            //     i++;
+            //     if (i >= requestCount) return;
+            // }
         }
 
         public void Dispose()

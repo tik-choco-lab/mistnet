@@ -19,6 +19,7 @@ namespace MistNet
         private Area _prevSelfChunk;
         private Area _selfChunk;
         private ConnectionBalancer _connectionBalancer;
+        public readonly HashSet<NodeId> ExchangeNodes = new();
 
         public AreaTracker(Kademlia kademlia, KademliaRoutingTable routingTable,
             DNVE1Selector dnve1Selector)
@@ -50,12 +51,6 @@ namespace MistNet
                 FindMyAreaNodes(_surroundingChunks);
 
                 AddNodeToArea(_selfChunk, _routingTable.SelfNode);
-                // if (!_selfChunk.Equals(_prevSelfChunk))
-                // {
-                //     if (_prevSelfChunk != null) RemoveNodeFromArea(_prevSelfChunk, _routingTable.SelfNode);
-                //     _prevSelfChunk ??= new Area();
-                //     _prevSelfChunk.Set(_selfChunk.GetChunk());
-                // }
             }
         }
 
@@ -65,11 +60,17 @@ namespace MistNet
         /// <param name="surroundingChunks"></param>
         private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
+            ExchangeNodes.Clear();
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
                 _dnve1Selector.FindValue(closestNodes, target);
+
+                foreach (var nodeInfo in closestNodes)
+                {
+                    ExchangeNodes.Add(nodeInfo.Id);
+                }
             }
         }
 
@@ -80,7 +81,6 @@ namespace MistNet
             var closeNodes = _routingTable.FindClosestNodes(target);
             foreach (var closeNode in closeNodes)
             {
-                // _kademlia.Store(closestNode, target, $"add{Kademlia.SplitChar}{node.Id}");
                 _kademlia.Store(closeNode, target, node.Id.ToString());
             }
         }
