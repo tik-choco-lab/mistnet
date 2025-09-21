@@ -47,6 +47,7 @@ namespace MistNet
     {
         [JsonProperty("node")] public Node Node;
         [JsonProperty("nodes")] public Node[] Nodes;
+        [JsonProperty("stats")] public EvalStatData Stats;
     }
 
     public class NodeRequest

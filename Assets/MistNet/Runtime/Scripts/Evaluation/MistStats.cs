@@ -10,13 +10,14 @@ namespace MistNet
     {
         public static MistStats I { get; private set; }
         private static readonly float IntervalPingDistanceTimeSec = 1f;
-        private static readonly float IntervalSendSizeTimeSec = 1f;
+        private static readonly int IntervalSendSizeTimeSec = 1;
         
         public int TotalSendBytes { get; set; }
         public int TotalReceiveBytes { get; set; }
-        public int TotalMessengeCount { get; set; }
+        public int TotalMessageCount { get; set; }
         
         private CancellationTokenSource _cancellationToken;
+        public EvalStatData StatData { get; private set; } = new EvalStatData();
 
         private void Start()
         {
@@ -51,6 +52,8 @@ namespace MistNet
             var timeSpan = new TimeSpan(time);
             var rtt = (int)timeSpan.TotalMilliseconds;
             MistLogger.Debug($"[STATS][RTT][{sourceId}] {rtt} ms");
+
+            StatData.RttMillis[sourceId] = rtt;
         }
 
         private async UniTask UpdatePing(CancellationToken token = default)
@@ -84,11 +87,15 @@ namespace MistNet
                 MistLogger.Debug($"[STATS][Download]\t{FormatBps(receiveBps)}\t{receiveBps} bps");
                 
                 // メッセージ数
-                MistLogger.Debug($"[STATS][MessageCount] {TotalMessengeCount}");
+                MistLogger.Debug($"[STATS][MessageCount] {TotalMessageCount}");
+
+                StatData.SendBits = sendBps;
+                StatData.ReceiveBits = receiveBps;
+                StatData.MessageCount = TotalMessageCount;
                 
                 TotalSendBytes = 0;
                 TotalReceiveBytes = 0;
-                TotalMessengeCount = 0;
+                TotalMessageCount = 0;
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalSendSizeTimeSec), cancellationToken: token);
             }

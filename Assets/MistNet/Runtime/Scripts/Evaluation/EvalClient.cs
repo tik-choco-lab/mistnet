@@ -76,6 +76,7 @@ namespace MistNet.Evaluation
             _nodeStateData ??= GetNodeStateData();
             _nodeStateData.Node = NodeUtils.GetSelfNodeData();
             _nodeStateData.Nodes = NodeUtils.GetOtherNodeData();
+            _nodeStateData.Stats ??= MistStats.I.StatData;
             Send(EvalMessageType.NodeState, _nodeStateData);
         }
 
@@ -83,7 +84,7 @@ namespace MistNet.Evaluation
         {
             _webSocketHandler.OnMessage -= OnMessage;
             _webSocketHandler?.Dispose();
-            EvalConfig.WriteConfig();
+            // EvalConfig.WriteConfig();
         }
 
         private void OnMessage(string message)

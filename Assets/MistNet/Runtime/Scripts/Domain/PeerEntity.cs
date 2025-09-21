@@ -197,7 +197,7 @@ namespace MistNet
             if (MistStats.I != null)
             {
                 MistStats.I.TotalSendBytes += data.Length;
-                MistStats.I.TotalMessengeCount++;
+                MistStats.I.TotalMessageCount++;
             }
 
             _dataChannel.Send(data);
