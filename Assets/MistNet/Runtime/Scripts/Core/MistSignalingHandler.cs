@@ -78,21 +78,12 @@ namespace MistNet
             var targetId = response.SenderId;
             var peer = MistManager.I.PeerRepository.GetPeer(targetId);
 
-            // if (peer.Connection.SignalingState != RTCSignalingState.HaveLocalOffer)
-            // {
-            //     MistDebug.LogError($"[Error][Signaling] SignalingState is not have local offer: {peer.Connection.SignalingState}");
-            //     return;
-            // }
-
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
             {
                 MistLogger.Error("sdp is null or empty");
                 return;
             }
-            // MistDebug.Log($"[Signaling][SignalingState] {peer.SignalingState}");
-            // if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
-            // if (peer.SignalingState == MistSignalingState.InitialStable) return;
 
             var sdp = JsonConvert.DeserializeObject<RTCSessionDescription>(sdpJson);
             peer.SetRemoteDescription(sdp).Forget();

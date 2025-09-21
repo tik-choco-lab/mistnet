@@ -8,7 +8,7 @@ namespace MistNet
     public class KBucket
     {
         private const float PingTimeoutSeconds = 5f;
-        public const int K = 20;
+        public static int K = 20;
         public IReadOnlyList<NodeInfo> Nodes => _nodes.AsReadOnly();
         private readonly List<NodeInfo> _nodes;
         private readonly Dictionary<NodeInfo, NodeInfo> _pendingNodeList = new();
@@ -18,6 +18,7 @@ namespace MistNet
         {
             _nodes = new List<NodeInfo>();
             _kademlia = kademlia;
+            K = OptConfig.Data.KademliaK;
         }
 
         public void AddNode(NodeInfo newNode)
