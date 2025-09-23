@@ -50,7 +50,6 @@ namespace MistNet
         {
             _onMessageDict.Clear();
             PeerRepository.Dispose();
-            MistConfig.WriteConfig();
             _mistSignalingWebRtc.Dispose();
             _mistSyncManager.Dispose();
         }
