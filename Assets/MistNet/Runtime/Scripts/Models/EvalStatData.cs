@@ -10,5 +10,8 @@ namespace MistNet
         [JsonProperty("sendBits")] public int SendBits { get; set; }
         [JsonProperty("receiveBits")] public int ReceiveBits { get; set; }
         [JsonProperty("rttMillis")] public Dictionary<NodeId, float> RttMillis { get; set; } = new();
+        [JsonProperty("evalSendBits")] public int EvalSendBits { get; set; }
+        [JsonProperty("evalReceiveBits")] public int EvalReceiveBits { get; set; }
+        [JsonProperty("evalMessageCount")] public int EvalMessageCount { get; set; }
     }
 }

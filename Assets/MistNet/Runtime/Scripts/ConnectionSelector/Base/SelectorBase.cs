@@ -20,6 +20,7 @@ namespace MistNet
 
         private void OnMessageReceived(byte[] data, NodeId id)
         {
+            MistStats.I.TotalEvalReceiveBytes += data.Length;
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
             OnMessage(message.Data, id);
         }
@@ -46,7 +47,10 @@ namespace MistNet
         protected void Send(string data, NodeId targetId)
         {
             MistLogger.Debug($"[Debug][Send] {data}");
-            MistManager.I.Send(MistNetMessageType.ConnectionSelector, CreateData(data), targetId);
+            var bytes = CreateData(data);
+            MistManager.I.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
+            MistStats.I.TotalEvalSendBytes += bytes.Length;
+            MistStats.I.TotalEvalMessageCount++;
         }
 
         private static byte[] CreateData(string data)
