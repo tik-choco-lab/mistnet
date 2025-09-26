@@ -108,6 +108,8 @@ namespace MistNet
             MistLogger.Debug($"[Signaling][CreateAnswer] {Id}");
 
             // RemoteDescription
+            if (RtcPeer == null) return default;
+            if (string.IsNullOrEmpty(remoteDescription.sdp)) return default;
             var remoteOp = RtcPeer.SetRemoteDescription(ref remoteDescription);
             while (!remoteOp.IsDone)
             {
