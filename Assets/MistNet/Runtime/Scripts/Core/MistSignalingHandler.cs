@@ -77,7 +77,13 @@ namespace MistNet
             MistLogger.Debug($"[Signaling] ReceiveAnswer: {response.SenderId}");
             var targetId = response.SenderId;
             var peer = MistManager.I.PeerRepository.GetPeer(targetId);
-
+            if (peer == null) return;
+            if (peer.RtcPeer.SignalingState != RTCSignalingState.HaveLocalOffer)
+            {
+                MistLogger.Warning($"[Error][Signaling] SignalingState is not HaveLocalOffer: {peer.RtcPeer.SignalingState}");
+                return;
+            }
+            
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
             {
