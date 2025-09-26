@@ -114,6 +114,7 @@ namespace MistNet
                 await UniTask.Yield();
             }
             if (remoteOp.IsError) return default;
+            if (RtcPeer == null) return default;
 
             // CreateAnswer
             var answerOp = RtcPeer.CreateAnswer();

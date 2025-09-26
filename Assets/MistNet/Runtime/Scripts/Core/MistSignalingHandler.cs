@@ -83,7 +83,7 @@ namespace MistNet
                 MistLogger.Warning($"[Error][Signaling] SignalingState is not HaveLocalOffer: {peer.RtcPeer.SignalingState}");
                 return;
             }
-            
+
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
             {
