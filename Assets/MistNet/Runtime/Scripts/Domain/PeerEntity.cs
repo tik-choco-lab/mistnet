@@ -94,6 +94,7 @@ namespace MistNet
             }
 
             if (offerOp.IsError) return default;
+            if (RtcPeer == null) return default;
 
             var desc = offerOp.Desc;
             var localOp = RtcPeer.SetLocalDescription(ref desc);
@@ -162,6 +163,8 @@ namespace MistNet
 
         public async UniTaskVoid SetRemoteDescription(RTCSessionDescription remoteDescription)
         {
+            if (RtcPeer == null) return;
+            if (string.IsNullOrEmpty(remoteDescription.sdp)) return;
             var remoteDescriptionOperation = RtcPeer.SetRemoteDescription(ref remoteDescription);
             await remoteDescriptionOperation;
             if (remoteDescriptionOperation.IsError)
