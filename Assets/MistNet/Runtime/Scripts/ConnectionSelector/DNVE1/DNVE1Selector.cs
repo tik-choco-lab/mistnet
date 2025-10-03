@@ -14,6 +14,8 @@ namespace MistNet
         private ConnectionBalancer _connectionBalancer;
         private VisibleNodesController _visibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
+        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
+        private RoutingBase _routingBase;
 
         protected override void Start()
         {
@@ -23,8 +25,9 @@ namespace MistNet
 
             _dataStore = new KademliaDataStore();
             _routingTable = new KademliaRoutingTable();
+            _routingBase = MistManager.I.Routing;
             _kademlia = new Kademlia(this, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _dataStore, _routingTable, this);
+            _areaTracker = new AreaTracker(_kademlia, _routingTable, this);
             _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
             _visibleNodesController = new VisibleNodesController(_connectionBalancer);
 
@@ -41,17 +44,21 @@ namespace MistNet
             {
                 handler(message);
             }
+            else if (ReceiversWithId.TryGetValue(message.Type, out var handlerWithId))
+            {
+                handlerWithId(message, id);
+            }
         }
 
         public void Send(NodeId targetId, KademliaMessage message)
         {
-            SendInternal(targetId, message);
-        }
-
-        private void SendInternal(NodeId nodeId, KademliaMessage message)
-        {
             message.Sender = _routingTable.SelfNode;
-            Send(JsonConvert.SerializeObject(message), nodeId);
+            if (targetId == _routingTable.SelfNode.Id)
+            {
+                MistLogger.Debug($"[Debug][Send] Loopback {JsonConvert.SerializeObject(message)}");
+                OnMessage(JsonConvert.SerializeObject(message), targetId);
+            }
+            else Send(JsonConvert.SerializeObject(message), targetId);
         }
 
         public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)
@@ -59,44 +66,45 @@ namespace MistNet
             Receivers[type] = receiver;
         }
 
-        private void OnFindNodeResponse(KademliaMessage message)
+        public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandlerWithFromId receiver)
+        {
+            ReceiversWithId[type] = receiver;
+        }
+
+        private void OnFindNodeResponse(KademliaMessage message, NodeId fromId)
         {
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
             foreach (var node in closestNodes.Nodes)
             {
+                // _routingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
-            }
-
-            if (closestNodes.Nodes.Count < KBucket.K)
-            {
-                // OK 既にroutingTableに登録されている
-                MistLogger.Debug($"[Debug][KademliaController] Found {closestNodes.Nodes.Count} nodes");
             }
         }
 
         private void OnFindValueResponse(KademliaMessage message)
         {
-            MistLogger.Debug($"[Debug][KademliaController] Received FindValue {message.Payload} from {message.Sender.Id}");
-
             var response = JsonConvert.DeserializeObject<ResponseFindValue>(message.Payload);
+            MistLogger.Debug($"[FindValue][RES] {message.Payload} from {message.Sender.Id}");
+
             if (string.IsNullOrEmpty(response.Value))
             {
-                MistLogger.Error(
-                    $"[Error][KademliaController] No value found for target {BitConverter.ToString(response.Key)}");
+                MistLogger.Error($"[FindValue] Value not found for target {BitConverter.ToString(response.Key)}");
                 return;
             }
 
-            MistLogger.Debug($"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
+            MistLogger.Debug(
+                $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
             _dataStore.Store(response.Key, response.Value);
         }
 
         public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
         {
+            if (closestNodes == null) return;
             var count = 0;
             foreach (var node in closestNodes)
             {
-                _kademlia.FindValue(node, target);
                 count++;
+                _kademlia.FindValue(node, target);
                 if (count >= Alpha) break;
             }
         }

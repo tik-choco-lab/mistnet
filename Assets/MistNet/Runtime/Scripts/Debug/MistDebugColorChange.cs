@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace MistNet
@@ -16,8 +14,8 @@ namespace MistNet
 
             if (!_syncObject.IsOwner) return;
             // Materialを変更
-            var renderer = transform.GetChild(0).GetComponent<Renderer>();
-            renderer.material = changeMaterial;
+            var ren = transform.GetChild(0).GetComponent<Renderer>();
+            ren.material = changeMaterial;
         }
     }
 }

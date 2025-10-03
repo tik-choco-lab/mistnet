@@ -50,7 +50,6 @@ namespace MistNet
         {
             _onMessageDict.Clear();
             PeerRepository.Dispose();
-            MistConfig.WriteConfig();
             _mistSignalingWebRtc.Dispose();
             _mistSyncManager.Dispose();
         }
@@ -188,6 +187,7 @@ namespace MistNet
             {
                 var peer = PeerRepository.GetPeer(targetId);
                 if (peer == null
+                    || peer.RtcPeer == null
                     || peer.RtcPeer.ConnectionState != RTCPeerConnectionState.Connected
                     || peer.Id == PeerRepository.I.SelfId
                     || peer.Id == senderId)

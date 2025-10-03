@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Unity.WebRTC;
 using UnityEngine;
 
@@ -29,6 +30,8 @@ namespace MistNet
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
+
+        private CancellationTokenSource _cts = new();
 
         public PeerEntity(NodeId id)
         {
@@ -74,77 +77,66 @@ namespace MistNet
             _dataChannel?.Dispose();
             _dataChannel = null;
             RtcPeer = null;
+            _cts.Cancel();
         }
 
-        public async UniTask<RTCSessionDescription> CreateOffer()
+        public async UniTask<RTCSessionDescription> CreateOffer(CancellationToken ct)
         {
             MistLogger.Debug($"[Signaling][CreateOffer] {Id}");
 
-            CreateDataChannel(); // DataChannelを作成
+            CreateDataChannel();
 
-            // ----------------------------
-            // CreateOffer
-            var offerOperation = RtcPeer.CreateOffer();
-            await offerOperation;
-            if (offerOperation.IsError)
+            var offerOp = RtcPeer.CreateOffer();
+            while (!offerOp.IsDone)
             {
-                MistLogger.Error($"[Signaling][{Id}][Error][OfferOperation]");
-                return default;
+                ct.ThrowIfCancellationRequested();
+                await UniTask.Yield();
             }
 
-            // ----------------------------
-            // LocalDescription
-            var desc = offerOperation.Desc;
-            var localDescriptionOperation = RtcPeer.SetLocalDescription(ref desc);
-            if (localDescriptionOperation.IsError)
-            {
-                MistLogger.Error($"[Signaling][{Id}][Error][SetLocalDescription]");
-                return default;
-            }
+            if (offerOp.IsError) return default;
+            if (RtcPeer == null) return default;
+
+            var desc = offerOp.Desc;
+            var localOp = RtcPeer.SetLocalDescription(ref desc);
+            if (localOp.IsError) return default;
 
             return desc;
         }
 
-        public async UniTask<RTCSessionDescription> CreateAnswer(RTCSessionDescription remoteDescription)
+        public async UniTask<RTCSessionDescription> CreateAnswer(RTCSessionDescription remoteDescription, CancellationToken ct)
         {
             MistLogger.Debug($"[Signaling][CreateAnswer] {Id}");
 
-            // ----------------------------
             // RemoteDescription
-            var remoteDescriptionOperation = RtcPeer.SetRemoteDescription(ref remoteDescription);
-            await remoteDescriptionOperation.ToUniTask();
-            if (remoteDescriptionOperation.IsError)
+            if (RtcPeer == null) return default;
+            if (string.IsNullOrEmpty(remoteDescription.sdp)) return default;
+            var remoteOp = RtcPeer.SetRemoteDescription(ref remoteDescription);
+            while (!remoteOp.IsDone)
             {
-                Reconnect().Forget();
-                MistLogger.Error(
-                    $"[Error][Signaling][SetRemoteDescription] {Id} {remoteDescriptionOperation.Error.message}");
-                return default;
+                ct.ThrowIfCancellationRequested();
+                await UniTask.Yield();
             }
+            if (remoteOp.IsError) return default;
+            if (RtcPeer == null) return default;
 
-            // ----------------------------
             // CreateAnswer
-            var answerOperation = RtcPeer.CreateAnswer();
-            await answerOperation.ToUniTask();
-            ;
-            if (answerOperation.IsError)
+            var answerOp = RtcPeer.CreateAnswer();
+            while (!answerOp.IsDone)
             {
-                Reconnect().Forget();
-                MistLogger.Error(
-                    $"[Error][Signaling][CreateAnswer] -> {Id} {answerOperation.Error.message} {RtcPeer.SignalingState}");
-                return default;
+                ct.ThrowIfCancellationRequested();
+                await UniTask.Yield();
             }
+            if (answerOp.IsError) return default;
 
-            // ----------------------------
             // LocalDescription
-            var desc = answerOperation.Desc;
-            var localDescriptionOperation = RtcPeer.SetLocalDescription(ref desc);
-            if (localDescriptionOperation.IsError)
+            var desc = answerOp.Desc;
+            var localOp = RtcPeer.SetLocalDescription(ref desc);
+            while (!localOp.IsDone)
             {
-                Reconnect().Forget();
-                MistLogger.Error(
-                    $"[Error][Signaling][SetLocalDescription] -> {Id} {localDescriptionOperation.Error.message}");
-                return default;
+                ct.ThrowIfCancellationRequested();
+                await UniTask.Yield();
             }
+            if (localOp.IsError) return default;
 
             return desc;
         }
@@ -173,6 +165,8 @@ namespace MistNet
 
         public async UniTaskVoid SetRemoteDescription(RTCSessionDescription remoteDescription)
         {
+            if (RtcPeer == null) return;
+            if (string.IsNullOrEmpty(remoteDescription.sdp)) return;
             var remoteDescriptionOperation = RtcPeer.SetRemoteDescription(ref remoteDescription);
             await remoteDescriptionOperation;
             if (remoteDescriptionOperation.IsError)
@@ -200,7 +194,7 @@ namespace MistNet
                 case { ReadyState: RTCDataChannelState.Closed }:
                 case { ReadyState: RTCDataChannelState.Closing }:
                 case { ReadyState: RTCDataChannelState.Connecting }:
-                    MistLogger.Error($"[Send] DataChannel is not open {Id} {_dataChannel.ReadyState}");
+                    MistLogger.Warning($"[Send] DataChannel is not open {Id} {_dataChannel.ReadyState}");
                     if (_dataChannel.ReadyState == RTCDataChannelState.Closed) Close();
                     return;
             }
@@ -209,7 +203,7 @@ namespace MistNet
             if (MistStats.I != null)
             {
                 MistStats.I.TotalSendBytes += data.Length;
-                MistStats.I.TotalMessengeCount++;
+                MistStats.I.TotalMessageCount++;
             }
 
             _dataChannel.Send(data);
@@ -217,6 +211,7 @@ namespace MistNet
 
         public void Close()
         {
+            if (RtcPeer == null) return;
             if (_sender != null) RtcPeer.RemoveTrack(_sender);
             RtcPeer.Close();
             RtcPeer = null;
@@ -290,7 +285,7 @@ namespace MistNet
         private async UniTask Reconnect()
         {
             await UniTask.Delay(TimeSpan.FromSeconds(WaitReconnectTimeSec));
-            CreateOffer().Forget();
+            CreateOffer(_cts.Token).Forget();
         }
     }
 

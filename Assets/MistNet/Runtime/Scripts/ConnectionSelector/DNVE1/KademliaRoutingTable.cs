@@ -29,22 +29,37 @@ namespace MistNet
 
             if (index == -1)
             {
-                MistLogger.Error($"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
+                MistLogger.Error(
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
             }
+
             _buckets[index] ??= new KBucket(_kademlia);
             _buckets[index].AddNode(nodeInfo);
         }
 
+        public NodeInfo GetNodeInfo(NodeId nodeId)
+        {
+            var id = IdUtil.ToBytes(nodeId.ToString());
+            _selfId ??= IdUtil.ToBytes(PeerRepository.I.SelfId.ToString());
+            var distance = IdUtil.Xor(_selfId, id);
+            var index = IdUtil.LeadingBitIndex(distance);
+
+            if (index == -1)
+            {
+                MistLogger.Error(
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
+                return null;
+            }
+
+            var bucket = _buckets[index];
+            if (bucket == null) return null;
+
+            return bucket.Nodes.FirstOrDefault(n => n.Id.Equals(nodeId));
+        }
+
         public HashSet<NodeInfo> FindClosestNodes(byte[] targetId)
         {
-            var allNodes = new List<NodeInfo>();
-            foreach (var bucket in _buckets)
-            {
-                if (bucket != null)
-                {
-                    allNodes.AddRange(bucket.Nodes);
-                }
-            }
+            var allNodes = GetAllNodes();
 
             if (allNodes.Count == 0)
             {
@@ -58,6 +73,19 @@ namespace MistNet
                 .Take(KBucket.K)
                 .Select(tuple => tuple.Node)
                 .ToHashSet();
+        }
+
+        private List<NodeInfo> GetAllNodes()
+        {
+            var allNodes = new List<NodeInfo>();
+            foreach (var bucket in _buckets)
+            {
+                if (bucket == null) continue;
+
+                allNodes.AddRange(bucket.Nodes);
+            }
+
+            return allNodes;
         }
     }
 }

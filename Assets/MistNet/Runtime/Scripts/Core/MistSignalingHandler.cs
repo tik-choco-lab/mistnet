@@ -9,6 +9,7 @@ namespace MistNet
 {
     public class MistSignalingHandler : IDisposable
     {
+        private const float TimeoutSeconds = 5f;
         public Action<SignalingData, NodeId> Send;
         private readonly CancellationTokenSource _cts = new();
         private readonly PeerActiveProtocol _activeProtocol;
@@ -45,7 +46,19 @@ namespace MistNet
             peer.ActiveProtocol = _activeProtocol;
             peer.OnCandidate = ice => SendCandidate(ice, receiverId);
 
-            var desc = await peer.CreateOffer();
+            RTCSessionDescription? desc;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
+            try
+            {
+                desc = await peer.CreateOffer(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                MistLogger.Warning("[Signaling][Offer] Timeout");
+                PeerRepository.I.RemovePeer(receiverId);
+                return;
+            }
+
             var sendData = CreateSendData();
             sendData.Type = SignalingType.Offer;
             sendData.Data = JsonConvert.SerializeObject(desc);
@@ -64,12 +77,12 @@ namespace MistNet
             MistLogger.Debug($"[Signaling] ReceiveAnswer: {response.SenderId}");
             var targetId = response.SenderId;
             var peer = MistManager.I.PeerRepository.GetPeer(targetId);
-
-            // if (peer.Connection.SignalingState != RTCSignalingState.HaveLocalOffer)
-            // {
-            //     MistDebug.LogError($"[Error][Signaling] SignalingState is not have local offer: {peer.Connection.SignalingState}");
-            //     return;
-            // }
+            if (peer == null) return;
+            if (peer.RtcPeer.SignalingState != RTCSignalingState.HaveLocalOffer)
+            {
+                MistLogger.Warning($"[Error][Signaling] SignalingState is not HaveLocalOffer: {peer.RtcPeer.SignalingState}");
+                return;
+            }
 
             var sdpJson = response.Data;
             if (string.IsNullOrEmpty(sdpJson))
@@ -77,9 +90,6 @@ namespace MistNet
                 MistLogger.Error("sdp is null or empty");
                 return;
             }
-            // MistDebug.Log($"[Signaling][SignalingState] {peer.SignalingState}");
-            // if (peer.SignalingState == MistSignalingState.NegotiationCompleted) return;
-            // if (peer.SignalingState == MistSignalingState.InitialStable) return;
 
             var sdp = JsonConvert.DeserializeObject<RTCSessionDescription>(sdpJson);
             peer.SetRemoteDescription(sdp).Forget();
@@ -118,7 +128,18 @@ namespace MistNet
         /// <returns></returns>
         private async UniTask SendAnswer(PeerEntity peerEntity, RTCSessionDescription sdp, NodeId targetId)
         {
-            var desc = await peerEntity.CreateAnswer(sdp);
+            RTCSessionDescription? desc;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
+            try
+            {
+                desc = await peerEntity.CreateAnswer(sdp, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                MistLogger.Warning("[Signaling] Timeout, operation cancelled");
+                PeerRepository.I.RemovePeer(targetId);
+                return;
+            }
 
             var sendData = CreateSendData();
             sendData.Type = SignalingType.Answer;

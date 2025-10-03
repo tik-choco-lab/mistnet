@@ -31,6 +31,7 @@ namespace MistNet
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
+            _areaTracker.InitBalancer(this);
         }
 
         private void OnLocation(KademliaMessage message)
@@ -81,13 +82,14 @@ namespace MistNet
             // dataStoreから接続候補を探す
             // 自身のいるChunkを優先的に
             var surroundingChunks = _areaTracker.SurroundingChunks;
-            var selfChunk = _areaTracker.MyArea;
+            var selfChunk = AreaTracker.MyArea;
             var chunkId = IdUtil.ToBytes(selfChunk.ToString());
             if (_dataStore.TryGetValue(chunkId, out var data))
             {
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
+                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                     MistManager.I.Connect(nodeId);
 
@@ -99,13 +101,15 @@ namespace MistNet
             // 周囲のChunkからも接続候補を探す
             foreach (var area in surroundingChunks)
             {
-                if (area.ToString() == selfChunk.ToString()) continue; // 自分のChunkはスキップ
+                if (area.Equals(selfChunk)) continue; // 自分のChunkはスキップ
                 var areaId = IdUtil.ToBytes(area.ToString());
                 if (!_dataStore.TryGetValue(areaId, out data)) continue;
 
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes)
+                foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
+                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
+
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                     // if (MistManager.I.CompareId(nodeId))
                     {
@@ -120,30 +124,58 @@ namespace MistNet
             }
         }
 
+        private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
+        {
+            var time = areaInfo.ExpireAt[nodeId];
+            if (time >= DateTime.UtcNow) return false;
+
+            // 有効期限切れ
+            areaInfo.Nodes.Remove(nodeId);
+            areaInfo.ExpireAt.Remove(nodeId);
+
+            MistLogger.Debug($"[ConnectionBalancer] Removed expired node {nodeId} from AreaInfo");
+            return true;
+        }
+
         private void SelectDisconnection()
         {
-            // 接続数が最大値を超えているかつ、エリア外のノードがある場合に切断を行う
+            // 表示しているNodeと情報交換Node以外の中から切断していく
             if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
-            var i = 0;
 
             var connectedNodes = _routingBase.ConnectedNodes;
-            foreach (var nodeId in connectedNodes)
+
+            // 保護すべきノード（情報交換ノード + 表示ノード）
+            var exchangeNodes = _areaTracker.ExchangeNodes;
+            var visibleNodes = _routingBase.MessageNodes;
+            var safeConnectedNodes = connectedNodes
+                .Where(n => exchangeNodes.Contains(n) || visibleNodes.Contains(n))
+                .ToList();
+
+            // 切断候補ノード（safe以外）
+            var candidateNodes = connectedNodes.Except(safeConnectedNodes).ToList();
+
+            if (candidateNodes.Count < requestCount)
             {
-                if (!_nodeLocations.TryGetValue(nodeId, out var position)) continue;
-                var area = new Area(position);
-
-                if (_areaTracker.SurroundingChunks.Contains(area)) continue;
-                // エリア外のノードを切断
-                if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                if (MistManager.I.CompareId(nodeId))
+                // 切断候補が足りない場合はexchangeNodesから ExchangeNodeCount分を残して切断する
+                // connectedNodes かつ exchangeNodes
+                var connectedExchangeNodes = connectedNodes.Intersect(exchangeNodes).ToList();
+                var targetCount = connectedExchangeNodes.Count - OptConfig.Data.ExchangeNodeCount;
+                if (targetCount <= 0) return; // 切断するノードがない場合は終了
+                var count = 0;
+                // candidateに追加していく
+                foreach (var nodeId in connectedExchangeNodes)
                 {
-                    MistManager.I.Disconnect(nodeId);
+                    if (count >= targetCount) break;
+                    candidateNodes.Add(nodeId);
+                    count++;
                 }
+            }
 
-                i++;
-                if (i >= requestCount) return;
+            foreach (var nodeId in candidateNodes)
+            {
+                MistManager.I.Disconnect(nodeId);
             }
         }
 

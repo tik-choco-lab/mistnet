@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace MistNet
 {
     public class Kademlia
     {
-        private const char SplitChar = '|';
+        public const char SplitChar = '|';
         private readonly IDNVE1MessageSender _sender;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
@@ -37,7 +38,7 @@ namespace MistNet
 
         public void Store(NodeInfo node, byte[] key, string value)
         {
-            MistLogger.Debug($"[Debug][Kademlia] Store: {value}");
+            MistLogger.Debug($"[Store][SND] {node.Id}");
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.Store,
@@ -60,6 +61,7 @@ namespace MistNet
 
         public void FindValue(NodeInfo node, byte[] key)
         {
+            MistLogger.Debug($"[FindValue][REQ] to {node.Id}");
             var message = new KademliaMessage
             {
                 Type = KademliaMessageType.FindValue,
@@ -77,10 +79,12 @@ namespace MistNet
                 Payload = ""
             };
             _sender?.Send(message.Sender.Id, response);
+            // 相手はメソッドで受け取る必要はない　相手側のroutingTableに自動で更新され、pong待ちが削除されるため
         }
 
         private void OnStore(KademliaMessage message)
         {
+            MistLogger.Debug($"[Store][RCV] {message.Payload}");
             var parts = message.Payload.Split(SplitChar);
             if (parts.Length != 2)
             {
@@ -88,33 +92,24 @@ namespace MistNet
                 return;
             }
 
-            MistLogger.Info($"[Kademlia] OnStore Received store request: {parts[1]} for key {parts[0]}");
             var key = Convert.FromBase64String(parts[0]);
-            var value = parts[1];
+            var nodeId = new NodeId(parts[1]);
+            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
 
             // ここはKademliaと異なる
             // NOTE: 上書きしてデータが失われないようにするための処理
-            if (_dataStore.TryGetValue(key, out var existingValue))
+            if (!_dataStore.TryGetValue(key, out var existingValue))
             {
-                var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
-                var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
-                // MergeList
-                foreach (var node in newAreaInfo.Nodes)
-                {
-                    areaInfo.Nodes.Add(node);
-                    _routingBase.AddRouting(node, message.Sender.Id);
-                }
-
-                // 削除されている場合は、Senderに限り削除を行う
-                if (!newAreaInfo.Nodes.Contains(message.Sender.Id))
-                {
-                    areaInfo.Nodes.Remove(message.Sender.Id);
-                }
-
-                var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
-                _dataStore.Store(key, areaInfoStr);
+                var newAreaInfo = new AreaInfo();
+                existingValue = JsonConvert.SerializeObject(newAreaInfo);
             }
-            else _dataStore.Store(key, value);
+
+            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
+            areaInfo.Nodes.Add(nodeId);
+            areaInfo.ExpireAt[nodeId] = expireTime;
+            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+
+            _dataStore.Store(key, areaInfoStr);
         }
 
         private void OnFindNode(KademliaMessage message)
@@ -128,14 +123,32 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
-                MistLogger.Debug($"[Debug][Kademlia] Found value for key {BitConverter.ToString(targetKey)}: {value}");
+                value = RemoveExpiredNodes(value);
+                MistLogger.Debug($"[FindValue][RCV] found {value}");
+
                 SendValue(message.Sender, targetKey, value);
             }
             else
             {
-                MistLogger.Debug($"[Debug][Kademlia] Value not found for key {BitConverter.ToString(targetKey)}. Sending closest nodes.");
                 SendClosestNodes(message.Sender, targetKey);
             }
+        }
+
+        private static string RemoveExpiredNodes(string value)
+        {
+            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
+            var now = DateTime.UtcNow;
+            foreach (var nodeId in areaInfo.ExpireAt.Keys.ToList())
+            {
+                if (areaInfo.ExpireAt[nodeId] < now)
+                {
+                    areaInfo.Nodes.Remove(nodeId);
+                    areaInfo.ExpireAt.Remove(nodeId);
+                    MistLogger.Debug($"[Kademlia] Removed expired node {nodeId} from AreaInfo");
+                }
+            }
+            value = JsonConvert.SerializeObject(areaInfo);
+            return value;
         }
 
         private void SendValue(NodeInfo sender, byte[] key, string value)
@@ -159,8 +172,9 @@ namespace MistNet
         private void SendClosestNodes(NodeInfo sender, byte[] target)
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
+            MistLogger.Debug($"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
-            var responseFindNode = new ResponseFindNode
+            var responseFindNode = new ResponseFindNode()
             {
                 Key = target,
                 Nodes = closestNodes,

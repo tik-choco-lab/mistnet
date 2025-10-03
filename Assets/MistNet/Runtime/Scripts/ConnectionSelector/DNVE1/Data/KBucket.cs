@@ -8,7 +8,7 @@ namespace MistNet
     public class KBucket
     {
         private const float PingTimeoutSeconds = 5f;
-        public const int K = 20;
+        public static int K = 20;
         public IReadOnlyList<NodeInfo> Nodes => _nodes.AsReadOnly();
         private readonly List<NodeInfo> _nodes;
         private readonly Dictionary<NodeInfo, NodeInfo> _pendingNodeList = new();
@@ -18,6 +18,7 @@ namespace MistNet
         {
             _nodes = new List<NodeInfo>();
             _kademlia = kademlia;
+            K = OptConfig.Data.KademliaK;
         }
 
         public void AddNode(NodeInfo newNode)
@@ -48,6 +49,11 @@ namespace MistNet
 
             // 満杯 → 先頭を PING して置き換え判定
             var oldest = _nodes.First();
+            if (_pendingNodeList.ContainsKey(oldest))
+            {
+                // すでに PING 済みなら何もしない
+                return;
+            }
             _kademlia.Ping(oldest);
             _pendingNodeList[oldest] = newNode; // 置き換え候補を記録
             ReplaceByTimeout(oldest).Forget();  // タイムアウトで置き換えを実行
