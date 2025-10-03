@@ -177,33 +177,6 @@ namespace MistNet
             {
                 MistManager.I.Disconnect(nodeId);
             }
-
-            // foreach (var nodeId in connectedNodes.ToList())
-            // {
-            //     if (!_nodeLocations.TryGetValue(nodeId, out var position))
-            //     {
-            //         // 位置情報がないノードは危険なので切断対象にする
-            //         MistManager.I.Disconnect(nodeId);
-            //         i++;
-            //         if (i >= requestCount) return;
-            //         continue;
-            //     }
-            //
-            //     var area = new Area(position);
-            //
-            //     if (_areaTracker.SurroundingChunks.Contains(area))
-            //     {
-            //         if (_routingBase.ConnectedNodes.Count <=
-            //             OptConfig.Data.MaxConnectionCount + OptConfig.Data.SafeMargin)
-            //             continue; // 少しの超過なら残す
-            //     }
-            //
-            //     // エリア外のノードを切断
-            //     MistManager.I.Disconnect(nodeId);
-            //
-            //     i++;
-            //     if (i >= requestCount) return;
-            // }
         }
 
         public void Dispose()
