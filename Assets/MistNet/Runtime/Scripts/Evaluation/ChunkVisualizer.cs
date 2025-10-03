@@ -6,18 +6,19 @@ namespace MistNet
     {
         private const int ChunkCountX = 50;
         private const int ChunkCountZ = 50;
-        private static float ChunkSize => Area.ChunkSize;
+        private static float _chunkSize;
         private static readonly Color LineColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
         private void Start()
         {
+            _chunkSize = OptConfig.Data.ChunkSize;
 #if UNITY_EDITOR
             for (int x = -ChunkCountX; x <= ChunkCountX; x++)
             {
                 for (int z = -ChunkCountX; z <= ChunkCountZ; z++)
                 {
-                    var origin = new Vector3(x * ChunkSize, 0, z * ChunkSize);
-                    CreateChunkLines(origin, ChunkSize);
+                    var origin = new Vector3(x * _chunkSize, 0, z * _chunkSize);
+                    CreateChunkLines(origin, _chunkSize);
                 }
             }
 #endif

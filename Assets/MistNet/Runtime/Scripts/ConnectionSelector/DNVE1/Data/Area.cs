@@ -7,21 +7,22 @@ namespace MistNet
 {
     public class Area
     {
-        public const int ChunkSize = 256;
         [JsonProperty("x")] public int X;
         [JsonProperty("y")] public int Y;
         [JsonProperty("z")] public int Z;
+        private static int _chunkSize;
 
         public Area()
         {
+            _chunkSize = OptConfig.Data.ChunkSize;
         }
 
         public Area(Vector3 position)
         {
-            X = Mathf.FloorToInt(position.x / ChunkSize);
-            // Y = Mathf.FloorToInt(position.y / ChunkSize);
+            X = Mathf.FloorToInt(position.x / _chunkSize);
+            // Y = Mathf.FloorToInt(position.y / _chunkSize);
             Y = 0;
-            Z = Mathf.FloorToInt(position.z / ChunkSize);
+            Z = Mathf.FloorToInt(position.z / _chunkSize);
         }
 
         public Area(int x, int y, int z)
@@ -34,9 +35,9 @@ namespace MistNet
 
         public void Set(Vector3 position)
         {
-            X = Mathf.FloorToInt(position.x / ChunkSize);
+            X = Mathf.FloorToInt(position.x / _chunkSize);
             Y = 0;
-            Z = Mathf.FloorToInt(position.z / ChunkSize);
+            Z = Mathf.FloorToInt(position.z / _chunkSize);
         }
 
         public void Set((int, int, int) chunk)
@@ -73,9 +74,9 @@ namespace MistNet
         public static Vector3Int ToChunk(Vector3 position)
         {
             return new Vector3Int(
-                Mathf.FloorToInt(position.x / ChunkSize),
+                Mathf.FloorToInt(position.x / _chunkSize),
                 0,
-                Mathf.FloorToInt(position.z / ChunkSize)
+                Mathf.FloorToInt(position.z / _chunkSize)
             );
         }
     }
