@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace MistNet
 {
-    public class DNVE1Selector : SelectorBase, IDisposable, IDNVE1MessageSender
+    public class DNVE1Selector : SelectorBase, IDNVE1MessageSender
     {
         private const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
@@ -33,6 +33,13 @@ namespace MistNet
 
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
+
+            MistManager.I.AddSendFailedCallback((Action<NodeId>) SendFailed);
+        }
+
+        private void SendFailed(NodeId id)
+        {
+            _routingTable.RemoveNode(id);
         }
 
         protected override void OnMessage(string data, NodeId id)
@@ -120,7 +127,7 @@ namespace MistNet
             }
         }
 
-        public void Dispose()
+        private void OnDestroy()
         {
             _areaTracker?.Dispose();
             _connectionBalancer?.Dispose();

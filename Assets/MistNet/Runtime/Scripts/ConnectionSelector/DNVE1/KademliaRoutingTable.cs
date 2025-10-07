@@ -37,6 +37,26 @@ namespace MistNet
             _buckets[index].AddNode(nodeInfo);
         }
 
+        public void RemoveNode(NodeId nodeId)
+        {
+            var id = IdUtil.ToBytes(nodeId.ToString());
+            _selfId ??= IdUtil.ToBytes(PeerRepository.I.SelfId.ToString());
+            var distance = IdUtil.Xor(_selfId, id);
+            var index = IdUtil.LeadingBitIndex(distance);
+
+            if (index == -1)
+            {
+                MistLogger.Error(
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {PeerRepository.I.SelfId} Cannot determine bucket index.");
+                return;
+            }
+
+            var bucket = _buckets[index];
+            if (bucket == null) return;
+
+            bucket.RemoveNode(nodeId);
+        }
+
         public NodeInfo GetNodeInfo(NodeId nodeId)
         {
             var id = IdUtil.ToBytes(nodeId.ToString());

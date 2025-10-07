@@ -15,11 +15,12 @@ namespace MistNet.Evaluation
         private NodeState _nodeStateData;
         private static MistEvalConfigData Data => EvalConfig.Data;
         private readonly Dictionary<EvalMessageType, EvalMessageReceivedHandler> _onMessageFunc = new();
+        private MistEventLogger _logger;
 
         private async void Start()
         {
             EvalConfig.ReadConfig();
-            MistEventLogger logger = new(Data.EnableEventLog);
+            _logger = new(Data.EnableEventLog);
             MistEventLogger.I.LogEvent(EventType.GameStarted);
 
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
@@ -84,7 +85,7 @@ namespace MistNet.Evaluation
         {
             _webSocketHandler.OnMessage -= OnMessage;
             _webSocketHandler?.Dispose();
-            // EvalConfig.WriteConfig();
+            _logger?.Dispose();
         }
 
         private void OnMessage(string message)
