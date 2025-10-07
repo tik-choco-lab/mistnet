@@ -97,7 +97,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in Routing.MessageNodes)
+            foreach (var peerId in Routing.ConnectedNodes)
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
