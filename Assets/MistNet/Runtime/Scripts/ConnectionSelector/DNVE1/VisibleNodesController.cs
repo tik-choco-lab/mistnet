@@ -36,10 +36,15 @@ namespace MistNet
             if (nodes.Count == 0) return;
 
             // 表示すべきNode一覧
+            var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
+            var distanceLimit = OptConfig.Data.ChunkSize * OptConfig.Data.ChunkLoadSize;
+
             var visibleTargetNodes = nodes
-                .OrderBy(kvp => Vector3.Distance(MistSyncManager.I.SelfSyncObject.transform.position, kvp.Value))
+                .Select(kvp => new { kvp.Key, Distance = Vector3.Distance(selfPos, kvp.Value) })
+                .Where(x => x.Distance <= distanceLimit)
+                .OrderBy(x => x.Distance)
                 .Take(OptConfig.Data.VisibleCount)
-                .Select(kvp => kvp.Key)
+                .Select(x => x.Key)
                 .ToHashSet();
 
             var addVisibleNodes = visibleTargetNodes.Except(_routingBase.MessageNodes);

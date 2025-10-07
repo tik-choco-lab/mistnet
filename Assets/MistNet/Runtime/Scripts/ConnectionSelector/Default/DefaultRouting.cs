@@ -9,11 +9,11 @@ namespace MistNet
             if (sourceId == MistManager.I.PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
-            MistLogger.Debug($"[RoutingTable] Add {sourceId} from {fromId}");
             if (_routingTable.TryAdd(sourceId, fromId))
             {
                 return;
             }
+            MistLogger.Debug($"[RoutingTable] Add {sourceId} from {fromId}");
 
             _routingTable[sourceId] = fromId;
         }
