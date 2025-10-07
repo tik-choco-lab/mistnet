@@ -31,7 +31,6 @@ namespace MistNet
             _routingTable = routingTable;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
-            _areaTracker.InitBalancer(this);
         }
 
         private void OnLocation(KademliaMessage message)
@@ -103,6 +102,16 @@ namespace MistNet
             {
                 if (area.Equals(selfChunk)) continue; // 自分のChunkはスキップ
                 var areaId = IdUtil.ToBytes(area.ToString());
+                var closestNodes = _routingTable.FindClosestNodes(areaId);
+                foreach (var node in closestNodes)
+                {
+                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+                    MistManager.I.Connect(node.Id);
+                    i++;
+                    if (i >= requestCount) return;
+                    break;
+                }
+
                 if (!_dataStore.TryGetValue(areaId, out data)) continue;
 
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
@@ -122,6 +131,9 @@ namespace MistNet
 
                 if (i >= requestCount) return;
             }
+
+            // まだ接続していないChunkのIdとNodeIdが近いものを接続
+            // var
         }
 
         private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
