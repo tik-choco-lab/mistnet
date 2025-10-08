@@ -20,7 +20,11 @@ namespace MistNet
 
         private void OnMessageReceived(byte[] data, NodeId id)
         {
-            MistStats.I.TotalEvalReceiveBytes += data.Length;
+            if (MistStats.I != null)
+            {
+                MistStats.I.TotalEvalReceiveBytes += data.Length;
+            }
+
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
             OnMessage(message.Data, id);
         }
