@@ -59,6 +59,22 @@ namespace MistNet
             ReplaceByTimeout(oldest).Forget();  // タイムアウトで置き換えを実行
         }
 
+        public void RemoveNode(NodeId nodeId)
+        {
+            var existing = _nodes.FirstOrDefault(n => n.Id.Equals(nodeId));
+            if (existing != null)
+            {
+                _nodes.Remove(existing);
+            }
+
+            // 置き換え候補からも削除
+            var pending = _pendingNodeList.Keys.FirstOrDefault(n => n.Id.Equals(nodeId));
+            if (pending != null)
+            {
+                _pendingNodeList.Remove(pending);
+            }
+        }
+
         private async UniTask ReplaceByTimeout(NodeInfo node)
         {
             await UniTask.Delay(TimeSpan.FromSeconds(PingTimeoutSeconds)); // PING 待ち時間

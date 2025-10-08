@@ -18,6 +18,7 @@ namespace MistNet
         public PeerRepository PeerRepository;
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
+        private Action<NodeId> _sendFailed;
 
         [field: SerializeField] public Selector Selector { get; private set; }
         public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
@@ -52,6 +53,7 @@ namespace MistNet
             PeerRepository.Dispose();
             _mistSignalingWebRtc.Dispose();
             _mistSyncManager.Dispose();
+            MistSignalingWebSocket.Dispose();
         }
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
@@ -70,7 +72,8 @@ namespace MistNet
                 targetId = Routing.Get(targetId);
                 if (targetId == null)
                 {
-                    MistLogger.Error($"[Error] No route to {message.TargetId}");
+                    MistLogger.Warning($"[Error] No route to {message.TargetId}");
+                    _sendFailed?.Invoke(new NodeId(message.TargetId));
                     return; // メッセージの破棄
                 }
 
@@ -94,7 +97,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in Routing.MessageNodes)
+            foreach (var peerId in Routing.ConnectedNodes)
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -275,6 +278,11 @@ namespace MistNet
         public void AddLeftCallback(Delegate callback)
         {
             _onDisconnectedAction += (Action<NodeId>)callback;
+        }
+
+        public void AddSendFailedCallback(Delegate callback)
+        {
+            _sendFailed += (Action<NodeId>)callback;
         }
 
         [Obsolete("Use InstantiatePlayerAsync instead. InstantiateAsync will be removed in future versions.")]

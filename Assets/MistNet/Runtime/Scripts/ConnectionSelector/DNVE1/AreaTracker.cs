@@ -18,7 +18,6 @@ namespace MistNet
         private readonly HashSet<Area> _surroundingChunks = new();
         private Area _prevSelfChunk;
         private Area _selfChunk;
-        private ConnectionBalancer _connectionBalancer;
         public readonly HashSet<NodeId> ExchangeNodes = new();
 
         public AreaTracker(Kademlia kademlia, KademliaRoutingTable routingTable,
@@ -29,11 +28,6 @@ namespace MistNet
             _dnve1Selector = dnve1Selector;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
-        }
-
-        public void InitBalancer(ConnectionBalancer connectionBalancer)
-        {
-            _connectionBalancer = connectionBalancer;
         }
 
         private async UniTask LoopFindMyAreaInfo(CancellationToken token)
@@ -69,6 +63,8 @@ namespace MistNet
 
                 foreach (var nodeInfo in closestNodes)
                 {
+                    // 接続していない場合はskip
+                    if (!PeerRepository.I.IsConnectingOrConnected(nodeInfo.Id)) continue;
                     ExchangeNodes.Add(nodeInfo.Id);
                 }
             }
