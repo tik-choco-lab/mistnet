@@ -49,6 +49,8 @@ namespace MistNet
             MistLogger.Debug($"[Debug][Send] {data}");
             var bytes = CreateData(data);
             MistManager.I.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
+
+            if (MistStats.I == null) return;
             MistStats.I.TotalEvalSendBytes += bytes.Length;
             MistStats.I.TotalEvalMessageCount++;
         }
