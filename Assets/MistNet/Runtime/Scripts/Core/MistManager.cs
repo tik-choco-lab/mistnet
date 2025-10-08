@@ -395,5 +395,10 @@ namespace MistNet
 
             return result;
         }
+
+        private void Update()
+        {
+            _mistSyncManager.UpdateSyncObjects();
+        }
     }
 }

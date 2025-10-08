@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace MistNet
@@ -30,11 +28,13 @@ namespace MistNet
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
         private readonly Dictionary<string, object> _propertyValueDict = new();
         private readonly List<WatchedProperty> _watchedProperties = new();
+
         private class WatchedProperty
         {
             public string KeyName;
             public Func<object> Getter;
         }
+
         private static int _instanceIdCount;
 
         public void Init(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
@@ -62,10 +62,6 @@ namespace MistNet
         private void InitSyncParameters()
         {
             RegisterPropertyAndRPC();
-            if (IsOwner)
-            {
-                WatchPropertiesAsync(this.GetCancellationTokenOnDestroy()).Forget();
-            }
 
             gameObject.TryGetComponent(out MistTransform);
             if (MistTransform != null) MistTransform.Init();
@@ -247,24 +243,19 @@ namespace MistNet
             return lambda.Compile();
         }
 
-        private async UniTask WatchPropertiesAsync(CancellationToken token)
+        public void WatchPropertiesAsync()
         {
-            while (!token.IsCancellationRequested)
+            foreach (var watched in _watchedProperties)
             {
-                foreach (var watched in _watchedProperties)
-                {
-                    // 保存されたプロパティ情報を使用して値を取得し、ログに出力
-                    var value = watched.Getter();
-                    if (!_propertyValueDict.TryGetValue(watched.KeyName, out var oldValue)) continue;
-                    if (Equals(oldValue, value)) continue;
+                // 保存されたプロパティ情報を使用して値を取得し、ログに出力
+                var value = watched.Getter();
+                if (!_propertyValueDict.TryGetValue(watched.KeyName, out var oldValue)) continue;
+                if (Equals(oldValue, value)) continue;
 
-                    _propertyValueDict[watched.KeyName] = value;
+                _propertyValueDict[watched.KeyName] = value;
 
-                    MistLogger.Debug($"Property: {watched.KeyName}, Value: {value}");
-                    MistManager.I.RPCOther(watched.KeyName, value);
-                }
-
-                await UniTask.Delay(TimeSpan.FromSeconds(syncIntervalSeconds), cancellationToken: token);
+                MistLogger.Debug($"Property: {watched.KeyName}, Value: {value}");
+                MistManager.I.RPCOther(watched.KeyName, value);
             }
         }
     }
