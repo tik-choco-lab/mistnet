@@ -23,7 +23,7 @@ namespace MistNet
                 { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
             };
             
-            MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
+            MistManager.I.World.RegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace MistNet
                 Data = JsonConvert.SerializeObject(sendData)
             };
             var data = MemoryPackSerializer.Serialize(message);
-            MistManager.I.Send(MistNetMessageType.Signaling, data, targetId);
+            MistManager.I.World.Send(MistNetMessageType.Signaling, data, targetId);
         }
 
         /// <summary>

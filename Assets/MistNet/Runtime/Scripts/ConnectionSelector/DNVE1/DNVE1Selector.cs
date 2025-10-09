@@ -34,7 +34,7 @@ namespace MistNet
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
 
-            MistManager.I.AddSendFailedCallback((Action<NodeId>) SendFailed);
+            MistManager.I.World.AddSendFailedCallback((Action<NodeId>) SendFailed);
         }
 
         private void SendFailed(NodeId id)

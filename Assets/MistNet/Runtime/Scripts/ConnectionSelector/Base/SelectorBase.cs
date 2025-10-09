@@ -7,7 +7,7 @@ namespace MistNet
     {
         protected virtual void Start()
         {
-            MistManager.I.AddRPC(MistNetMessageType.ConnectionSelector, OnMessageReceived);
+            MistManager.I.World.RegisterReceive(MistNetMessageType.ConnectionSelector, OnMessageReceived);
         }
 
         public virtual void OnConnected(NodeId id)
@@ -45,14 +45,14 @@ namespace MistNet
 
         protected void SendAll(string data)
         {
-            MistManager.I.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
+            MistManager.I.World.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
         }
 
         protected void Send(string data, NodeId targetId)
         {
             MistLogger.Debug($"[Debug][Send] {data}");
             var bytes = CreateData(data);
-            MistManager.I.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
+            MistManager.I.World.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
 
             if (MistStats.I == null) return;
             MistStats.I.TotalEvalSendBytes += bytes.Length;

@@ -47,7 +47,7 @@ namespace MistNet
                 // idの大きさを比較
                 if (MistManager.I.CompareId(nodeId))
                 {
-                    MistManager.I.Connect(nodeId);
+                    MistManager.I.Transport.Connect(nodeId);
                 }
             }
         }

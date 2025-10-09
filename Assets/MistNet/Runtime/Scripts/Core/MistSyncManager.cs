@@ -34,11 +34,11 @@ namespace MistNet
 
         public void Start()
         {
-            MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
+            MistManager.I.AOI.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
-            MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
-            MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
-            MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
+            MistManager.I.AOI.AddRPC(MistNetMessageType.Location, ReceiveLocation);
+            MistManager.I.AOI.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
+            MistManager.I.AOI.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
 
         public void Dispose()
@@ -62,7 +62,7 @@ namespace MistNet
             };
 
             var data = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
+            MistManager.I.World.Send(MistNetMessageType.ObjectInstantiate, data, id);
             MistLogger.Debug($"[Sync] SendObjectInstantiateInfo: {id}");
         }
 
@@ -98,7 +98,7 @@ namespace MistNet
             var syncObject = obj.GetComponent<MistSyncObject>();
             syncObject.Init(new ObjectId(instantiateData.ObjId), true, instantiateData.PrefabAddress, sourceId);
 
-            MistManager.I.OnSpawned(sourceId);
+            MistManager.I.AOI.OnSpawned(sourceId);
             MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
@@ -110,7 +110,7 @@ namespace MistNet
         {
             var sendData = new P_ObjectInstantiateRequest();
             var bytes = MemoryPackSerializer.Serialize(sendData);
-            MistManager.I.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
+            MistManager.I.World.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
             MistLogger.Debug($"[Sync] RequestObjectInstantiateInfo: {id}");
         }
 
@@ -183,7 +183,7 @@ namespace MistNet
                         ObjId = syncObject.Id,
                     };
                     var bytes = MemoryPackSerializer.Serialize(sendData);
-                    MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
+                    MistManager.I.World.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
                     break;
                 }
             }
@@ -212,7 +212,7 @@ namespace MistNet
             }
             ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
             
-            MistManager.I.OnDestroyed(syncObject.OwnerId);
+            MistManager.I.AOI.OnDestroyed(syncObject.OwnerId);
         }
 
         public MistSyncObject GetSyncObject(NodeId id)

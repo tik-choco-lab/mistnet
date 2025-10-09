@@ -22,7 +22,6 @@ namespace MistNet
 
         public bool IsPlayerObject { get; private set; }
         [HideInInspector] public MistTransform MistTransform;
-        [SerializeField] private float syncIntervalSeconds = 0.5f;
 
         private readonly List<string> _rpcList = new();
         private readonly List<(Component, PropertyInfo)> _propertyList = new();
@@ -71,7 +70,7 @@ namespace MistNet
         {
             foreach (var rpc in _rpcList)
             {
-                MistManager.I.RemoveRPC(rpc);
+                MistManager.I.AOI.RemoveRPC(rpc);
             }
 
             MistSyncManager.I.UnregisterSyncObject(this);
@@ -80,17 +79,17 @@ namespace MistNet
         // -------------------
         public void RPC(NodeId targetId, string key, params object[] args)
         {
-            MistManager.I.RPC(targetId, GetRPCName(key), args);
+            MistManager.I.AOI.RPC(targetId, GetRPCName(key), args);
         }
 
         public void RPCOther(string key, params object[] args)
         {
-            MistManager.I.RPCOther(GetRPCName(key), args);
+            MistManager.I.AOI.RPCOther(GetRPCName(key), args);
         }
 
         public void RPCAll(string key, params object[] args)
         {
-            MistManager.I.RPCAll(GetRPCName(key), args);
+            MistManager.I.AOI.RPCAll(GetRPCName(key), args);
         }
 
         private string GetRPCName(string methodName)
@@ -105,7 +104,7 @@ namespace MistNet
             foreach (var (component, property) in _propertyList)
             {
                 var value = property.GetValue(component);
-                MistManager.I.RPC(id, GetRPCName(property.Name), value);
+                MistManager.I.AOI.RPC(id, GetRPCName(property.Name), value);
             }
         }
 
@@ -146,7 +145,7 @@ namespace MistNet
                 {
                     var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }),
                         component, method);
-                    MistManager.I.AddJoinedCallback((Action<string>)delegateInstance);
+                    MistManager.I.Transport.AddConnectCallback((Action<string>)delegateInstance);
                 }
             }
 
@@ -158,7 +157,7 @@ namespace MistNet
                 {
                     var delegateInstance = Delegate.CreateDelegate(Expression.GetActionType(new[] { typeof(string) }),
                         component, method);
-                    MistManager.I.AddLeftCallback((Action<string>)delegateInstance);
+                    MistManager.I.Transport.AddDisconnectCallback((Action<string>)delegateInstance);
                 }
             }
         }
@@ -186,7 +185,7 @@ namespace MistNet
                 _rpcList.Add(keyName);
 
                 var argTypesWithoutMessageInfo = argTypes.Where(t => t != typeof(MessageInfo)).ToArray();
-                MistManager.I.AddObjectRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
+                MistManager.I.AOI.AddObjectRPC(keyName, delegateInstance, argTypesWithoutMessageInfo);
             }
         }
 
@@ -230,7 +229,7 @@ namespace MistNet
                 }
 
                 _rpcList.Add(keyName);
-                MistManager.I.AddObjectRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
+                MistManager.I.AOI.AddObjectRPC(keyName, (Action<object>)Wrapper, new[] { property.PropertyType });
             }
         }
 
@@ -255,7 +254,7 @@ namespace MistNet
                 _propertyValueDict[watched.KeyName] = value;
 
                 MistLogger.Debug($"Property: {watched.KeyName}, Value: {value}");
-                MistManager.I.RPCOther(watched.KeyName, value);
+                MistManager.I.AOI.RPCOther(watched.KeyName, value);
             }
         }
     }

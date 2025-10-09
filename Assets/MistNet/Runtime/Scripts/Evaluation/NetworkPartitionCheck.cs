@@ -17,7 +17,7 @@ namespace MistNet.Runtime.Evaluation
         {
             sender.RegisterReceive(EvalMessageType.NetworkPartitionCheck, OnNetworkPartitionCheck);
             _sender = sender;
-            MistManager.I.AddRPC(MistNetMessageType.Gossip, OnGossipReceived);
+            MistManager.I.World.RegisterReceive(MistNetMessageType.Gossip, OnGossipReceived);
         }
 
         private void OnNetworkPartitionCheck(string payload)
@@ -30,7 +30,7 @@ namespace MistNet.Runtime.Evaluation
             _message.Payload = data.Id;
             var bytes = MemoryPackSerializer.Serialize(_message);
 
-            MistManager.I.SendAll(MistNetMessageType.Gossip, bytes);
+            MistManager.I.World.SendAll(MistNetMessageType.Gossip, bytes);
         }
 
         private void OnGossipReceived(byte[] data, NodeId id)
@@ -55,7 +55,7 @@ namespace MistNet.Runtime.Evaluation
             if (_receivedMessages.Count > MaxQueueSize)
                 _receivedMessages.Dequeue(); // 古いものから削除
 
-            MistManager.I.SendAll(MistNetMessageType.Gossip, data);
+            MistManager.I.World.SendAll(MistNetMessageType.Gossip, data);
             SendToEvalServer(message.Payload);
         }
 

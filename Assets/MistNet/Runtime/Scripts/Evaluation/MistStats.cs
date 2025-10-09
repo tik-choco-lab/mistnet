@@ -25,8 +25,8 @@ namespace MistNet
         private void Start()
         {
             I = this;
-            MistManager.I.AddRPC(MistNetMessageType.Ping, ReceivePing);
-            MistManager.I.AddRPC(MistNetMessageType.Pong, ReceivePong);
+            MistManager.I.World.RegisterReceive(MistNetMessageType.Ping, ReceivePing);
+            MistManager.I.World.RegisterReceive(MistNetMessageType.Pong, ReceivePong);
             _cancellationToken = new CancellationTokenSource();
             UpdatePing(_cancellationToken.Token).Forget();
             UpdateSendSize(_cancellationToken.Token).Forget();
@@ -45,7 +45,7 @@ namespace MistNet
                 Time = ping.Time,
             };
             var sendData = MemoryPackSerializer.Serialize(pong);
-            MistManager.I.Send(MistNetMessageType.Pong, sendData ,sourceId);
+            MistManager.I.World.Send(MistNetMessageType.Pong, sendData ,sourceId);
         }
         
         private void ReceivePong(byte[] data, NodeId sourceId)
@@ -68,7 +68,7 @@ namespace MistNet
                     Time = DateTime.Now.Ticks,
                 };
                 var sendData = MemoryPackSerializer.Serialize(ping);
-                MistManager.I.SendAll(MistNetMessageType.Ping, sendData);
+                MistManager.I.World.SendAll(MistNetMessageType.Ping, sendData);
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(IntervalPingDistanceTimeSec), cancellationToken: token);
             }
