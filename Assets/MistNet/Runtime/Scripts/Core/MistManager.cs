@@ -12,7 +12,6 @@ namespace MistNet
         public static MistManager I;
         public PeerRepository PeerRepository;
 
-
         [field: SerializeField] public Selector Selector { get; private set; }
         public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
 
@@ -34,6 +33,8 @@ namespace MistNet
             Transport = new MistTransportLayer(Selector);
             World = new MistWorldLayer(Transport, Selector);
             AOI = new MistAOILayer(World);
+
+            Transport.Init();
         }
 
         private void Start()
@@ -117,12 +118,6 @@ namespace MistNet
         public void SendAll(MistNetMessageType type, byte[] data)
         {
             World.SendAll(type, data);
-        }
-
-        [Obsolete]
-        public void OnMessage(byte[] data, NodeId senderId)
-        {
-            World.OnMessage(data, senderId);
         }
 
         [Obsolete]

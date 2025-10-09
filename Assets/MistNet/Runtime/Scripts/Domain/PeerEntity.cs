@@ -36,7 +36,7 @@ namespace MistNet
         public PeerEntity(NodeId id)
         {
             Id = id;
-            OnMessage += MistManager.I.World.OnMessage;
+            OnMessage += MistManager.I.Transport.OnMessage;
             OnConnected += MistManager.I.Transport.OnConnected;
             OnDisconnected += MistManager.I.Transport.OnDisconnected;
 

@@ -6,7 +6,6 @@ namespace MistNet
     {
         void Send(MistNetMessageType type, byte[] data, NodeId targetId);
         void SendAll(MistNetMessageType type, byte[] data);
-        void OnMessage(byte[] data, NodeId senderId);
         void AddSendFailedCallback(Delegate callback);
         void RegisterReceive(MistNetMessageType type, MessageReceivedHandler receiver);
     }

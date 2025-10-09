@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using MemoryPack;
 
 namespace MistNet
 {
@@ -7,12 +8,17 @@ namespace MistNet
     {
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
-        private readonly MistSignalingWebRTC _mistSignalingWebRtc;
+        private Action<byte[], MistMessage, NodeId> _onMessageAction;
+        private MistSignalingWebRTC _mistSignalingWebRtc;
         private readonly Selector _selector;
 
         public MistTransportLayer(Selector selector)
         {
             _selector = selector;
+        }
+
+        public void Init()
+        {
             _mistSignalingWebRtc = new MistSignalingWebRTC();
         }
 
@@ -68,6 +74,31 @@ namespace MistNet
         public void AddDisconnectCallback(Delegate callback)
         {
             _onDisconnectedAction += (Action<NodeId>)callback;
+        }
+
+        public void RegisterReceive(Action<byte[], MistMessage, NodeId> callback)
+        {
+            _onMessageAction += callback;
+        }
+
+        public void OnMessage(byte[] data, NodeId senderId)
+        {
+            var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
+            MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
+            _onMessageAction?.Invoke(data, message, senderId);
+        }
+
+        public void Send(NodeId targetId, MistMessage data)
+        {
+            var bytes = MemoryPackSerializer.Serialize(data);
+            var peerData = PeerRepository.I.GetAllPeer[targetId];
+            peerData.PeerEntity.Send(bytes);
+        }
+
+        public void Send(NodeId targetId, byte[] data)
+        {
+            var peerData = PeerRepository.I.GetAllPeer[targetId];
+            peerData.PeerEntity.Send(data);
         }
 
         public void Dispose()
