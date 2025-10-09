@@ -50,7 +50,6 @@ namespace MistNet
             _worldLayer.Send(MistNetMessageType.RPC, bytes, targetId);
         }
 
-
         public void RPCOther(string key, params object[] args)
         {
             var rpcArgs = WrapArgs(args);
