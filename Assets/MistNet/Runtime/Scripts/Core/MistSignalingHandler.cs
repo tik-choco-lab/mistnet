@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Threading;
+using MistNet.Utils;
 using Newtonsoft.Json;
 using Unity.WebRTC;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace MistNet
         public void RequestOffer(SignalingData response)
         {
             var senderId = response.SenderId;
-            if(!MistManager.I.CompareId(senderId)) return;
+            if(!IdUtil.CompareId(senderId)) return;
             SendOffer(new NodeId(response.SenderId)).Forget();
         }
 

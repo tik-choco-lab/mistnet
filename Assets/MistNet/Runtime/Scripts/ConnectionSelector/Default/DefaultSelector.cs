@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MistNet.Utils;
 using UnityEngine;
 
 namespace MistNet
@@ -45,7 +46,7 @@ namespace MistNet
                 MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");
 
                 // idの大きさを比較
-                if (MistManager.I.CompareId(nodeId))
+                if (IdUtil.CompareId(nodeId))
                 {
                     MistManager.I.Transport.Connect(nodeId);
                 }

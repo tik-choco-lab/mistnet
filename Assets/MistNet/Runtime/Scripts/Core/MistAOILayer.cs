@@ -12,9 +12,11 @@ namespace MistNet
         private readonly Dictionary<string, Delegate> _methods = new();
         private readonly Dictionary<string, Type[]> _argTypes = new();
         private readonly IWorldLayer _worldLayer;
+        private readonly Selector _selector;
 
-        public MistAOILayer(IWorldLayer worldLayer)
+        public MistAOILayer(IWorldLayer worldLayer, Selector selector)
         {
+            _selector = selector;
             _worldLayer = worldLayer;
             _worldLayer.RegisterReceive(MistNetMessageType.RPC, OnRPC);
         }
@@ -48,11 +50,6 @@ namespace MistNet
             _worldLayer.Send(MistNetMessageType.RPC, bytes, targetId);
         }
 
-        public void SendAll(MistNetMessageType type, byte[] data)
-        {
-            _worldLayer.SendAll(type, data);
-            // TODO: AOI対象のみに送るように変更すべき
-        }
 
         public void RPCOther(string key, params object[] args)
         {
@@ -83,6 +80,15 @@ namespace MistNet
         {
             var rpc = MemoryPackSerializer.Deserialize<P_RPC>(data);
             Invoke(rpc);
+        }
+
+        public void SendAll(MistNetMessageType type, byte[] data)
+        {
+            var messageNode = _selector.RoutingBase.MessageNodes;
+            foreach (var nodeId in messageNode)
+            {
+                _worldLayer.Send(type, data, nodeId);
+            }
         }
 
         [Obsolete("Use InstantiatePlayerAsync instead. InstantiateAsync will be removed in future versions.")]
