@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace MistNet
 {
     public class MistSyncManager : IDisposable
     {
+        private const float SyncIntervalSeconds = 0.5f; // 同期間隔
         public static MistSyncManager I { get; private set; }
         public MistSyncObject SelfSyncObject { get; set; }
         public bool DestroyMyObjectsOnDisconnect { get; set; } // 自身のSyncObject
@@ -21,10 +23,13 @@ namespace MistNet
         private MistSyncObject _myPlayerObject; // 自身のプレイヤーオブジェクト
 
         private readonly MistObjectPool _objectPool = new();
+        private readonly CancellationTokenSource _cts;
+        private float _timeSync;
 
         public MistSyncManager()
         {
             I = this;
+            _cts = new();
         }
 
         public void Start()
@@ -39,6 +44,7 @@ namespace MistNet
         public void Dispose()
         {
             _objectPool?.Dispose();
+            _cts.Cancel();
         }
 
         private async UniTask SendObjectInstantiateInfo(NodeId id)
@@ -257,6 +263,16 @@ namespace MistNet
             syncObject.SendAllProperties(sourceId);
         }
 
-
+        public void UpdateSyncObjects()
+        {
+            _timeSync += Time.deltaTime;
+            if (_timeSync < SyncIntervalSeconds) return;
+            _timeSync = 0f;
+            foreach (var syncObject in _syncObjects.Values)
+            {
+                if (!syncObject.IsOwner) continue;
+                syncObject.WatchPropertiesAsync();
+            }
+        }
     }
 }
