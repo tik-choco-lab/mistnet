@@ -9,6 +9,7 @@ namespace MistNet
         private Action<NodeId> _sendFailed;
         private readonly Dictionary<MistNetMessageType, MessageReceivedHandler> _onMessageDict = new();
         private readonly Selector _selector;
+        private MistMessage _message;
 
         public MistWorldLayer(ITransportLayer transport, Selector selector)
         {
@@ -19,48 +20,43 @@ namespace MistNet
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
         {
-            var message = new MistMessage
-            {
-                Id = PeerRepository.I.SelfId,
-                Payload = data,
-                TargetId = targetId,
-                Type = type,
-            };
+            _message ??= new MistMessage();
+            _message.Id = PeerRepository.I.SelfId;
+            _message.Payload = data;
+            _message.Type = type;
 
             if (!PeerRepository.I.IsConnected(targetId))
             {
                 targetId = _selector.RoutingBase.Get(targetId);
                 if (targetId == null)
                 {
-                    MistLogger.Warning($"[Error] No route to {message.TargetId}");
-                    _sendFailed?.Invoke(new NodeId(message.TargetId));
+                    MistLogger.Warning($"[Error] No route to {_message.TargetId}");
+                    _sendFailed?.Invoke(new NodeId(_message.TargetId));
                     return; // メッセージの破棄
                 }
 
-                MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
+                MistLogger.Trace($"[FORWARD] {targetId} {type} {_message.TargetId}");
             }
 
             if (PeerRepository.I.IsConnected(targetId))
             {
                 MistLogger.Trace($"[SEND][{type.ToString()}] {type} {targetId}");
-                _transport.Send(targetId, message);
+                _transport.Send(targetId, _message);
             }
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
         {
-            var message = new MistMessage
-            {
-                Id = PeerRepository.I.SelfId,
-                Payload = data,
-                Type = type,
-            };
+            _message ??= new MistMessage();
+            _message.Id = PeerRepository.I.SelfId;
+            _message.Payload = data;
+            _message.Type = type;
 
             foreach (var peerId in _selector.RoutingBase.ConnectedNodes)
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
-                message.TargetId = peerId;
-                _transport.Send(peerId, message);
+                _message.TargetId = peerId;
+                _transport.Send(peerId, _message);
             }
         }
 
