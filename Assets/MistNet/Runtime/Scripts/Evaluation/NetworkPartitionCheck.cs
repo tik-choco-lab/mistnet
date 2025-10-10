@@ -30,6 +30,8 @@ namespace MistNet.Runtime.Evaluation
             _message.Payload = data.Id;
             var bytes = MemoryPackSerializer.Serialize(_message);
 
+            _receivedMessages.Enqueue(_message.Payload);
+            SendToEvalServer(_message.Payload);
             MistManager.I.World.SendAll(MistNetMessageType.Gossip, bytes);
         }
 
@@ -61,7 +63,18 @@ namespace MistNet.Runtime.Evaluation
 
         private void SendToEvalServer(string payload)
         {
-            _sender.Send(EvalMessageType.NetworkPartitionCheckResponse, payload);
+            var response = new NetworkPartitionCheckResponse
+            {
+                Id = payload,
+                NodeId = PeerRepository.I.SelfId.ToString()
+            };
+            _sender.Send(EvalMessageType.NetworkPartitionCheckResponse, response);
+        }
+
+        public class NetworkPartitionCheckResponse
+        {
+            [JsonProperty("id")] public string Id;
+            [JsonProperty("nodeId")] public string NodeId;
         }
     }
 }
