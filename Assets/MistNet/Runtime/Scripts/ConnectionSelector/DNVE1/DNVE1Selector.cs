@@ -84,7 +84,7 @@ namespace MistNet
             foreach (var node in closestNodes.Nodes)
             {
                 // Message数が増大するためコメントアウト
-                // _routingBase.AddRouting(node.Id, message.Sender.Id);
+                _routingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
             }
         }
