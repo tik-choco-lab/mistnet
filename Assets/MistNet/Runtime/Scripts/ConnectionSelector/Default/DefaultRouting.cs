@@ -29,8 +29,8 @@ namespace MistNet
             MistLogger.Warning($"[RoutingTable] Not found {targetId}");
 
             // 適当に返す
-            if (ConnectedNodes.Count != 0)
-                return ConnectedNodes.First();
+            // if (ConnectedNodes.Count != 0)
+            //     return ConnectedNodes.First();
 
             MistLogger.Warning("[RoutingTable] Not found connected peer");
             return null;
