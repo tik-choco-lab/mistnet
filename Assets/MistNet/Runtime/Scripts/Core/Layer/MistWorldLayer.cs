@@ -9,7 +9,7 @@ namespace MistNet
         private Action<NodeId> _sendFailed;
         private readonly Dictionary<MistNetMessageType, MessageReceivedHandler> _onMessageDict = new();
         private readonly Selector _selector;
-        private MistMessage _message;
+        // private MistMessage _message;
 
         public MistWorldLayer(ITransportLayer transport, Selector selector)
         {
@@ -20,43 +20,57 @@ namespace MistNet
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
         {
-            _message ??= new MistMessage();
-            _message.Id = PeerRepository.I.SelfId;
-            _message.Payload = data;
-            _message.Type = type;
+            // _message ??= new MistMessage();
+            // _message.Id = PeerRepository.I.SelfId;
+            // _message.Payload = data;
+            // _message.Type = type;
+
+            var message = new MistMessage
+            {
+                Id = PeerRepository.I.SelfId,
+                Payload = data,
+                Type = type,
+                TargetId = targetId,
+            };
 
             if (!PeerRepository.I.IsConnected(targetId))
             {
                 targetId = _selector.RoutingBase.Get(targetId);
                 if (targetId == null)
                 {
-                    MistLogger.Warning($"[Error] No route to {_message.TargetId}");
-                    _sendFailed?.Invoke(new NodeId(_message.TargetId));
+                    MistLogger.Warning($"[Error] No route to {message.TargetId}");
+                    _sendFailed?.Invoke(new NodeId(message.TargetId));
                     return; // メッセージの破棄
                 }
 
-                MistLogger.Trace($"[FORWARD] {targetId} {type} {_message.TargetId}");
+                MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
 
             if (PeerRepository.I.IsConnected(targetId))
             {
                 MistLogger.Trace($"[SEND][{type.ToString()}] {type} {targetId}");
-                _transport.Send(targetId, _message);
+                _transport.Send(targetId, message);
             }
         }
 
         public void SendAll(MistNetMessageType type, byte[] data)
         {
-            _message ??= new MistMessage();
-            _message.Id = PeerRepository.I.SelfId;
-            _message.Payload = data;
-            _message.Type = type;
+            var message = new MistMessage
+            {
+                Id = PeerRepository.I.SelfId,
+                Payload = data,
+                Type = type,
+            };
+            // _message ??= new MistMessage();
+            // _message.Id = PeerRepository.I.SelfId;
+            // _message.Payload = data;
+            // _message.Type = type;
 
             foreach (var peerId in _selector.RoutingBase.ConnectedNodes)
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
-                _message.TargetId = peerId;
-                _transport.Send(peerId, _message);
+                message.TargetId = peerId;
+                _transport.Send(peerId, message);
             }
         }
 
@@ -69,14 +83,11 @@ namespace MistNet
                 return;
             }
 
-            // 他のPeer宛のメッセージの場合
-            // if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
-
             var targetId = new NodeId(message.TargetId);
             targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
             if (string.IsNullOrEmpty(targetId)) return;
             if (targetId == message.Id) return; // 送り元に送り返すのは無限ループになるので破棄
-            
+
             _transport.Send(targetId, raw);
             MistLogger.Trace($"[FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {targetId}");
         }
@@ -99,7 +110,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            // _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
+            _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
             _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 
