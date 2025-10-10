@@ -85,12 +85,14 @@ namespace MistNet
         public void OnMessage(byte[] data, NodeId senderId)
         {
             var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
+            message.HopCount--;
             MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
             _onMessageAction?.Invoke(data, message, senderId);
         }
 
         public void Send(NodeId targetId, MistMessage data)
         {
+            data.HopCount = OptConfig.Data.HopCount;
             var bytes = MemoryPackSerializer.Serialize(data);
             var peerData = PeerRepository.I.GetAllPeer[targetId];
             peerData.PeerEntity.Send(bytes);

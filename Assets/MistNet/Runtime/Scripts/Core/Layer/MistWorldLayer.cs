@@ -25,6 +25,7 @@ namespace MistNet
             // _message.Payload = data;
             // _message.Type = type;
 
+            // NOTE: messageを共有すると予期しない問題が発生するので　毎回newしている
             var message = new MistMessage
             {
                 Id = PeerRepository.I.SelfId,
@@ -82,6 +83,12 @@ namespace MistNet
                 ProcessMessageForSelf(message, senderId);
                 return;
             }
+
+            // 他のPeer宛のメッセージの場合
+            if (message.HopCount <= 0) return;
+
+            // 送り元が接続されていない場合は破棄 loopを防ぐ
+            // if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
 
             var targetId = new NodeId(message.TargetId);
             targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);

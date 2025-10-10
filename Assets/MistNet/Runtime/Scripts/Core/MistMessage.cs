@@ -7,6 +7,7 @@ public partial class MistMessage
     public string TargetId;
     public string Id;
     public byte[] Payload;
+    public int HopCount;
 }
 
 namespace MistNet

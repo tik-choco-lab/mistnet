@@ -1,4 +1,6 @@
+using System;
 using System.Linq;
+using Random = UnityEngine.Random;
 
 namespace MistNet
 {
@@ -28,9 +30,13 @@ namespace MistNet
 
             MistLogger.Warning($"[RoutingTable] Not found {targetId}");
 
-            // 適当に返す
-            // if (ConnectedNodes.Count != 0)
-            //     return ConnectedNodes.First();
+            // NOTE: 下記のように適当に返すと、メッセージがループする可能性がある 扱いに注意 やるならhopCountを必ずつける
+            if (ConnectedNodes.Count != 0)
+            {
+                // randomで返す
+                var index = Random.Range(0, ConnectedNodes.Count);
+                return ConnectedNodes.ElementAt(index);
+            }
 
             MistLogger.Warning("[RoutingTable] Not found connected peer");
             return null;

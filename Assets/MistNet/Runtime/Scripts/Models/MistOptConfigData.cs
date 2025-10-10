@@ -17,6 +17,7 @@ namespace MistNet
         [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
         [JsonProperty("expireSeconds")] public float ExpireSeconds = 10f; // dataStoreの中身で自動削除するまでの秒数
         [JsonProperty("kademliaK")] public int KademliaK = 20; // KademliaのK値
+        [JsonProperty("hopCount")] public int HopCount = 5; // メッセージの最大ホップ数
 
         // DNVE2 ---------------
         [JsonProperty("nodeListExchangeIntervalSeconds")] public float NodeListExchangeIntervalSeconds = 3f;
