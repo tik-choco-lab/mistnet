@@ -55,7 +55,7 @@ namespace MistNet
             }
             catch (OperationCanceledException)
             {
-                MistLogger.Warning("[Signaling][Offer] Timeout");
+                MistLogger.Warning($"[Signaling][Offer] Timeout operation cancelled: {receiverId}");
                 PeerRepository.I.RemovePeer(receiverId);
                 return;
             }

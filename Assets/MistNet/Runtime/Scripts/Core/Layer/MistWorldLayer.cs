@@ -70,10 +70,13 @@ namespace MistNet
             }
 
             // 他のPeer宛のメッセージの場合
-            if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
+            // if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
+
             var targetId = new NodeId(message.TargetId);
             targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
             if (string.IsNullOrEmpty(targetId)) return;
+            if (targetId == message.Id) return; // 送り元に送り返すのは無限ループになるので破棄
+            
             _transport.Send(targetId, raw);
             MistLogger.Trace($"[FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {targetId}");
         }
@@ -96,7 +99,7 @@ namespace MistNet
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
-            _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
+            // _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
             _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
         }
 
