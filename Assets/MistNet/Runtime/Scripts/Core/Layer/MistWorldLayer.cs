@@ -70,6 +70,7 @@ namespace MistNet
             }
 
             // 他のPeer宛のメッセージの場合
+            if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
             var targetId = new NodeId(message.TargetId);
             targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
             if (string.IsNullOrEmpty(targetId)) return;
