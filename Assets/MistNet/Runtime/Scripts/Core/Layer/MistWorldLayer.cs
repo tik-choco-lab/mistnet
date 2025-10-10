@@ -77,6 +77,13 @@ namespace MistNet
 
         private void OnMessage(byte[] raw, MistMessage message, NodeId senderId)
         {
+            if (message.Id == PeerRepository.I.SelfId)
+            {
+                // 自分からのメッセージは破棄 loopを防ぐ
+                MistLogger.Warning($"[Warning] Loop message from self {message.Type}");
+                return;
+            }
+
             if (IsMessageForSelf(message))
             {
                 // 自身宛のメッセージの場合
