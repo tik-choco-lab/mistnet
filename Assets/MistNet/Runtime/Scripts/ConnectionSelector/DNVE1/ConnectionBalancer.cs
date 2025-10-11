@@ -94,6 +94,7 @@ namespace MistNet
 
                     i++;
                     if (i >= requestCount) return;
+                    break;
                 }
             }
 
@@ -131,9 +132,6 @@ namespace MistNet
 
                 if (i >= requestCount) return;
             }
-
-            // まだ接続していないChunkのIdとNodeIdが近いものを接続
-            // var
         }
 
         private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
