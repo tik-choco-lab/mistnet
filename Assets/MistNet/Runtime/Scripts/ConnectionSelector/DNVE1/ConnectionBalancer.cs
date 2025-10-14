@@ -128,6 +128,7 @@ namespace MistNet
 
                     i++;
                     if (i >= requestCount) return;
+                    return;
                 }
 
                 if (i >= requestCount) return;
