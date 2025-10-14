@@ -13,8 +13,7 @@ namespace MistNet
         void AddConnectCallback(Delegate callback);
         void AddDisconnectCallback(Delegate callback);
         void RegisterReceive(Action<byte[], MistMessage, NodeId> callback);
-        void Send(NodeId targetId, MistMessage data);
-        void Send(NodeId targetId, byte[] data);
+        void Send(NodeId targetId, MistMessage data, bool isForward = false);
         void OnMessage(byte[] data, NodeId senderId);
     }
 }

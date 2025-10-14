@@ -71,7 +71,7 @@ namespace MistNet
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
-                _transport.Send(peerId, message);
+                _transport.Send(peerId, message, isForward:false);
             }
         }
 
@@ -102,7 +102,7 @@ namespace MistNet
             if (string.IsNullOrEmpty(targetId)) return;
             if (targetId == message.Id) return; // 送り元に送り返すのは無限ループになるので破棄
 
-            _transport.Send(targetId, raw);
+            _transport.Send(targetId, message, isForward:true);
             MistLogger.Trace($"[FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {targetId}");
         }
 

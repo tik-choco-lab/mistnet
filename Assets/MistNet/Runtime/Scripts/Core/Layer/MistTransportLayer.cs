@@ -90,28 +90,32 @@ namespace MistNet
             _onMessageAction?.Invoke(data, message, senderId);
         }
 
-        public void Send(NodeId targetId, MistMessage data)
+        public void Send(NodeId targetId, MistMessage data, bool isForward = false)
         {
-            data.HopCount = OptConfig.Data.HopCount;
+            if (!isForward)
+            {
+                data.HopCount = OptConfig.Data.HopCount;
+            }
+
             var bytes = MemoryPackSerializer.Serialize(data);
             var peerData = PeerRepository.I.GetAllPeer[targetId];
             peerData.PeerEntity.Send(bytes);
         }
 
-        public void Send(NodeId targetId, byte[] data)
-        {
-            var peerData = PeerRepository.I.GetAllPeer[targetId];
-            var peer = peerData.PeerEntity;
-            if (peer == null
-                || peer.RtcPeer == null
-                || peer.RtcPeer.ConnectionState != RTCPeerConnectionState.Connected
-                || peer.Id == PeerRepository.I.SelfId)
-            {
-                MistLogger.Warning($"[Error] Peer is null {targetId}");
-                return;
-            }
-            peer.Send(data);
-        }
+        // public void Send(NodeId targetId, byte[] data)
+        // {
+        //     var peerData = PeerRepository.I.GetAllPeer[targetId];
+        //     var peer = peerData.PeerEntity;
+        //     if (peer == null
+        //         || peer.RtcPeer == null
+        //         || peer.RtcPeer.ConnectionState != RTCPeerConnectionState.Connected
+        //         || peer.Id == PeerRepository.I.SelfId)
+        //     {
+        //         MistLogger.Warning($"[Error] Peer is null {targetId}");
+        //         return;
+        //     }
+        //     peer.Send(data);
+        // }
 
         public void Dispose()
         {
