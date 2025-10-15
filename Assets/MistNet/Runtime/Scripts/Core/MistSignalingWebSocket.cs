@@ -11,12 +11,7 @@ namespace MistNet
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
 
-        public MistSignalingWebSocket()
-        {
-            Init().Forget();
-        }
-
-        private async UniTask Init()
+        public async UniTask Init()
         {
             _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket);
             _mistSignalingHandler.Send += Send;

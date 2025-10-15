@@ -34,7 +34,7 @@ namespace MistNet
         {
             MistLogger.Info("[ConnectionSelector] Resetting connections...");
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"全切断");
-            MistManager.I.DisconnectAll();
+            MistManager.I.Transport.DisconnectAll();
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(EvalConfig.Data.NodeResetIntervalSeconds));
@@ -58,12 +58,12 @@ namespace MistNet
                 case RequestActionType.Connect:
                     if (nodeId == PeerRepository.I.SelfId) return;
                     MistLogger.Info($"[Action] Connect {nodeId}");
-                    MistManager.I.Connect(nodeId);
+                    MistManager.I.Transport.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
                     if (nodeId == PeerRepository.I.SelfId) return;
                     MistLogger.Info($"[Action] Disconnect {nodeId}");
-                    MistManager.I.Disconnect(nodeId);
+                    MistManager.I.Transport.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
                     MistLogger.Info($"[Action] SendNodeInfo {nodeId}");

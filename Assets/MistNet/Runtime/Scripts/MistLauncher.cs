@@ -26,7 +26,7 @@ namespace MistNet
 
             var selfId = MistConfig.Data.NodeId;
             var objId = new ObjectId(selfId);
-            MistManager.I.InstantiatePlayerAsync(prefabAddress, position, Quaternion.identity, objId).Forget();
+            MistManager.I.AOI.InstantiatePlayerAsync(prefabAddress, position, Quaternion.identity, objId).Forget();
         }
     }
 }

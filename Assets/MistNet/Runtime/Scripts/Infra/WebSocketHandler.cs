@@ -66,7 +66,7 @@ namespace MistNet
         public async UniTask CloseAsync()
         {
             _ws.CloseAsync();
-            await UniTask.WaitUntil(() => _ws.ReadyState == WebSocketState.Closed);
+            await UniTask.WaitUntil(() => _ws == null || _ws.ReadyState == WebSocketState.Closed);
         }
 
         public void Dispose()

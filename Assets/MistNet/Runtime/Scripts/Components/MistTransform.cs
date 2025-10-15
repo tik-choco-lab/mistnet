@@ -72,7 +72,7 @@ namespace MistNet
             _sendData.Time = syncIntervalTimeSecond;
             
             var data = MemoryPackSerializer.Serialize(_sendData);
-            MistManager.I.SendAll(MistNetMessageType.Location, data);
+            MistManager.I.AOI.SendAll(MistNetMessageType.Location, data);
         }
         
         public void ReceiveLocation(P_Location location)

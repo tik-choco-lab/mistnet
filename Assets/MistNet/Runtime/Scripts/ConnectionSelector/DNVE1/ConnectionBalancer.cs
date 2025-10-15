@@ -90,10 +90,11 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
-                    MistManager.I.Connect(nodeId);
+                    MistManager.I.Transport.Connect(nodeId);
 
                     i++;
                     if (i >= requestCount) return;
+                    break;
                 }
             }
 
@@ -106,7 +107,7 @@ namespace MistNet
                 foreach (var node in closestNodes)
                 {
                     if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
-                    MistManager.I.Connect(node.Id);
+                    MistManager.I.Transport.Connect(node.Id);
                     i++;
                     if (i >= requestCount) return;
                     break;
@@ -122,18 +123,16 @@ namespace MistNet
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                     // if (MistManager.I.CompareId(nodeId))
                     {
-                        MistManager.I.Connect(nodeId);
+                        MistManager.I.Transport.Connect(nodeId);
                     }
 
                     i++;
                     if (i >= requestCount) return;
+                    break;
                 }
 
                 if (i >= requestCount) return;
             }
-
-            // まだ接続していないChunkのIdとNodeIdが近いものを接続
-            // var
         }
 
         private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
@@ -187,7 +186,7 @@ namespace MistNet
 
             foreach (var nodeId in candidateNodes)
             {
-                MistManager.I.Disconnect(nodeId);
+                MistManager.I.Transport.Disconnect(nodeId);
             }
         }
 
