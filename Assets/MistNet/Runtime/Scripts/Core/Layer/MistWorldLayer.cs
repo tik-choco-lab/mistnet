@@ -75,7 +75,7 @@ namespace MistNet
             }
         }
 
-        private void OnMessage(byte[] raw, MistMessage message, NodeId senderId)
+        private void OnMessage(MistMessage message, NodeId senderId)
         {
             if (message.Id == PeerRepository.I.SelfId)
             {
