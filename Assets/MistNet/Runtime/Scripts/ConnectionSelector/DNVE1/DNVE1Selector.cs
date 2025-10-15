@@ -83,7 +83,6 @@ namespace MistNet
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
             foreach (var node in closestNodes.Nodes)
             {
-                // Message数が増大するためコメントアウト
                 _routingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
             }

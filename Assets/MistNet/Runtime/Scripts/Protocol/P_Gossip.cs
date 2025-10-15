@@ -1,5 +1,4 @@
 using MemoryPack;
-using Newtonsoft.Json;
 
 namespace MistNet
 {
@@ -8,6 +7,4 @@ namespace MistNet
     {
         public string Payload { get; set; }
     }
-
-
 }

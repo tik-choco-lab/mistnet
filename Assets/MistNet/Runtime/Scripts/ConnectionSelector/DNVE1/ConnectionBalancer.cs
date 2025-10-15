@@ -128,7 +128,7 @@ namespace MistNet
 
                     i++;
                     if (i >= requestCount) return;
-                    return;
+                    break;
                 }
 
                 if (i >= requestCount) return;

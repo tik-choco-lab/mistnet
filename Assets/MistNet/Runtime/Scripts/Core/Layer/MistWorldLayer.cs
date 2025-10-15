@@ -9,7 +9,6 @@ namespace MistNet
         private Action<NodeId> _sendFailed;
         private readonly Dictionary<MistNetMessageType, MessageReceivedHandler> _onMessageDict = new();
         private readonly Selector _selector;
-        // private MistMessage _message;
 
         public MistWorldLayer(ITransportLayer transport, Selector selector)
         {
@@ -20,11 +19,6 @@ namespace MistNet
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
         {
-            // _message ??= new MistMessage();
-            // _message.Id = PeerRepository.I.SelfId;
-            // _message.Payload = data;
-            // _message.Type = type;
-
             // NOTE: messageを共有すると予期しない問題が発生するので　毎回newしている
             var message = new MistMessage
             {
@@ -62,10 +56,6 @@ namespace MistNet
                 Payload = data,
                 Type = type,
             };
-            // _message ??= new MistMessage();
-            // _message.Id = PeerRepository.I.SelfId;
-            // _message.Payload = data;
-            // _message.Type = type;
 
             foreach (var peerId in _selector.RoutingBase.ConnectedNodes)
             {
@@ -93,9 +83,6 @@ namespace MistNet
 
             // 他のPeer宛のメッセージの場合
             if (message.HopCount <= 0) return;
-
-            // 送り元が接続されていない場合は破棄 loopを防ぐ
-            // if (!_selector.RoutingBase.ConnectedNodes.Contains(new NodeId(message.Id))) return;
 
             var targetId = new NodeId(message.TargetId);
             targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
