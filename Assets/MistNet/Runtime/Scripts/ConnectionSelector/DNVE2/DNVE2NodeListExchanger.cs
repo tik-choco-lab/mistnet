@@ -9,24 +9,24 @@ namespace MistNet.DNVE2
 {
     public class DNVE2NodeListExchanger : IDisposable
     {
-        private readonly IDNVE2MessageSender _sender;
-        private readonly IDNVE2NodeListStore _store;
+        private readonly IMessageSender _sender;
+        private readonly INodeListStore _store;
         private readonly CancellationTokenSource _cts = new();
-        private DNVE2Message _message;
+        private DNVEMessage _message;
         private NodeId _selfId;
         private readonly RoutingBase _routingBase;
 
-        public DNVE2NodeListExchanger(IDNVE2MessageSender sender, IDNVE2NodeListStore store)
+        public DNVE2NodeListExchanger(IMessageSender sender, INodeListStore store)
         {
             _sender = sender;
             _store = store;
-            _sender.RegisterReceive(DNVE2MessageType.NodeList, OnNodeListReceived);
+            _sender.RegisterReceive(DNVEMessageType.NodeList, OnNodeListReceived);
             _sender.RegisterOnConnected(OnConnected);
             _routingBase = MistManager.I.Routing;
             LoopExchangeNodeList(_cts.Token).Forget();
         }
 
-        private void OnNodeListReceived(DNVE2Message message)
+        private void OnNodeListReceived(DNVEMessage message)
         {
             MistLogger.Info($"[DNVE2ConnectionBalancer] OnNodeListReceived: {message.Payload} from {message.Sender}");
             var nodes = JsonConvert.DeserializeObject<List<Node>>(message.Payload);
@@ -45,9 +45,9 @@ namespace MistNet.DNVE2
             _store.TryGet(_selfId, out var selfNode);
             var payload = JsonConvert.SerializeObject(new List<Node> { selfNode });
 
-            _message ??= new DNVE2Message
+            _message ??= new DNVEMessage
             {
-                Type = DNVE2MessageType.NodeList,
+                Type = DNVEMessageType.NodeList,
             };
             _message.Receiver = id;
             _message.Payload = payload;
@@ -73,9 +73,9 @@ namespace MistNet.DNVE2
                     var nodeList = DNVE2Util.GetNodeList(allNodes, node, OptConfig.Data.NodeListExchangeMaxCount);
                     var payload = JsonConvert.SerializeObject(nodeList);
 
-                    _message ??= new DNVE2Message
+                    _message ??= new DNVEMessage
                     {
-                        Type = DNVE2MessageType.NodeList,
+                        Type = DNVEMessageType.NodeList,
                     };
                     _message.Receiver = connectedNode;
                     _message.Payload = payload;

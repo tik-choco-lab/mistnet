@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -9,14 +9,13 @@ namespace MistNet
 {
     public class VisibleNodesController : IDisposable
     {
-        private readonly ConnectionBalancer _connectionBalancer;
+        private readonly INodeListStore _dataStore;
         private readonly RoutingBase _routingBase;
         private readonly CancellationTokenSource _cts = new();
-        // 表示中のNode List
 
-        public VisibleNodesController(ConnectionBalancer connectionBalancer)
+        public VisibleNodesController(INodeListStore dataStore)
         {
-            _connectionBalancer = connectionBalancer;
+            _dataStore = dataStore;
             _routingBase = MistManager.I.Routing;
             LoopVisibleNodes(_cts.Token).Forget();
         }
@@ -25,26 +24,31 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.VisibleNodesIntervalSeconds), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.VisibleNodesIntervalSeconds),
+                    cancellationToken: token);
                 UpdateVisibleNodes();
             }
         }
 
         private void UpdateVisibleNodes()
         {
-            var nodes = _connectionBalancer.NodeLocations;
-            if (nodes.Count == 0) return;
+            var nodeIds = _routingBase.ConnectedNodes;
+
+            if (nodeIds.Count == 0) return;
+
+            var nodes = new List<Node>();
+            foreach (var nodeId in nodeIds)
+            {
+                if (!_dataStore.TryGet(nodeId, out var node)) continue;
+                nodes.Add(node);
+            }
 
             // 表示すべきNode一覧
-            var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-            var distanceLimit = OptConfig.Data.ChunkSize * OptConfig.Data.ChunkLoadSize;
-
             var visibleTargetNodes = nodes
-                .Select(kvp => new { kvp.Key, Distance = Vector3.Distance(selfPos, kvp.Value) })
-                .Where(x => x.Distance <= distanceLimit)
-                .OrderBy(x => x.Distance)
+                .OrderBy(kvp =>
+                    Vector3.Distance(MistSyncManager.I.SelfSyncObject.transform.position, kvp.Position.ToVector3()))
                 .Take(OptConfig.Data.VisibleCount)
-                .Select(x => x.Key)
+                .Select(kvp => kvp.Id)
                 .ToHashSet();
 
             var addVisibleNodes = visibleTargetNodes.Except(_routingBase.MessageNodes);
