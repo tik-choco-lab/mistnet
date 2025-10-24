@@ -128,6 +128,7 @@ namespace MistNet
             }
             if (answerOp.IsError) return default;
 
+            if (RtcPeer == null) return default;
             // LocalDescription
             var desc = answerOp.Desc;
             var localOp = RtcPeer.SetLocalDescription(ref desc);
