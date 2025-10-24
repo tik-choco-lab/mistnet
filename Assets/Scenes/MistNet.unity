@@ -1031,18 +1031,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 2334297786803169392}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1526608174 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4847058793079305405, guid: 9f209ce27d36b304d94cea3e3f4b2f59,
-    type: 3}
-  m_PrefabInstance: {fileID: 2334297786803169392}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63758c151c3949cfa447faa64366659f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1531781157
 GameObject:
   m_ObjectHideFlags: 0
@@ -1153,13 +1141,25 @@ PrefabInstance:
     - target: {fileID: 5096827511899744003, guid: b789ed09dc36c4144afd866fdfd4c185,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b789ed09dc36c4144afd866fdfd4c185, type: 3}
+--- !u!114 &1050882226246937794 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7548641602927184751, guid: b789ed09dc36c4144afd866fdfd4c185,
+    type: 3}
+  m_PrefabInstance: {fileID: 1050882226246937793}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63758c151c3949cfa447faa64366659f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2334297786803169392
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1222,6 +1222,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: DNVE3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5315555472739708848, guid: 9f209ce27d36b304d94cea3e3f4b2f59,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1543,7 +1548,7 @@ PrefabInstance:
         type: 3}
       propertyPath: <Selector>k__BackingField
       value: 
-      objectReference: {fileID: 1526608174}
+      objectReference: {fileID: 1050882226246937794}
     - target: {fileID: 2003660962140733667, guid: 701c67af5a70dfc45bd6ed39e5d18584,
         type: 3}
       propertyPath: <MistSignalingWebRTC>k__BackingField
