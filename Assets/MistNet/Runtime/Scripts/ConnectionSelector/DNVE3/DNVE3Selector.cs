@@ -35,7 +35,7 @@ namespace MistNet.DNVE3
 
         public void Send(DNVEMessage message)
         {
-            
+
         }
 
         public void RegisterReceive(DNVEMessageType type, DNVEMessageReceivedHandler receiver)

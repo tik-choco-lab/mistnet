@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace MistNet
 {
@@ -10,6 +12,7 @@ namespace MistNet
         [JsonProperty("payload")] public string Payload;
     }
 
+    [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
     public enum DNVEMessageType
     {
         NodeList,
