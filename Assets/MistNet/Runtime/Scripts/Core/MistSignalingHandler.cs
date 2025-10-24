@@ -129,6 +129,11 @@ namespace MistNet
         /// <returns></returns>
         private async UniTask SendAnswer(PeerEntity peerEntity, RTCSessionDescription sdp, NodeId targetId)
         {
+            if (peerEntity == null)
+            {
+                MistLogger.Warning("[Signaling][Answer] PeerEntity is null");
+                return;
+            }
             RTCSessionDescription? desc;
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
             try
