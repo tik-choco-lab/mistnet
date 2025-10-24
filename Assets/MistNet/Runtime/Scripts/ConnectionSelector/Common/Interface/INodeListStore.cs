@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace MistNet.DNVE2
+namespace MistNet
 {
-    public interface IDNVE2NodeListStore
+    public interface INodeListStore
     {
         IReadOnlyDictionary<NodeId, Node> NodeList { get; }
         void AddOrUpdate(Node node);

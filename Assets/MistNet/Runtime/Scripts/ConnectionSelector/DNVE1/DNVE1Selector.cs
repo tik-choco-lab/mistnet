@@ -12,7 +12,7 @@ namespace MistNet
         private KademliaDataStore _dataStore;
         private AreaTracker _areaTracker;
         private ConnectionBalancer _connectionBalancer;
-        private VisibleNodesController _visibleNodesController;
+        private DNVE1VisibleNodesController _dnve1VisibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
         private RoutingBase _routingBase;
@@ -29,7 +29,7 @@ namespace MistNet
             _kademlia = new Kademlia(this, _dataStore, _routingTable);
             _areaTracker = new AreaTracker(_kademlia, _routingTable, this);
             _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
-            _visibleNodesController = new VisibleNodesController(_connectionBalancer);
+            _dnve1VisibleNodesController = new DNVE1VisibleNodesController(_connectionBalancer);
 
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
@@ -131,7 +131,7 @@ namespace MistNet
         {
             _areaTracker?.Dispose();
             _connectionBalancer?.Dispose();
-            _visibleNodesController?.Dispose();
+            _dnve1VisibleNodesController?.Dispose();
         }
     }
 }

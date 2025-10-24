@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace MistNet.DNVE2
+namespace MistNet
 {
-    public class DNVE2NodeListStore : IDNVE2NodeListStore
+    public class NodeListStore : INodeListStore
     {
         public IReadOnlyDictionary<NodeId, Node> NodeList => _nodeList;
         private readonly Dictionary<NodeId, Node> _nodeList = new();

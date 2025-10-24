@@ -9,11 +9,11 @@ namespace MistNet.DNVE2
     public class DNVE2ConnectionBalancer : IDisposable
     {
         private readonly CancellationTokenSource _cts = new();
-        private readonly IDNVE2NodeListStore _dataStore;
+        private readonly INodeListStore _dataStore;
         private NodeId _selfId;
         private readonly RoutingBase _routing;
 
-        public DNVE2ConnectionBalancer(IDNVE2MessageSender messageSender, IDNVE2NodeListStore dataStore)
+        public DNVE2ConnectionBalancer(INodeListStore dataStore)
         {
             _dataStore  = dataStore;
             _routing = MistManager.I.Routing;
