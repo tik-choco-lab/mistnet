@@ -16,7 +16,7 @@ namespace MistNet.DNVE3
 
             _routingBase = MistManager.I.Routing;
             var dataStore = new NodeListStore();
-            _exchanger = new DNVE3Exchanger();
+            _exchanger = new DNVE3Exchanger(this);
             _balancer = new DNVE3ConnectionBalancer();
             _visibleController = new VisibleNodesController(dataStore);
         }
