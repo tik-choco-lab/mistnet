@@ -1,9 +1,9 @@
-# MistNet
+## MistNet
 - [English Documents](README_EN.md)
 - [中文文件](README_CN.md)
 
 
-# 特徴
+## 特徴
 Unity向けのWebRTCベースのネットワークライブラリです。
 初回の接続確立時のみシグナリングサーバーを利用し、それ以降は基本的にサーバー不要でマルチプレイ通信を実現します。必要に応じてTURNサーバーも利用可能です。
 
@@ -13,7 +13,7 @@ https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-
 
 
 
-# 導入方法
+## 導入方法
 UPM Package
 本ソフトウェアは、MemoryPackとUniTaskが使用されています。
 
@@ -31,18 +31,12 @@ https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
 
-# Signaling Server
-2種類用意しています。どちらも処理内容は同じです。
-## Python
-- MistNet/main.py
+## Signaling Server
+こちらを使用することができます。
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/f0c37c6a-aec2-47d7-8b09-99162c56e35a)
+https://github.com/tik-choco-lab/mistnet-signaling
 
-
-## C#
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/c5b11c4e-4604-455e-8c1d-81f77eee0d3d)
-
-# 初期設定
+## 初期設定
 Scene上に「MistNet」Prefabを置いてください。
 
 Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
@@ -54,39 +48,19 @@ Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
 
 <img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
 
+## 同期するGameObjectの設定方法
 
-# [Obsolete] 接続設定
-- SignalingServerAddress
-    - Signalingをどこで行うか
-- MinConnection (現在は未使用)
-- LimitConnection
-    - 制限する人数
-        - 接続人数がこの制限を超えることがありますが、
-        接続人数が制限に収まるように、優先度の低いPeerが自動的に切断されます。
-- MaxConnection
-    - 最大接続人数
-```json
-{
-    "SignalingServerAddress": "ws://localhost:8080/ws",
-    "MinConnection": 2,
-    "LimitConnection": 20,
-    "MaxConnection": 80
-}
-```
-
-# 同期するGameObjectの設定方法
-
-## 設定
+### 設定
 - 「MistSyncObject」を Add Componentします。
     - RPC呼び出しや、同期するObjectの識別に使用されます。
 
-## 座標同期方法
+### 座標同期方法
 - 「MistTransform」を Add Componentします。
 
-## Animation同期方法
+### Animation同期方法
 - 「MistAnimatorState」を Add Componentします。
 
-## Playerの生成
+### Playerの生成
 - 最初からSceneに同期するGameObjectを配置するのではなく、
 MistNetを経由してInstantiateする必要があります。
 
@@ -102,15 +76,15 @@ string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
 MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
 ```
 
-# RPC
-## 登録方法
+## RPC
+### 登録方法
 `[MistRpc]`をメソッドの前につけます。
 ```csharp
 [MistRpc]
 void RPC_○○ () {}
 ```
 
-## 呼び出し方法
+### 呼び出し方法
 ```csharp
 [SerializeField] MistSyncObject syncObject;
 
@@ -125,7 +99,7 @@ syncObject.RPC(id, nameof(RPC_○○), args);
 
 ```
 
-# 変数の同期
+## 変数の同期
 
 `[MistSync]`をつけることで、変数の同期が可能です。
 
