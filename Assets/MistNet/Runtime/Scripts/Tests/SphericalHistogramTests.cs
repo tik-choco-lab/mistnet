@@ -9,7 +9,6 @@ public class SphericalHistogramTests
     private Vector3[] nodes;
     private Vector3 centerOld;
     private Vector3 centerNew;
-    private int distBins = 4;
 
     [SetUp]
     public void SetUp()
@@ -33,11 +32,11 @@ public class SphericalHistogramTests
     [Test]
     public void TestHistogramProjectionShape()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes, distBins);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew, distBins);
+        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
+        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
         Assert.AreEqual(26, hist.GetLength(0));
-        Assert.AreEqual(distBins, hist.GetLength(1));
+        Assert.AreEqual(SphericalHistogramUtils.DistBins, hist.GetLength(1));
         Assert.AreEqual(hist.GetLength(0), histProj.GetLength(0));
         Assert.AreEqual(hist.GetLength(1), histProj.GetLength(1));
     }
@@ -45,8 +44,8 @@ public class SphericalHistogramTests
     [Test]
     public void TestProjectionNonNegative()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes, distBins);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew, distBins);
+        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
+        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
         foreach (var val in histProj)
             Assert.GreaterOrEqual(val, 0f);
@@ -55,11 +54,11 @@ public class SphericalHistogramTests
     [Test]
     public void TestNoOffsetProjectionIdentity()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes, distBins);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerOld, distBins);
+        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
+        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerOld);
 
         for (int i = 0; i < 26; i++)
-            for (int j = 0; j < distBins; j++)
+            for (int j = 0; j < SphericalHistogramUtils.DistBins; j++)
                 Assert.AreEqual(hist[i, j], histProj[i, j]);
     }
 
@@ -78,13 +77,13 @@ public class SphericalHistogramTests
         }
 
         // 固定サイズヒストグラム
-        float[,] hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes, distBins);
-        float[,] histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew, distBins);
+        float[,] hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
+        float[,] histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
         float[] distApprox = new float[26];
         for (int i = 0; i < 26; i++)
-            for (int j = 0; j < distBins; j++)
+            for (int j = 0; j < SphericalHistogramUtils.DistBins; j++)
                 distApprox[i] += histProj[i, j];
 
         // 誤差計算

@@ -4,6 +4,7 @@ namespace MistNet.Utils
 {
     public static class SphericalHistogramUtils
     {
+        public const int DistBins = 4;
         // 26方向ベクトルを定数化
         public static readonly Vector3[] Directions = new Vector3[]
         {
@@ -29,13 +30,13 @@ namespace MistNet.Utils
                 Directions[i] = Directions[i].normalized;
         }
 
-        public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, int distBins)
+        public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, int distBins = DistBins)
         {
             return CreateSphericalHistogram(center, nodes, Directions, distBins);
         }
 
         public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, Vector3[] directions,
-            int distBins)
+            int distBins = DistBins)
         {
             var hist = new float[26, distBins];
             float maxDist = 0f;
@@ -64,13 +65,13 @@ namespace MistNet.Utils
         }
 
         public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
-            int distBins)
+            int distBins = DistBins)
         {
             return ProjectSphericalHistogram(hist, oldCenter, newCenter, Directions, distBins);
         }
 
         public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
-            Vector3[] directions, int distBins)
+            Vector3[] directions, int distBins=DistBins)
         {
             Vector3 offset = newCenter - oldCenter;
             float offsetNorm = offset.magnitude;
@@ -90,6 +91,28 @@ namespace MistNet.Utils
             }
 
             return projected;
+        }
+
+        public static float[,] MergeHistograms(
+            float[,] selfHist, Vector3 selfCenter,
+            float[,] otherHist, Vector3 otherCenter,
+            int distBins = DistBins)
+        {
+            // 他人のヒストグラムを自分の中心に射影
+            var otherProjected = ProjectSphericalHistogram(otherHist, otherCenter, selfCenter, Directions, distBins);
+
+            int dirs = Directions.Length;
+            var merged = new float[dirs, distBins];
+
+            for (int i = 0; i < dirs; i++)
+            {
+                for (int j = 0; j < distBins; j++)
+                {
+                    merged[i, j] = selfHist[i, j] + otherProjected[i, j];
+                }
+            }
+
+            return merged;
         }
     }
 }
