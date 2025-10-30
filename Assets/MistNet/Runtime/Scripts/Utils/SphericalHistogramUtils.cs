@@ -51,9 +51,9 @@ namespace MistNet.Utils
 
             foreach (var node in nodes)
             {
-                Vector3 vec = node - center;
+                var vec = node - center;
                 float dist = vec.magnitude;
-                Vector3 unitVec = vec.normalized;
+                var unitVec = vec.normalized;
 
                 int distIdx = Mathf.FloorToInt(dist / maxDist * (distBins - 1));
 
@@ -73,11 +73,11 @@ namespace MistNet.Utils
         public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             Vector3[] directions, int distBins=DistBins)
         {
-            Vector3 offset = newCenter - oldCenter;
+            var offset = newCenter - oldCenter;
             float offsetNorm = offset.magnitude;
             if (offsetNorm == 0f) return (float[,])hist.Clone();
 
-            Vector3 offsetUnit = offset.normalized;
+            var offsetUnit = offset.normalized;
             float[,] projected = (float[,])hist.Clone();
 
             for (int i = 0; i < directions.Length; i++)

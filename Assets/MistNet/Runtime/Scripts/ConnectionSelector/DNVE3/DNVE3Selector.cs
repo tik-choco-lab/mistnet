@@ -17,8 +17,9 @@ namespace MistNet.DNVE3
             base.Start();
 
             var dataStore = new NodeListStore();
-            _exchanger = new DNVE3Exchanger(this, dataStore);
-            _balancer = new DNVE3ConnectionBalancer();
+            var dnveDataStore = new DNVE3DataStore();
+            _exchanger = new DNVE3Exchanger(this, dataStore, dnveDataStore);
+            _balancer = new DNVE3ConnectionBalancer(dnveDataStore);
             _visibleController = new VisibleNodesController(dataStore);
         }
 

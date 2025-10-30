@@ -14,8 +14,7 @@ namespace MistNet.DNVE3
         private readonly RoutingBase _routingBase;
         private readonly INodeListStore _dataStore;
         private readonly CancellationTokenSource _cts = new();
-        private readonly Dictionary<NodeId, DirectionalFeatureData> _nodeMaps = new(); // TODO: dataStoreに入れるべきかも
-        private readonly Dictionary<NodeId, DateTime> _expireNodeTimes = new();
+        private readonly DNVE3DataStore _dnveDataStore;
 
         public void Dispose()
         {
@@ -23,10 +22,11 @@ namespace MistNet.DNVE3
             _cts.Dispose();
         }
 
-        public DNVE3Exchanger(IMessageSender sender, INodeListStore dataStore)
+        public DNVE3Exchanger(IMessageSender sender, INodeListStore dataStore, DNVE3DataStore dnve3DataStore)
         {
             _sender = sender;
             _dataStore = dataStore;
+            _dnveDataStore = dnve3DataStore;
             _routingBase = MistManager.I.Routing;
             _sender.RegisterReceive(DNVEMessageType.Heartbeat, OnHeartbeatReceived);
             SendLoop(_cts.Token).Forget();
@@ -34,10 +34,10 @@ namespace MistNet.DNVE3
 
         private void OnHeartbeatReceived(DNVEMessage message)
         {
-            var data = JsonConvert.DeserializeObject<DirectionalFeatureData>(message.Payload);
-            _nodeMaps[message.Sender] = data;
+            var data = JsonConvert.DeserializeObject<SpatialHistogramData>(message.Payload);
+            _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
-            _expireNodeTimes[message.Sender] = expireTime;
+            _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
         }
 
         private List<Node> GetNodes()
@@ -63,19 +63,25 @@ namespace MistNet.DNVE3
                 if (token.IsCancellationRequested) break;
                 await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.HeartbeatIntervalSeconds),
                     cancellationToken: token);
-
                 DeleteOldData();
-                var selfHistData = GetDirectionalFeatureData(GetNodes().ToArray());
-                var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
+                var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
+                // copy渡し
+                _dnveDataStore.SelfData = new SpatialHistogramData
+                {
+                    Hists = (float[,])selfHistData.Hists.Clone(),
+                    Position = selfHistData.Position,
+                };
 
                 // merge
-                foreach (var (_, data) in _nodeMaps)
+                foreach (var (_, data) in _dnveDataStore.NodeMaps)
                 {
                     var otherPos = data.Position;
                     var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfPos, hist, otherPos);
+                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position, hist, otherPos);
                 }
+                _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
+                // send
                 var json = JsonConvert.SerializeObject(selfHistData);
                 var message = new DNVEMessage
                 {
@@ -90,7 +96,7 @@ namespace MistNet.DNVE3
         {
             var now = DateTime.UtcNow;
             var toRemove = new List<NodeId>();
-            foreach (var kvp in _expireNodeTimes)
+            foreach (var kvp in _dnveDataStore.ExpireNodeTimes)
             {
                 var nodeId = kvp.Key;
                 var lastUpdateTime = kvp.Value;
@@ -101,12 +107,12 @@ namespace MistNet.DNVE3
             }
             foreach (var nodeId in toRemove)
             {
-                _nodeMaps.Remove(nodeId);
-                _expireNodeTimes.Remove(nodeId);
+                _dnveDataStore.NodeMaps.Remove(nodeId);
+                _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
             }
         }
 
-        private DirectionalFeatureData GetDirectionalFeatureData(Node[] nodes)
+        private SpatialHistogramData GetSpatialHistogramData(Node[] nodes)
         {
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
             var posArray = new Vector3[nodes.Length];
@@ -117,9 +123,10 @@ namespace MistNet.DNVE3
 
             var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray);
 
-            return new DirectionalFeatureData
+            return new SpatialHistogramData
             {
-                Hists = hists
+                Hists = hists,
+                Position = selfPos,
             };
         }
     }
