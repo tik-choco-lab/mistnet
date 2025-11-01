@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
+using Newtonsoft.Json;
+using UnityEngine;
 
 namespace MistNet.DNVE3
 {
@@ -10,6 +13,9 @@ namespace MistNet.DNVE3
     {
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
+        private readonly IMessageSender _sender;
+        private readonly NodeListStore _dataStore;
+        private readonly RoutingBase _routing;
 
         public void Dispose()
         {
@@ -17,10 +23,15 @@ namespace MistNet.DNVE3
             _cts.Dispose();
         }
         
-        public DNVE3ConnectionBalancer(DNVE3DataStore dnveDataStore)
+        public DNVE3ConnectionBalancer(IMessageSender sender, NodeListStore dataStore, DNVE3DataStore dnveDataStore)
         {
+            _sender = sender;
             _dnveDataStore = dnveDataStore;
+            _dataStore = dataStore;
+            _routing = MistManager.I.Routing;
             LoopBalanceConnections(_cts.Token).Forget();
+            _sender.RegisterReceive(DNVEMessageType.RequestNodeList, OnRequestNodeListReceived);
+            _sender.RegisterReceive(DNVEMessageType.NodeList, OnNodeListReceived);
         }
 
         private async UniTask LoopBalanceConnections(CancellationToken token)
@@ -36,22 +47,101 @@ namespace MistNet.DNVE3
 
                 for (var i = 0; i < OptConfig.Data.ExchangeCount; i++)
                 {
-                    SendRequest(importantNodes[i].nodeId);
+                    SendRequestNodeList(importantNodes[i].nodeId);
                 }
+
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds),
+                    cancellationToken: token);
+
+                SelectConnection();
             }
         }
 
-        private void SendRequest(NodeId nodeId)
+        // private void SelectConnection()
+        // {
+        //     // dataStoreにあるノードの座標と自身の座標を比較し、重要度を決定
+        //     var allNodes = _dataStore.GetAllNodes().ToHashSet();
+        //     var positions = allNodes
+        //         .Select(n => n.Position.ToVector3())
+        //         .ToArray();
+        //     var selfPosition = _dnveDataStore.SelfData.Position;
+        //     var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPosition, positions);
+        //
+        //
+        // }
+        private void SelectConnection()
         {
-            // MergedHistを送って、相手に足りなさそうなところを送ってもらう？
-            // 欲しい方向ベクトルを1にして送る
-            var hist = new float[SphericalHistogramUtils.Directions.Length, SphericalHistogramUtils.DistBins];
-            for (var i = 0; i < SphericalHistogramUtils.Directions.Length; i++)
+            var allNodes = _dataStore.GetAllNodes().ToList();
+            var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
+
+            var directions = SphericalHistogramUtils.Directions;
+            var selectedNodes = new List<Node>();
+
+            foreach (var dir in directions)
             {
-                for (var j = 0; j < SphericalHistogramUtils.DistBins; j++)
+                Node closest = null;
+                var minDist = float.MaxValue;
+
+                foreach (var node in allNodes)
                 {
-                    hist[i, j] = _dnveDataStore.MergedHistogram[i, j];
+                    var vec = node.Position.ToVector3() - selfPos;
+                    var dot = Vector3.Dot(vec.normalized, dir);
+                    if (dot < 0.7f) continue; // 同じ方向じゃない場合スキップ（閾値は調整可）
+
+                    var dist = vec.magnitude;
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        closest = node;
+                    }
                 }
+
+                if (closest != null && !selectedNodes.Contains(closest))
+                    selectedNodes.Add(closest);
+            }
+
+            // 結果を使って接続確立などを行う
+            // _connectionStore.UpdateConnections(selectedNodes);
+        }
+
+
+        private void SendRequestNodeList(NodeId nodeId)
+        {
+            // 相手にNodeListを要求する
+            var message = new DNVEMessage
+            {
+                Type = DNVEMessageType.RequestNodeList,
+                Payload = string.Empty,
+                Receiver = nodeId,
+            };
+            _sender.Send(message);
+        }
+
+        private void OnRequestNodeListReceived(DNVEMessage receiveMessage)
+        {
+            // NodeList要求を受信したら、自分のNodeListを送信する
+            // TODO: 自動で_dataStoreの古いノードを削除したい
+            var allNodes = _dataStore.GetAllNodes().ToHashSet();
+            var connectedAllNodes = allNodes
+                .Where(n => _routing.ConnectedNodes.Contains(n.Id))
+                .ToList();
+            var jsonPayload = JsonConvert.SerializeObject(connectedAllNodes);
+            var message = new DNVEMessage
+            {
+                Type = DNVEMessageType.NodeList,
+                Payload = jsonPayload,
+                Receiver = receiveMessage.Sender,
+            };
+            _sender.Send(message);
+        }
+
+        private void OnNodeListReceived(DNVEMessage receiveMessage)
+        {
+            var nodes = JsonConvert.DeserializeObject<List<Node>>(receiveMessage.Payload);
+            foreach (var node in nodes)
+            {
+                _routing.AddRouting(node.Id, receiveMessage.Sender);
+                _dataStore.AddOrUpdate(node);
             }
         }
 

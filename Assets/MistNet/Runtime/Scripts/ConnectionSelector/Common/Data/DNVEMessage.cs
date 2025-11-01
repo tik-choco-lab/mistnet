@@ -19,6 +19,6 @@ namespace MistNet
         NodeList,
         // DNVE3
         Heartbeat,
-        NodeRequest,
+        RequestNodeList,
     }
 }
