@@ -77,18 +77,24 @@ namespace MistNet.DNVE3
                 {
                     var otherPos = data.Position;
                     var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position, hist, otherPos);
+                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3());
                 }
                 _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
                 // send
                 var json = JsonConvert.SerializeObject(selfHistData);
-                var message = new DNVEMessage
+
+                foreach (var nodeId in _routingBase.ConnectedNodes)
                 {
-                    Type = DNVEMessageType.Heartbeat,
-                    Payload = json
-                };
-                _sender.Send(message);
+                    var message = new DNVEMessage
+                    {
+                        Type = DNVEMessageType.Heartbeat,
+                        Payload = json,
+                        Receiver = nodeId,
+                    };
+                    _sender.Send(message);
+                    await UniTask.Yield();
+                }
             }
         }
 
@@ -126,7 +132,7 @@ namespace MistNet.DNVE3
             return new SpatialHistogramData
             {
                 Hists = hists,
-                Position = selfPos,
+                Position = new Position(selfPos),
             };
         }
     }

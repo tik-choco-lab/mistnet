@@ -45,7 +45,8 @@ namespace MistNet.DNVE3
                 if (_dnveDataStore.MergedHistogram == null) continue;
                 var importantNodes= FindImportantNode();
 
-                for (var i = 0; i < OptConfig.Data.ExchangeCount; i++)
+                var count = Math.Min(OptConfig.Data.ExchangeCount, importantNodes.Count);
+                for (var i = 0; i < count; i++)
                 {
                     SendRequestNodeList(importantNodes[i].nodeId);
                 }
@@ -99,11 +100,13 @@ namespace MistNet.DNVE3
 
             // AOI対象ノードは切断しない
             var nodesToDisconnect = _routing.ConnectedNodes
-                .Where(id => selectedNodes.All(n => n.Id != id && !_routing.MessageNodes.Contains(n.Id)))
+                .Where(id => selectedNodes.All(n => n.Id != id) && !_routing.MessageNodes.Contains(id))
                 .ToList();
+
             foreach (var nodeId in nodesToDisconnect)
             {
                 if (nodeId == PeerRepository.I.SelfId) continue;
+
                 if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
                 MistManager.I.Transport.Disconnect(nodeId);
             }
@@ -164,7 +167,7 @@ namespace MistNet.DNVE3
 
                 // 自分の中心に射影
                 var projected = SphericalHistogramUtils.ProjectSphericalHistogram(
-                    otherHist, otherCenter, selfCenter
+                    otherHist, otherCenter.ToVector3(), selfCenter.ToVector3()
                 );
 
                 var score = 0f;

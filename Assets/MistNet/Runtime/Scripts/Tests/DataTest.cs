@@ -23,7 +23,7 @@ namespace MistNet.Runtime.Scripts.Tests
         {
             var selfData = new SpatialHistogramData
             {
-                Position = new Vector3(0, 0, 32),
+                Position = new Position(new Vector3(0, 0, 32)),
                 Hists = new float[, ]
                 {
                     {1, 2, 3},
