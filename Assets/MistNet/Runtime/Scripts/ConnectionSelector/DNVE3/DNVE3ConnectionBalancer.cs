@@ -56,7 +56,7 @@ namespace MistNet.DNVE3
                 SelectConnection();
             }
         }
-        
+
         private void SelectConnection()
         {
             var allNodes = _dataStore.GetAllNodes().ToList();
@@ -88,10 +88,26 @@ namespace MistNet.DNVE3
                     selectedNodes.Add(closest);
             }
 
-            // 結果を使って接続確立などを行う
-            // _connectionStore.UpdateConnections(selectedNodes);
-        }
+            // selectedNodesに含まれないノードを切断し、selectedNodesに含まれるノードに接続を試みる
+            foreach (var node in selectedNodes)
+            {
+                var nodeId = node.Id;
+                if (nodeId == PeerRepository.I.SelfId) continue;
+                if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                MistManager.I.Transport.Connect(nodeId);
+            }
 
+            // AOI対象ノードは切断しない
+            var nodesToDisconnect = _routing.ConnectedNodes
+                .Where(id => selectedNodes.All(n => n.Id != id && !_routing.MessageNodes.Contains(n.Id)))
+                .ToList();
+            foreach (var nodeId in nodesToDisconnect)
+            {
+                if (nodeId == PeerRepository.I.SelfId) continue;
+                if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                MistManager.I.Transport.Disconnect(nodeId);
+            }
+        }
 
         private void SendRequestNodeList(NodeId nodeId)
         {
