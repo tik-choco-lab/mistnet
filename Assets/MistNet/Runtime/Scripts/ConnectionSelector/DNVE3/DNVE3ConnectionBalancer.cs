@@ -56,19 +56,7 @@ namespace MistNet.DNVE3
                 SelectConnection();
             }
         }
-
-        // private void SelectConnection()
-        // {
-        //     // dataStoreにあるノードの座標と自身の座標を比較し、重要度を決定
-        //     var allNodes = _dataStore.GetAllNodes().ToHashSet();
-        //     var positions = allNodes
-        //         .Select(n => n.Position.ToVector3())
-        //         .ToArray();
-        //     var selfPosition = _dnveDataStore.SelfData.Position;
-        //     var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPosition, positions);
-        //
-        //
-        // }
+        
         private void SelectConnection()
         {
             var allNodes = _dataStore.GetAllNodes().ToList();
