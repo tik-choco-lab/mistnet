@@ -15,7 +15,10 @@ namespace MistNet
     [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]
     public enum DNVEMessageType
     {
+        // DNVE2
         NodeList,
+        // DNVE3
         Heartbeat,
+        RequestNodeList,
     }
 }
