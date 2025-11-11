@@ -1,3 +1,4 @@
+using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -10,7 +11,9 @@ namespace MistNet.Minimal
 
         private void Start()
         {
+            var selfId = Guid.NewGuid().ToString("N");
             _peerRepository = new PeerRepository();
+            _peerRepository.Init(new NodeId(selfId));
             _mistSignalingWebSocket = new MistSignalingWebSocket(_peerRepository);
         }
 

@@ -52,7 +52,7 @@ namespace MistNet.VC
             audioSource.Play();
 
             // MistPeerData にオーディオ入力を追加
-            //PeerRepository.I.AddInputAudioSource(audioSource);
+            MistManager.I.PeerRepository.AddInputAudioSource(audioSource);
         }
 
         // マイクデバイスのリストを取得するためのヘルパーメソッド
