@@ -8,15 +8,12 @@ using UnityEngine;
 namespace MistNet
 {
     /// <summary>
-    /// TODO: 相手のPeerでDataChannelが開いていない？
     /// </summary>
     public class PeerEntity : IDisposable
     {
         private const float WaitReconnectTimeSec = 3f;
         private const string DataChannelLabel = "data";
 
-        [Obsolete("Use RtcPeer instead. This property will be removed in future versions.")]
-        public RTCPeerConnection Connection => RtcPeer;
         public RTCPeerConnection RtcPeer;
 
         public NodeId Id;
@@ -31,14 +28,14 @@ namespace MistNet
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
 
-        private CancellationTokenSource _cts = new();
+        private readonly CancellationTokenSource _cts = new();
 
-        public PeerEntity(NodeId id)
+        public PeerEntity(NodeId id, ITransportLayer transport)
         {
             Id = id;
-            OnMessage += MistManager.I.Transport.OnMessage;
-            OnConnected += MistManager.I.Transport.OnConnected;
-            OnDisconnected += MistManager.I.Transport.OnDisconnected;
+            OnMessage += transport.OnMessage;
+            OnConnected += transport.OnConnected;
+            OnDisconnected += transport.OnDisconnected;
 
             // ----------------------------
             // Configuration
@@ -314,15 +311,6 @@ namespace MistNet
                 sdpMLineIndex = SdpMLineIndex
             });
             return data;
-        }
-    }
-
-    [Obsolete("Use PeerEntity instead.")]
-    public class MistPeer : PeerEntity
-    {
-        public MistPeer(NodeId id) : base(id)
-        {
-            MistLogger.Warning("[MistPeer] MistPeer is deprecated. Use PeerEntity instead.");
         }
     }
 }

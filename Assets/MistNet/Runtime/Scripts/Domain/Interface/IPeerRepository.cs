@@ -6,7 +6,7 @@ namespace MistNet
 {
     public interface IPeerRepository : IDisposable
     {
-        void Init(NodeId selfId = null);
+        void Init(ITransportLayer transport, NodeId selfId = null);
         NodeId SelfId { get; }
         IReadOnlyDictionary<NodeId, MistPeerDataElement> PeerDict { get; }
         PeerEntity GetPeer(NodeId id);
