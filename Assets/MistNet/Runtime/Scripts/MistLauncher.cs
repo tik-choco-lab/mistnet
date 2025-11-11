@@ -15,7 +15,7 @@ namespace MistNet
         {
             // 座標をランダムで取得する
             var position = Vector3.zero;
-            var maxRange = EvalConfig.Data.MaxAreaSize;
+            var maxRange = EvalConfig.Data.MaxAreaSize * 0.5f;
             if (randomSpawn)
             {
                 var x = Random.Range(-maxRange, maxRange);

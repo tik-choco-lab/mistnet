@@ -90,6 +90,7 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    if(!IdUtil.CompareId(nodeId)) continue;
                     MistManager.I.Transport.Connect(nodeId);
 
                     i++;

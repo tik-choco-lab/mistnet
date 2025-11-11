@@ -37,11 +37,10 @@ namespace MistNet
 
             // 表示すべきNode一覧
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-            var distanceLimit = OptConfig.Data.ChunkSize * OptConfig.Data.ChunkLoadSize;
 
             var visibleTargetNodes = nodes
                 .Select(kvp => new { kvp.Key, Distance = Vector3.Distance(selfPos, kvp.Value) })
-                .Where(x => x.Distance <= distanceLimit)
+                .Where(x => x.Distance <= OptConfig.Data.AoiRange)
                 .OrderBy(x => x.Distance)
                 .Take(OptConfig.Data.VisibleCount)
                 .Select(x => x.Key)
