@@ -239,8 +239,9 @@ namespace MistNet
             }
         }
 
-        private void OnOpenDataChannel()
+        private async void OnOpenDataChannel()
         {
+            await UniTask.Yield(); // DataChannelの状態が安定するまで待つ
             OnConnected?.Invoke(Id); // DataChannelが開いていないと、例えばInstantiateができないため、ここで呼ぶ
         }
 

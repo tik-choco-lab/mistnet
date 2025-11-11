@@ -20,7 +20,7 @@ namespace MistNet
             WriteConfig();
         }
 
-        public static void WriteConfig()
+        private static void WriteConfig()
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(Data, Newtonsoft.Json.Formatting.Indented);
             System.IO.File.WriteAllText(ConfigPath, json);

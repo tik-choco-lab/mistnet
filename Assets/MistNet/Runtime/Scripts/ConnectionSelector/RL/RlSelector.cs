@@ -17,7 +17,6 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            OptConfig.ReadConfig();
             MistLogger.Info($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
             _evalSender = evalClient;
             evalClient.RegisterReceive(EvalMessageType.NodeRequest, OnRequest);

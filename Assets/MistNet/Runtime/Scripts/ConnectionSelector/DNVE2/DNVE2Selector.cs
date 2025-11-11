@@ -14,7 +14,6 @@ namespace MistNet.DNVE2
 
         protected override void Start()
         {
-            OptConfig.ReadConfig();
             base.Start();
 
             var dataStore = new NodeListStore();
