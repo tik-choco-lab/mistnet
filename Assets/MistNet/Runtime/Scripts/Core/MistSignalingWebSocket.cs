@@ -10,10 +10,16 @@ namespace MistNet
         private Dictionary<SignalingType, Action<SignalingData>> _functions;
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
+        private readonly IPeerRepository _peerRepository;
+
+        public MistSignalingWebSocket(IPeerRepository peerRepository)
+        {
+            _peerRepository = peerRepository;
+        }
 
         public async UniTask Init()
         {
-            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket);
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket, _peerRepository);
             _mistSignalingHandler.Send += Send;
 
             // Functionの登録

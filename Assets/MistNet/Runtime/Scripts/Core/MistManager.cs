@@ -9,7 +9,7 @@ namespace MistNet
     public class MistManager : MonoBehaviour
     {
         public static MistManager I;
-        public PeerRepository PeerRepository;
+        public IPeerRepository PeerRepository;
 
         [field: SerializeField] public Selector Selector { get; private set; }
         public MistSignalingWebSocket MistSignalingWebSocket { get; private set; }
@@ -24,12 +24,12 @@ namespace MistNet
         public void Awake()
         {
             MistConfig.ReadConfig();
-            PeerRepository = new();
+            PeerRepository = new PeerRepository();
             _mistSyncManager = new MistSyncManager();
             PeerRepository.Init();
             I = this;
 
-            Transport = new MistTransportLayer(Selector);
+            Transport = new MistTransportLayer(Selector, PeerRepository);
             World = new MistWorldLayer(Transport, Selector);
             AOI = new MistAOILayer(World, Selector);
 
@@ -38,7 +38,7 @@ namespace MistNet
 
         private void Start()
         {
-            MistSignalingWebSocket = new MistSignalingWebSocket();
+            MistSignalingWebSocket = new MistSignalingWebSocket(PeerRepository);
             MistSignalingWebSocket.Init().Forget();
             _mistSyncManager.Start();
         }

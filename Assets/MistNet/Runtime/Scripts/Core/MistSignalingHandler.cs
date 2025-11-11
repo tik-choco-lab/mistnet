@@ -14,10 +14,12 @@ namespace MistNet
         public Action<SignalingData, NodeId> Send;
         private readonly CancellationTokenSource _cts = new();
         private readonly PeerActiveProtocol _activeProtocol;
+        private readonly IPeerRepository _peerRepository;
 
-        public MistSignalingHandler(PeerActiveProtocol activeProtocol)
+        public MistSignalingHandler(PeerActiveProtocol activeProtocol, IPeerRepository peerRepository)
         {
             _activeProtocol = activeProtocol;
+            _peerRepository = peerRepository;
         }
 
         public void RequestOffer(SignalingData response)
@@ -33,7 +35,7 @@ namespace MistNet
         /// <returns></returns>
         public async UniTask SendOffer(NodeId receiverId)
         {
-            var peer = MistManager.I.PeerRepository.CreatePeer(receiverId);
+            var peer = _peerRepository.CreatePeer(receiverId);
             if (peer.RtcPeer.ConnectionState == RTCPeerConnectionState.Connecting)
             {
                 MistLogger.Warning($"[Warning][Signaling] Peer is connecting: {receiverId}");
@@ -77,7 +79,7 @@ namespace MistNet
         {
             MistLogger.Debug($"[Signaling] ReceiveAnswer: {response.SenderId}");
             var targetId = response.SenderId;
-            var peer = MistManager.I.PeerRepository.GetPeer(targetId);
+            var peer = _peerRepository.GetPeer(targetId);
             if (peer == null) return;
             if (peer.RtcPeer.SignalingState != RTCSignalingState.HaveLocalOffer)
             {
@@ -166,7 +168,7 @@ namespace MistNet
             Send(sendData, targetId);
 
             // 接続が完了したら、関連するICE候補を削除
-            var peer = MistManager.I.PeerRepository.GetPeer(targetId).RtcPeer;
+            var peer = _peerRepository.GetPeer(targetId).RtcPeer;
             RegisterIceConnectionChangeHandler(peer);
             MistLogger.Debug($"[Signaling] SendCandidate: {targetId}");
         }
@@ -231,11 +233,11 @@ namespace MistNet
             }
         }
 
-        private static async UniTask<PeerEntity> GetPeer(NodeId targetId, CancellationToken token)
+        private async UniTask<PeerEntity> GetPeer(NodeId targetId, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                var peer = MistManager.I.PeerRepository.GetPeer(targetId);
+                var peer = _peerRepository.GetPeer(targetId);
                 if (peer != null) return peer;
                 await UniTask.Yield();
             }
@@ -247,11 +249,11 @@ namespace MistNet
         /// 送信用データを作成する
         /// </summary>
         /// <returns></returns>
-        private static SignalingData CreateSendData()
+        private SignalingData CreateSendData()
         {
             var sendData = new SignalingData
             {
-                SenderId = MistManager.I.PeerRepository.SelfId,
+                SenderId = _peerRepository.SelfId,
                 RoomId = MistConfig.Data.RoomId
             };
 

@@ -11,9 +11,9 @@ namespace MistNet
         private readonly MistSignalingHandler _mistSignalingHandler;
         private readonly Dictionary<SignalingType, Action<SignalingData>> _functions;
 
-        public MistSignalingWebRTC()
+        public MistSignalingWebRTC(IPeerRepository peerRepository)
         {
-            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC);
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC, peerRepository);
             _mistSignalingHandler.Send += SendSignalingMessage;
             // Functionの登録
             _functions = new Dictionary<SignalingType, Action<SignalingData>>
