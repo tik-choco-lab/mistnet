@@ -15,5 +15,7 @@ namespace MistNet
         void RegisterReceive(Action<MistMessage, NodeId> callback);
         void Send(NodeId targetId, MistMessage data, bool isForward = false);
         void OnMessage(byte[] data, NodeId senderId);
+        bool IsConnectingOrConnected(NodeId id);
+        bool IsConnected(NodeId id);
     }
 }

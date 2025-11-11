@@ -81,7 +81,7 @@ namespace MistNet
 
             return _pool.Count > 0 ? _pool.Pop() : new EventData
             {
-                Id = PeerRepository.I.SelfId,
+                Id = MistManager.I.PeerRepository.SelfId,
                 Service = Application.productName,
                 Version = Application.version,
                 Key = Key,
@@ -108,7 +108,7 @@ namespace MistNet
         {
             if (type is LogType.Error or LogType.Exception)
             {
-                if (PeerRepository.I == null) return;
+                if (MistManager.I.PeerRepository == null) return;
                 LogEvent(EventType.Error, $"{logString}\n{stackTrace}");
             }
         }

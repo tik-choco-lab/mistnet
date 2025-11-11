@@ -28,7 +28,7 @@ namespace MistNet.DNVE2
                     cancellationToken: token);
 
                 var allNodes = _dataStore.GetAllNodes().ToHashSet();
-                _selfId ??= PeerRepository.I.SelfId;
+                _selfId ??= MistManager.I.PeerRepository.SelfId;
                 if (_selfId == null) return;
                 if (!_dataStore.TryGet(_selfId, out var selfNode)) return;
 
@@ -49,7 +49,7 @@ namespace MistNet.DNVE2
             foreach (var nodeId in nodesToDisconnect)
             {
                 if (nodeId == _selfId) continue;
-                if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
                 // if (MistManager.I.CompareId(nodeId)) continue;
                 MistManager.I.Transport.Disconnect(nodeId);
             }
@@ -60,7 +60,7 @@ namespace MistNet.DNVE2
             foreach (var node in closestNodes)
             {
                 if (node.Id == _selfId) continue;
-                if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+                if (MistManager.I.Transport.IsConnectingOrConnected(node.Id)) continue;
                 // if (MistManager.I.CompareId(node.Id)) continue;
                 MistManager.I.Transport.Connect(node.Id);
             }

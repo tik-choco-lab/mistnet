@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using MemoryPack;
+using Unity.WebRTC;
 
 namespace MistNet
 {
@@ -26,14 +27,14 @@ namespace MistNet
 
         public void Connect(NodeId id)
         {
-            if (id == PeerRepository.I.SelfId) return;
+            if (id == _peerRepository.SelfId) return;
 
             _mistSignalingWebRtc.Connect(id);
         }
 
         public void Disconnect(NodeId id)
         {
-            if (id == PeerRepository.I.SelfId) return;
+            if (id == _peerRepository.SelfId) return;
 
             _selector.RoutingBase.RemoveMessageNode(id);
             _selector.RoutingBase.Remove(id);
@@ -63,7 +64,7 @@ namespace MistNet
             MistLogger.Info($"[Disconnected] {id}");
             MistSyncManager.I.RemoveObject(id);
             _selector.SelectorBase.OnDisconnected(id);
-            PeerRepository.I.OnDisconnected(id);
+            _peerRepository.RemovePeer(id);
             _onDisconnectedAction?.Invoke(id);
             _selector.RoutingBase.OnDisconnected(id);
         }
@@ -91,9 +92,24 @@ namespace MistNet
             _onMessageAction?.Invoke(message, senderId);
         }
 
+        public bool IsConnectingOrConnected(NodeId id)
+        {
+            if (!_peerRepository.PeerDict.TryGetValue(id, out var peerData)) return false;
+            if (peerData.PeerEntity == null) return false;
+            if (peerData.PeerEntity.RtcPeer == null) return false;
+
+            return peerData.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
+                or RTCPeerConnectionState.Connecting;
+        }
+
+        public bool IsConnected(NodeId id)
+        {
+            return _peerRepository.PeerDict.TryGetValue(id, out var data) && data.IsConnected;
+        }
+
         public void Send(NodeId targetId, MistMessage data, bool isForward = false)
         {
-            if (!PeerRepository.I.IsConnected(targetId)) return;
+            if (!IsConnected(targetId)) return;
 
             if (!isForward)
             {
@@ -101,7 +117,7 @@ namespace MistNet
             }
 
             var bytes = MemoryPackSerializer.Serialize(data);
-            var peerData = PeerRepository.I.GetAllPeer[targetId];
+            var peerData = _peerRepository.PeerDict[targetId];
             peerData.PeerEntity.Send(bytes);
         }
 

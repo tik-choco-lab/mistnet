@@ -30,7 +30,7 @@ namespace MistNet.VC
             while (peerData == null)
             {
                 await UniTask.Yield();
-                peerData = PeerRepository.I.GetPeerData(_syncObject.OwnerId);
+                //peerData = PeerRepository.I.GetPeerData(_syncObject.OwnerId);
             }
 
             MistLogger.Info($"[Debug][MistVC] {peerData.PeerEntity.Id} add output audio source");

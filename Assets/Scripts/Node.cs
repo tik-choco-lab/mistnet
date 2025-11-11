@@ -5,20 +5,22 @@ namespace MistNet.Minimal
 {
     public class Node : MonoBehaviour
     {
-        public MistSignalingWebSocket MistSignalingWebSocket;
+        private MistSignalingWebSocket _mistSignalingWebSocket;
+        private PeerRepository _peerRepository;
+
         private void Start()
         {
-            // MistSignalingWebSocket = new MistSignalingWebSocket();
+            _peerRepository = new PeerRepository();
+            _mistSignalingWebSocket = new MistSignalingWebSocket(_peerRepository);
         }
 
         public void Signaling()
         {
-            MistSignalingWebSocket.Init().Forget();
+            _mistSignalingWebSocket.Init().Forget();
         }
 
         public void Send()
         {
-
         }
     }
 }

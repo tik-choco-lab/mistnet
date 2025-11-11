@@ -11,7 +11,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            MistLogger.Debug($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
+            MistLogger.Debug($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
         }
 
         public override void OnConnected(NodeId id)
@@ -40,7 +40,7 @@ namespace MistNet
             foreach (var nodeIdStr in nodes)
             {
                 var nodeId = new NodeId(nodeIdStr);
-                if (nodeId == PeerRepository.I.SelfId) continue;
+                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
                 if (!_connectedNodes.Add(nodeId)) continue;
 
                 MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");

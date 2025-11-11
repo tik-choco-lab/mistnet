@@ -50,7 +50,7 @@ namespace MistNet
             var sendData = new SignalingData
             {
                 Type = SignalingType.Request,
-                SenderId = PeerRepository.I.SelfId,
+                SenderId = _peerRepository.SelfId,
                 RoomId = MistConfig.Data.RoomId,
             };
 

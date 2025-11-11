@@ -64,7 +64,7 @@ namespace MistNet
                 foreach (var nodeInfo in closestNodes)
                 {
                     // 接続していない場合はskip
-                    if (!PeerRepository.I.IsConnectingOrConnected(nodeInfo.Id)) continue;
+                    if (!MistManager.I.Transport.IsConnectingOrConnected(nodeInfo.Id)) continue;
                     ExchangeNodes.Add(nodeInfo.Id);
                 }
             }
