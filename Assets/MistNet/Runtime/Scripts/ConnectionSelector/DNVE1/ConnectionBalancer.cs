@@ -90,6 +90,7 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    if(!IdUtil.CompareId(nodeId)) continue;
                     MistManager.I.Transport.Connect(nodeId);
 
                     i++;
@@ -151,7 +152,7 @@ namespace MistNet
         private void SelectDisconnection()
         {
             // 表示しているNodeと情報交換Node以外の中から切断していく
-            if (_routingBase.ConnectedNodes.Count < OptConfig.Data.MaxConnectionCount) return;
+            if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
 
