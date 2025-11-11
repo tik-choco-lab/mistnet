@@ -11,8 +11,8 @@ namespace MistNet
         [JsonProperty("exchangeNodeCount")] public int ExchangeNodeCount = 12; // 情報交換用のノード数
         [JsonProperty("safeMargin")] public int SafeMargin = 3;
         [JsonProperty("chunkLoadSize")] public int ChunkLoadSize = 1;
-        [JsonProperty("aoiRange")] public int AoiRange = 256; // m
         [JsonProperty("chunkSize")] public int ChunkSize = 256; // m
+        [JsonProperty("aoiRange")] public int AoiRange = 64; // m
         [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 5f;
         [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f; // DNVE3も使用
         [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
