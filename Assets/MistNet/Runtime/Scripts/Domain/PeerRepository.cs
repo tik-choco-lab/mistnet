@@ -12,9 +12,11 @@ namespace MistNet
         public Dictionary<NodeId, MistPeerDataElement> GetAllPeer { get; } = new();
 
         private AudioSource _selfAudioSource;
+        private ITransportLayer _transport;
 
-        public void Init(NodeId selfId = null)
+        public void Init(ITransportLayer transport, NodeId selfId = null)
         {
+            _transport = transport;
             if (selfId != null)
             {
                 SelfId = selfId;
@@ -55,7 +57,7 @@ namespace MistNet
             }
 
             MistLogger.Debug($"[MistPeerData] Add {id}");
-            GetAllPeer.Add(id, new MistPeerDataElement(id));
+            GetAllPeer.Add(id, new MistPeerDataElement(id, _transport));
             GetAllPeer[id].PeerEntity.AddInputAudioSource(_selfAudioSource);
 
             return GetAllPeer[id].PeerEntity;
@@ -110,9 +112,9 @@ namespace MistNet
     {
         public PeerEntity PeerEntity;
 
-        public MistPeerDataElement(NodeId id)
+        public MistPeerDataElement(NodeId id, ITransportLayer transport)
         {
-            PeerEntity = new(id);
+            PeerEntity = new(id, transport);
             MistLogger.Debug($"[MistPeerData] Create Peer {id}");
         }
 

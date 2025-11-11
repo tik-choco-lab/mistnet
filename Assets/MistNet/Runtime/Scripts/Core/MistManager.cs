@@ -28,10 +28,10 @@ namespace MistNet
 
             PeerRepository = new PeerRepository();
             _mistSyncManager = new MistSyncManager();
-            PeerRepository.Init();
             I = this;
 
             Transport = new MistTransportLayer(Selector, PeerRepository);
+            PeerRepository.Init(Transport);
             World = new MistWorldLayer(Transport, Selector, PeerRepository);
             AOI = new MistAOILayer(World, Selector, PeerRepository);
 
