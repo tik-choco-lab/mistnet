@@ -25,7 +25,7 @@ namespace MistNet
         public void RequestOffer(SignalingData response)
         {
             var senderId = response.SenderId;
-            if(!IdUtil.CompareId(senderId)) return;
+            if(!IdUtil.CompareId(_peerRepository.SelfId, senderId)) return;
             SendOffer(new NodeId(response.SenderId)).Forget();
         }
 
