@@ -39,7 +39,7 @@ namespace MistNet
         public void Init(ObjectId id, bool isPlayer, string prefabAddress, NodeId ownerId)
         {
             Id = id;
-            IsOwner = PeerRepository.I.SelfId == ownerId;
+            IsOwner = MistManager.I.PeerRepository.SelfId == ownerId;
             PrefabAddress = prefabAddress;
             OwnerId = ownerId;
             IsPlayerObject = isPlayer;
@@ -51,7 +51,7 @@ namespace MistNet
         public void SetOwner(NodeId newOwnerId)
         {
             OwnerId = newOwnerId;
-            IsOwner = PeerRepository.I.SelfId == newOwnerId;
+            IsOwner = MistManager.I.PeerRepository.SelfId == newOwnerId;
             MistSyncManager.I.UnregisterSyncObject(this);
 
             InitSyncParameters();

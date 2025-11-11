@@ -30,8 +30,8 @@ namespace MistNet
             I = this;
 
             Transport = new MistTransportLayer(Selector, PeerRepository);
-            World = new MistWorldLayer(Transport, Selector);
-            AOI = new MistAOILayer(World, Selector);
+            World = new MistWorldLayer(Transport, Selector, PeerRepository);
+            AOI = new MistAOILayer(World, Selector, PeerRepository);
 
             Transport.Init();
         }

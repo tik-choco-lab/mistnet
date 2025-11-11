@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class NodeInfo
     {
-        [JsonProperty("id")] public NodeId Id { get; set; } = PeerRepository.I.SelfId;
+        [JsonProperty("id")] public NodeId Id { get; set; } = MistManager.I.PeerRepository.SelfId;
         [JsonIgnore] public DateTime LastSeen = DateTime.UtcNow;
 
         public override bool Equals(object obj)

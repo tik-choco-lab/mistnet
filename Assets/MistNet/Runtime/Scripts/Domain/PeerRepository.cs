@@ -7,15 +7,14 @@ namespace MistNet
 {
     public class PeerRepository : IPeerRepository
     {
-        public static PeerRepository I { get; private set; } = new();
         public NodeId SelfId { get; private set; }
+        public IReadOnlyDictionary<NodeId, MistPeerDataElement> PeerDict => GetAllPeer;
         public Dictionary<NodeId, MistPeerDataElement> GetAllPeer { get; } = new();
 
         private AudioSource _selfAudioSource;
 
         public void Init()
         {
-            I = this;
             InitSelfId();
 
             MistLogger.Info($"[Self ID] {SelfId}");
@@ -96,11 +95,6 @@ namespace MistNet
 
         public void RemovePeer(NodeId id)
         {
-            OnDisconnected(id);
-        }
-
-        public void OnDisconnected(NodeId id)
-        {
             if (string.IsNullOrEmpty(id)) return;
             if (!GetAllPeer.TryGetValue(id, out var peerData)) return;
             MistLogger.Debug($"[MistPeerData] Delete {id}");
@@ -123,7 +117,6 @@ namespace MistNet
                 peerData.PeerEntity?.Dispose();
             }
 
-            I = null;
             SelfId = null;
             _selfAudioSource = null;
         }

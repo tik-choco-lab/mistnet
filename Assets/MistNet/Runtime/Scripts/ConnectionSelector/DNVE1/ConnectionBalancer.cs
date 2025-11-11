@@ -89,7 +89,7 @@ namespace MistNet
                 foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
-                    if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
                     if(!IdUtil.CompareId(nodeId)) continue;
                     MistManager.I.Transport.Connect(nodeId);
 
@@ -107,7 +107,7 @@ namespace MistNet
                 var closestNodes = _routingTable.FindClosestNodes(areaId);
                 foreach (var node in closestNodes)
                 {
-                    if (PeerRepository.I.IsConnectingOrConnected(node.Id)) continue;
+                    if (MistManager.I.Transport.IsConnectingOrConnected(node.Id)) continue;
                     MistManager.I.Transport.Connect(node.Id);
                     i++;
                     if (i >= requestCount) return;
@@ -121,7 +121,7 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
 
-                    if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                    if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
                     // if (MistManager.I.CompareId(nodeId))
                     {
                         MistManager.I.Transport.Connect(nodeId);

@@ -54,7 +54,7 @@ namespace MistNet.DNVE2
 
         public void Send(DNVEMessage message)
         {
-            message.Sender = PeerRepository.I.SelfId;
+            message.Sender = MistManager.I.PeerRepository.SelfId;
             var json = JsonConvert.SerializeObject(message);
             MistLogger.Debug($"[DNVE2Selector] Send: {json} to {message.Receiver}");
             Send(json, message.Receiver);

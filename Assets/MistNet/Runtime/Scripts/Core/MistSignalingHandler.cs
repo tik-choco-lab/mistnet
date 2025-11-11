@@ -58,7 +58,7 @@ namespace MistNet
             catch (OperationCanceledException)
             {
                 MistLogger.Warning($"[Signaling][Offer] Timeout operation cancelled: {receiverId}");
-                PeerRepository.I.RemovePeer(receiverId);
+                _peerRepository.RemovePeer(receiverId);
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace MistNet
             MistLogger.Debug($"[Signaling] ReceiveOffer: {response.SenderId}");
             var targetId = response.SenderId;
 
-            var peer = PeerRepository.I.CreatePeer(targetId);
+            var peer = _peerRepository.CreatePeer(targetId);
 
             if (peer.RtcPeer.SignalingState != RTCSignalingState.Stable)
             {
@@ -145,7 +145,7 @@ namespace MistNet
             catch (OperationCanceledException)
             {
                 MistLogger.Warning("[Signaling] Timeout, operation cancelled");
-                PeerRepository.I.RemovePeer(targetId);
+                _peerRepository.RemovePeer(targetId);
                 return;
             }
 

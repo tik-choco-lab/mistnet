@@ -6,7 +6,7 @@ namespace MistNet.Utils
         {
             var selfPosition = MistSyncManager.I.SelfSyncObject.transform.position;
             var node = new Node(
-                nodeId: new NodeId(PeerRepository.I.SelfId),
+                nodeId: new NodeId(MistManager.I.PeerRepository.SelfId),
                 position: new Position(selfPosition)
             );
             return node;
@@ -22,7 +22,7 @@ namespace MistNet.Utils
             var i = 0;
             foreach (var node in nodes.Values)
             {
-                if (node.Id == PeerRepository.I.SelfId) continue; // Skip self node
+                if (node.Id == MistManager.I.PeerRepository.SelfId) continue; // Skip self node
                 if (connectedNodes.Contains(node.Id))
                 {
                     node.State = EvalNodeState.Connected;

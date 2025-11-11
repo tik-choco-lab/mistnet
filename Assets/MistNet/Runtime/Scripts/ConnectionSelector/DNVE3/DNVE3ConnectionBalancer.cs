@@ -93,8 +93,8 @@ namespace MistNet.DNVE3
             foreach (var node in selectedNodes)
             {
                 var nodeId = node.Id;
-                if (nodeId == PeerRepository.I.SelfId) continue;
-                if (PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
+                if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
                 MistManager.I.Transport.Connect(nodeId);
             }
 
@@ -105,9 +105,9 @@ namespace MistNet.DNVE3
 
             foreach (var nodeId in nodesToDisconnect)
             {
-                if (nodeId == PeerRepository.I.SelfId) continue;
+                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
 
-                if (!PeerRepository.I.IsConnectingOrConnected(nodeId)) continue;
+                if (!MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
                 MistManager.I.Transport.Disconnect(nodeId);
             }
         }

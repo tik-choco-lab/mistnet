@@ -87,7 +87,7 @@ namespace MistNet.DNVE2
 
         private void UpdateSelfNode()
         {
-            _selfId ??= PeerRepository.I.SelfId;
+            _selfId ??= MistManager.I.PeerRepository.SelfId;
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
 
             if (!_store.TryGet(_selfId, out var node))

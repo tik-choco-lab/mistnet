@@ -13,12 +13,14 @@ namespace MistNet
         private readonly Dictionary<string, Type[]> _argTypes = new();
         private readonly IWorldLayer _worldLayer;
         private readonly Selector _selector;
+        private readonly IPeerRepository _peerRepository;
 
-        public MistAOILayer(IWorldLayer worldLayer, Selector selector)
+        public MistAOILayer(IWorldLayer worldLayer, Selector selector, IPeerRepository peerRepository)
         {
             _selector = selector;
             _worldLayer = worldLayer;
             _worldLayer.RegisterReceive(MistNetMessageType.RPC, OnRPC);
+            _peerRepository = peerRepository;
         }
 
         public void AddRPC(MistNetMessageType messageType, MessageReceivedHandler function)
@@ -109,8 +111,8 @@ namespace MistNet
             GameObject obj, ObjectId objId)
         {
             var syncObject = obj.GetComponent<MistSyncObject>();
-            objId ??= new ObjectId(PeerRepository.I.SelfId);
-            syncObject.Init(objId, true, prefabAddress, PeerRepository.I.SelfId);
+            objId ??= new ObjectId(_peerRepository.SelfId);
+            syncObject.Init(objId, true, prefabAddress, _peerRepository.SelfId);
 
             // 接続先最適化に使用するため、PlayerObjectであることを設定
             MistSyncManager.I.SelfSyncObject = syncObject;

@@ -18,7 +18,7 @@ namespace MistNet
         {
             base.Start();
             OptConfig.ReadConfig();
-            MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.I.SelfId}");
+            MistLogger.Info($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
             _evalSender = evalClient;
             evalClient.RegisterReceive(EvalMessageType.NodeRequest, OnRequest);
             evalClient.RegisterReceive(EvalMessageType.NodeReset, OnReset);
@@ -56,12 +56,12 @@ namespace MistNet
                     NodeStart().Forget();
                     break;
                 case RequestActionType.Connect:
-                    if (nodeId == PeerRepository.I.SelfId) return;
+                    if (nodeId == MistManager.I.PeerRepository.SelfId) return;
                     MistLogger.Info($"[Action] Connect {nodeId}");
                     MistManager.I.Transport.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
-                    if (nodeId == PeerRepository.I.SelfId) return;
+                    if (nodeId == MistManager.I.PeerRepository.SelfId) return;
                     MistLogger.Info($"[Action] Disconnect {nodeId}");
                     MistManager.I.Transport.Disconnect(nodeId);
                     break;
@@ -101,7 +101,7 @@ namespace MistNet
             var message = new OptMessage
             {
                 Type = OptMessageType.RequestNodeList,
-                Payload = PeerRepository.I.SelfId,
+                Payload = MistManager.I.PeerRepository.SelfId,
             };
 
             var json = JsonConvert.SerializeObject(message);

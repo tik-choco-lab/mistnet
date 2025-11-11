@@ -9,12 +9,14 @@ namespace MistNet
         private Action<NodeId> _sendFailed;
         private readonly Dictionary<MistNetMessageType, MessageReceivedHandler> _onMessageDict = new();
         private readonly Selector _selector;
+        private readonly IPeerRepository _peerRepository;
 
-        public MistWorldLayer(ITransportLayer transport, Selector selector)
+        public MistWorldLayer(ITransportLayer transport, Selector selector, IPeerRepository peerRepository)
         {
             _selector = selector;
             _transport = transport;
             _transport.RegisterReceive(OnMessage);
+            _peerRepository = peerRepository;
         }
 
         public void Send(MistNetMessageType type, byte[] data, NodeId targetId)
@@ -22,13 +24,13 @@ namespace MistNet
             // NOTE: messageを共有すると予期しない問題が発生するので　毎回newしている
             var message = new MistMessage
             {
-                Id = PeerRepository.I.SelfId,
+                Id = _peerRepository.SelfId,
                 Payload = data,
                 Type = type,
                 TargetId = targetId,
             };
 
-            if (!PeerRepository.I.IsConnected(targetId))
+            if (!_transport.IsConnected(targetId))
             {
                 targetId = _selector.RoutingBase.Get(targetId);
                 if (targetId == null)
@@ -41,7 +43,7 @@ namespace MistNet
                 MistLogger.Trace($"[FORWARD] {targetId} {type} {message.TargetId}");
             }
 
-            if (PeerRepository.I.IsConnected(targetId))
+            if (_transport.IsConnected(targetId))
             {
                 MistLogger.Trace($"[SEND][{type.ToString()}] {type} {targetId}");
                 _transport.Send(targetId, message);
@@ -52,7 +54,7 @@ namespace MistNet
         {
             var message = new MistMessage
             {
-                Id = PeerRepository.I.SelfId,
+                Id = _peerRepository.SelfId,
                 Payload = data,
                 Type = type,
             };
@@ -67,7 +69,7 @@ namespace MistNet
 
         private void OnMessage(MistMessage message, NodeId senderId)
         {
-            if (message.Id == PeerRepository.I.SelfId)
+            if (message.Id == _peerRepository.SelfId)
             {
                 // 自分からのメッセージは破棄 loopを防ぐ
                 MistLogger.Warning($"[Warning] Loop message from self {message.Type}");
@@ -85,12 +87,12 @@ namespace MistNet
             if (message.HopCount <= 0) return;
 
             var targetId = new NodeId(message.TargetId);
-            targetId = PeerRepository.I.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
+            targetId = _transport.IsConnected(targetId) ? targetId : _selector.RoutingBase.Get(targetId);
             if (string.IsNullOrEmpty(targetId)) return;
             if (targetId == message.Id) return; // 送り元に送り返すのは無限ループになるので破棄
 
             _transport.Send(targetId, message, isForward:true);
-            MistLogger.Trace($"[FORWARD][{message.Type.ToString()}] {message.Id} -> {PeerRepository.I.SelfId} -> {targetId}");
+            MistLogger.Trace($"[FORWARD][{message.Type.ToString()}] {message.Id} -> {_peerRepository.SelfId} -> {targetId}");
         }
 
         public void RegisterReceive(MistNetMessageType type, MessageReceivedHandler callback)
@@ -106,7 +108,7 @@ namespace MistNet
 
         private bool IsMessageForSelf(MistMessage message)
         {
-            return message.TargetId == PeerRepository.I.SelfId;
+            return message.TargetId == _peerRepository.SelfId;
         }
 
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)

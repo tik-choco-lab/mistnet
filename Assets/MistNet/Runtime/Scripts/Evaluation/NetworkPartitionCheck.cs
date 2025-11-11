@@ -12,11 +12,13 @@ namespace MistNet.Runtime.Evaluation
         private readonly Queue<string> _receivedMessages = new();
         private EvalMessage _evalMessage;
         private readonly IEvalMessageSender _sender;
+        private readonly IPeerRepository _peerRepository;
 
-        public NetworkPartitionCheck(IEvalMessageSender sender)
+        public NetworkPartitionCheck(IEvalMessageSender sender, IPeerRepository peerRepository)
         {
             sender.RegisterReceive(EvalMessageType.NetworkPartitionCheck, OnNetworkPartitionCheck);
             _sender = sender;
+            _peerRepository = peerRepository;
             MistManager.I.World.RegisterReceive(MistNetMessageType.Gossip, OnGossipReceived);
         }
 
@@ -66,7 +68,7 @@ namespace MistNet.Runtime.Evaluation
             var response = new NetworkPartitionCheckResponse
             {
                 Id = payload,
-                NodeId = PeerRepository.I.SelfId.ToString()
+                NodeId = _peerRepository.SelfId.ToString()
             };
             _sender.Send(EvalMessageType.NetworkPartitionCheckResponse, response);
         }
