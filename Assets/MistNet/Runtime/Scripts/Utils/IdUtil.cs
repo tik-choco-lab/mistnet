@@ -58,6 +58,14 @@ namespace MistNet.Utils
             var selfId = MistManager.I.PeerRepository.SelfId;
             return string.CompareOrdinal(selfId, sourceId) < 0;
         }
+
+        /// <summary>
+        /// IDを比較する
+        /// </summary>
+        public static bool CompareId(string selfId, string sourceId)
+        {
+            return string.CompareOrdinal(selfId, sourceId) < 0;
+        }
     }
 
     public class ByteArrayDistanceComparer : IComparer<byte[]>

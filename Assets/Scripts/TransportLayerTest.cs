@@ -1,22 +1,20 @@
 using System;
-using System.Linq;
 using MemoryPack;
 using Unity.WebRTC;
 
-namespace MistNet
+namespace MistNet.Minimal
 {
-    public class MistTransportLayer : ITransportLayer
+    public class TransportLayerTest : ITransportLayer
     {
+        private readonly IPeerRepository _peerRepository;
+        private MistSignalingWebRTC _mistSignalingWebRtc;
+
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
         private Action<MistMessage, NodeId> _onMessageAction;
-        private MistSignalingWebRTC _mistSignalingWebRtc;
-        private readonly Selector _selector;
-        private readonly IPeerRepository _peerRepository;
 
-        public MistTransportLayer(Selector selector, IPeerRepository peerRepository)
+        public TransportLayerTest(IPeerRepository peerRepository)
         {
-            _selector = selector;
             _peerRepository = peerRepository;
         }
 
@@ -33,26 +31,22 @@ namespace MistNet
         public void Connect(NodeId id)
         {
             if (id == _peerRepository.SelfId) return;
-
             _mistSignalingWebRtc.Connect(id);
         }
 
         public void Disconnect(NodeId id)
         {
             if (id == _peerRepository.SelfId) return;
-
-            _selector.RoutingBase.RemoveMessageNode(id);
-            _selector.RoutingBase.Remove(id);
             OnDisconnected(id);
         }
 
         public void DisconnectAll()
         {
-            MistLogger.Info("[DisconnectAll] All peers will be disconnected.");
-            var peerIds = _selector.RoutingBase.ConnectedNodes.ToArray();
-            foreach (var peerId in peerIds)
+            var nodeDict = _peerRepository.PeerDict;
+            foreach (var nodeId in nodeDict.Keys)
             {
-                Disconnect(peerId);
+                if (!IsConnectingOrConnected(nodeId)) continue;
+                Disconnect(nodeId);
             }
         }
 
@@ -88,19 +82,14 @@ namespace MistNet
         public void OnConnected(NodeId id)
         {
             MistLogger.Info($"[Connected] {id}");
-            _selector.SelectorBase.OnConnected(id);
             _onConnectedAction?.Invoke(id);
-            _selector.RoutingBase.OnConnected(id);
         }
 
         public void OnDisconnected(NodeId id)
         {
             MistLogger.Info($"[Disconnected] {id}");
-            MistSyncManager.I.RemoveObject(id);
-            _selector.SelectorBase.OnDisconnected(id);
             _peerRepository.RemovePeer(id);
             _onDisconnectedAction?.Invoke(id);
-            _selector.RoutingBase.OnDisconnected(id);
         }
 
         public void OnMessage(byte[] data, NodeId senderId)

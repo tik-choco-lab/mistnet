@@ -14,6 +14,7 @@ namespace MistNet.Minimal
         private void Start()
         {
             MistConfig.ReadConfig();
+            OptConfig.ReadConfig();
         }
 
         [Button]
@@ -34,6 +35,15 @@ namespace MistNet.Minimal
             }
         }
 
+        [Button]
+        private void Signaling()
+        {
+            foreach (var node in _nodes)
+            {
+                node.Signaling();
+            }
+        }
+
         private void DestroyAllNodes()
         {
             foreach (var node in _nodes)
@@ -44,12 +54,6 @@ namespace MistNet.Minimal
                 }
             }
             _nodes.Clear();
-        }
-
-        [Button]
-        private void Signaling()
-        {
-
         }
     }
 }

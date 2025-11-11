@@ -8,14 +8,13 @@ namespace MistNet.Minimal
     {
         private MistSignalingWebSocket _mistSignalingWebSocket;
         private PeerRepository _peerRepository;
-        public ITransportLayer Transport { get; private set; }
-        [field: SerializeField] public Selector Selector { get; private set; }
+        private ITransportLayer Transport { get; set; }
 
         private void Start()
         {
             var selfId = Guid.NewGuid().ToString("N");
             _peerRepository = new PeerRepository();
-            Transport = new MistTransportLayer(Selector, _peerRepository);
+            Transport = new TransportLayerTest(_peerRepository);
             _peerRepository.Init(Transport, new NodeId(selfId));
             _mistSignalingWebSocket = new MistSignalingWebSocket(_peerRepository);
         }
