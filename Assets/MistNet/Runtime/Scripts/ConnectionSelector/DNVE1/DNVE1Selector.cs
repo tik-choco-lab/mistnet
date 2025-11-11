@@ -19,8 +19,6 @@ namespace MistNet
 
         protected override void Start()
         {
-            OptConfig.ReadConfig();
-
             base.Start();
 
             _dataStore = new KademliaDataStore();

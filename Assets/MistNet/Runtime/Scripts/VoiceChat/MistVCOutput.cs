@@ -26,15 +26,15 @@ namespace MistNet.VC
                 return;
             }
 
-            MistPeerDataElement peerData = null;
+            PeerEntity peerData = null;
             while (peerData == null)
             {
                 await UniTask.Yield();
-                //peerData = PeerRepository.I.GetPeerData(_syncObject.OwnerId);
+                peerData = MistManager.I.PeerRepository.GetPeer(_syncObject.OwnerId);
             }
 
-            MistLogger.Info($"[Debug][MistVC] {peerData.PeerEntity.Id} add output audio source");
-            peerData.PeerEntity.AddOutputAudioSource(audioSource);
+            MistLogger.Info($"[Debug][MistVC] {peerData.Id} add output audio source");
+            peerData.AddOutputAudioSource(audioSource);
         }
     }
 }

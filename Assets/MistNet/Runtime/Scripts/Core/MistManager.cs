@@ -24,6 +24,8 @@ namespace MistNet
         public void Awake()
         {
             MistConfig.ReadConfig();
+            OptConfig.ReadConfig();
+
             PeerRepository = new PeerRepository();
             _mistSyncManager = new MistSyncManager();
             PeerRepository.Init();

@@ -11,6 +11,7 @@ namespace MistNet
         private WebSocketHandler _ws;
         private MistSignalingHandler _mistSignalingHandler;
         private readonly IPeerRepository _peerRepository;
+        private int _currentAddressIndex;
 
         public MistSignalingWebSocket(IPeerRepository peerRepository)
         {
@@ -56,9 +57,6 @@ namespace MistNet
 
             Send(sendData, null);
         }
-
-
-        private int _currentAddressIndex;
 
         private void ConnectToSignalingServer()
         {

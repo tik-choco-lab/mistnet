@@ -11,6 +11,11 @@ namespace MistNet.Minimal
 
         private readonly List<Node> _nodes = new();
 
+        private void Start()
+        {
+            MistConfig.ReadConfig();
+        }
+
         [Button]
         private void SpawnNodes()
         {

@@ -92,41 +92,21 @@ namespace MistNet
             }
         }
 
-        [Obsolete("Use InstantiatePlayerAsync instead. InstantiateAsync will be removed in future versions.")]
-        public async UniTask<GameObject> InstantiateAsync(string prefabAddress, Vector3 position,
-            Quaternion rotation, ObjectId objId = null)
-        {
-            return await InstantiatePlayerAsync(prefabAddress, position, rotation, objId);
-        }
-
         public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position,
             Quaternion rotation, ObjectId objId = null)
         {
             var obj = await Addressables.InstantiateAsync(prefabAddress, position, rotation);
-            InstantiatePlayerObject(prefabAddress, position, rotation, obj, objId);
-            return obj;
-        }
-
-        private void InstantiatePlayerObject(string prefabAddress, Vector3 position, Quaternion rotation,
-            GameObject obj, ObjectId objId)
-        {
-            var syncObject = obj.GetComponent<MistSyncObject>();
+            if (!obj.TryGetComponent<MistSyncObject>(out var syncObject))
+            {
+                syncObject = obj.AddComponent<MistSyncObject>();
+            }
             objId ??= new ObjectId(_peerRepository.SelfId);
             syncObject.Init(objId, true, prefabAddress, _peerRepository.SelfId);
 
             // 接続先最適化に使用するため、PlayerObjectであることを設定
             MistSyncManager.I.SelfSyncObject = syncObject;
 
-            var sendData = new P_ObjectInstantiate()
-            {
-                ObjId = objId,
-                Position = position,
-                Rotation = rotation.eulerAngles,
-                PrefabAddress = prefabAddress,
-            };
-
-            var bytes = MemoryPackSerializer.Serialize(sendData);
-            _worldLayer.SendAll(MistNetMessageType.ObjectInstantiate, bytes);
+            return obj;
         }
 
         public void OnSpawned(NodeId id)

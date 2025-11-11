@@ -13,9 +13,14 @@ namespace MistNet
 
         private AudioSource _selfAudioSource;
 
-        public void Init()
+        public void Init(NodeId selfId = null)
         {
-            InitSelfId();
+            if (selfId != null)
+            {
+                SelfId = selfId;
+                MistConfig.Data.NodeId = SelfId;
+            }
+            else InitSelfId();
 
             MistLogger.Info($"[Self ID] {SelfId}");
             GetAllPeer.Clear();
@@ -31,33 +36,12 @@ namespace MistNet
             else SelfId = MistConfig.Data.NodeId;
         }
 
-        public void AllForceClose()
+        private void AllForceClose()
         {
             foreach (var peerData in GetAllPeer.Values)
             {
                 peerData.PeerEntity.Close();
             }
-        }
-
-        /// <summary>
-        /// TODO: IsConnectedが正しく機能していないかも
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public bool IsConnected(NodeId id)
-        {
-            return GetAllPeer.TryGetValue(id, out var data) && data.IsConnected;
-        }
-
-        public bool IsConnectingOrConnected(NodeId id)
-        {
-            if (!GetAllPeer.TryGetValue(id, out var data)) return false;
-
-            if (data.PeerEntity == null) return false;
-            if (data.PeerEntity.RtcPeer == null) return false;
-
-            return data.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
-                or RTCPeerConnectionState.Connecting;
         }
 
         public PeerEntity CreatePeer(NodeId id)
@@ -141,10 +125,5 @@ namespace MistNet
                 return PeerEntity.RtcPeer.ConnectionState == RTCPeerConnectionState.Connected;
             }
         }
-    }
-
-    [Obsolete("Use PeerRepository instead. MistPeerData is deprecated and will be removed in future versions.")]
-    public class MistPeerData : PeerRepository
-    {
     }
 }
