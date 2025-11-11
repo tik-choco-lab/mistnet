@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace MistNet
 {
-    public class PeerRepository : IDisposable
+    public class PeerRepository : IPeerRepository
     {
         public static PeerRepository I { get; private set; } = new();
         public NodeId SelfId { get; private set; }

@@ -11,15 +11,17 @@ namespace MistNet
         private Action<MistMessage, NodeId> _onMessageAction;
         private MistSignalingWebRTC _mistSignalingWebRtc;
         private readonly Selector _selector;
+        private readonly IPeerRepository _peerRepository;
 
-        public MistTransportLayer(Selector selector)
+        public MistTransportLayer(Selector selector, IPeerRepository peerRepository)
         {
             _selector = selector;
+            _peerRepository = peerRepository;
         }
 
         public void Init()
         {
-            _mistSignalingWebRtc = new MistSignalingWebRTC();
+            _mistSignalingWebRtc = new MistSignalingWebRTC(_peerRepository);
         }
 
         public void Connect(NodeId id)
