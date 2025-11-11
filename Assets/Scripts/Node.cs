@@ -16,7 +16,7 @@ namespace MistNet.Minimal
             var selfId = Guid.NewGuid().ToString("N");
             _peerRepository = new PeerRepository();
             Transport = new MistTransportLayer(Selector, _peerRepository);
-            _peerRepository.Init(Transport,new NodeId(selfId));
+            _peerRepository.Init(Transport, new NodeId(selfId));
             _mistSignalingWebSocket = new MistSignalingWebSocket(_peerRepository);
         }
 
