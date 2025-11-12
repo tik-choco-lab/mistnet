@@ -27,7 +27,12 @@ namespace MistNet
 
         public void Init()
         {
-            _mistSignalingWebRtc = new MistSignalingWebRTC(_peerRepository);
+            _mistSignalingWebRtc = new MistSignalingWebRTC
+            (
+                _peerRepository,
+                MistManager.I.World.RegisterReceive,
+                MistManager.I.World.Send
+            );
         }
 
         public void Connect(NodeId id)

@@ -30,7 +30,6 @@ namespace MistNet.Minimal
                 );
 
                 var obj = Instantiate(nodePrefab, position, Quaternion.identity);
-                obj.name = $"Node_{i}";
                 _nodes.Add(obj);
             }
         }

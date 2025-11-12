@@ -77,7 +77,7 @@ namespace MistNet
             del.DynamicInvoke(args);
         }
 
-        public void OnRPC(byte[] data, NodeId sourceId)
+        public void OnRPC(byte[] data, NodeId senderId)
         {
             var rpc = MemoryPackSerializer.Deserialize<P_RPC>(data);
             Invoke(rpc);

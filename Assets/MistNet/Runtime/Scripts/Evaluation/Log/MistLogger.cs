@@ -59,7 +59,7 @@ namespace MistNet
         {
             return $"{GetLevelText(level)} " +
                    $"{message} " +
-                   $"({ShortenPath(filePath)}:{lineNumber}) ";
+                   $"<color=#3c86d0>({ShortenPath(filePath)}:{lineNumber})</color> ";
         }
 
         private static string FormatJson(

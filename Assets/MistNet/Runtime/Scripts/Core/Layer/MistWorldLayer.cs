@@ -114,7 +114,8 @@ namespace MistNet
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
             _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
-            _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
+            // _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
+            _onMessageDict[message.Type](message.Payload, senderId);
         }
 
         public void Dispose()

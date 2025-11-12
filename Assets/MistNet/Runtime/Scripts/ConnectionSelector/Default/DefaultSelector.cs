@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class DefaultSelector : SelectorBase
     {
-        private readonly HashSet<string> _connectedNodes = new();
+        private readonly HashSet<string> _connectingOrConnectedNodes = new();
         [SerializeField] private RoutingBase routingBase;
         protected override void Start()
         {
@@ -17,10 +17,10 @@ namespace MistNet
         public override void OnConnected(NodeId id)
         {
             MistLogger.Debug($"[ConnectionSelector] OnConnected: {id}");
-            if (!_connectedNodes.Add(id)) return;
+            if (!_connectingOrConnectedNodes.Add(id)) return;
             routingBase.AddMessageNode(id);
 
-            var dataStr = string.Join(",", _connectedNodes);
+            var dataStr = string.Join(",", _connectingOrConnectedNodes);
             SendAll(dataStr);
             RequestObject(id);
         }
@@ -28,7 +28,7 @@ namespace MistNet
         public override void OnDisconnected(NodeId id)
         {
             MistLogger.Debug($"[ConnectionSelector] OnDisconnected: {id}");
-            _connectedNodes.Remove(id);
+            _connectingOrConnectedNodes.Remove(id);
             routingBase.AddMessageNode(id);
         }
 
@@ -41,7 +41,7 @@ namespace MistNet
             {
                 var nodeId = new NodeId(nodeIdStr);
                 if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
-                if (!_connectedNodes.Add(nodeId)) continue;
+                if (!_connectingOrConnectedNodes.Add(nodeId)) continue;
 
                 MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");
 
