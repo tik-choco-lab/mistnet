@@ -67,22 +67,24 @@ namespace MistNet.Minimal
             };
 
             var sendId = targetId;
-            if (!_peerRepository.PeerDict.ContainsKey(targetId))
+            if (!Transport.IsConnected(targetId))
             {
                 // 経路に基づいて転送
                 if (!_routingTable.TryGetValue(targetId, out var nextHopId)) return;
                 sendId = nextHopId;
             }
 
+            MistLogger.Debug($"Send {gameObject.name}: {targetId} <- {sendId}");
+
             Transport.Send(sendId, message);
         }
 
-        private void OnConnected(NodeId id)
+        private async void OnConnected(NodeId id)
         {
             MistLogger.Debug($"[ConnectionSelector] {gameObject.name}: {string.Join(", ", _peerRepository.PeerDict.Keys)}");
             if (!_connectingOrConnectedNodes.Add(id)) return;
 
-            // await UniTask.Yield();
+            await UniTask.DelayFrame(1);
 
             var dataStr = string.Join(",", _connectingOrConnectedNodes);
             SendAll(dataStr);
@@ -90,7 +92,7 @@ namespace MistNet.Minimal
 
         private void OnMessage(MistMessage message, NodeId senderId)
         {
-            _routingTable[new NodeId(message.Id)] = senderId;
+            AddRouting(new NodeId(message.Id), senderId);
 
             if (message.TargetId != _peerRepository.SelfId)
             {
@@ -118,15 +120,34 @@ namespace MistNet.Minimal
                 var nodeId = new NodeId(nodeIdStr);
                 if (nodeId == _peerRepository.SelfId) continue;
                 if (!_connectingOrConnectedNodes.Add(nodeId)) continue;
-                _routingTable[nodeId] = senderId;
+                AddRouting(nodeId, senderId);
 
                 // idの大きさを比較
                 if (IdUtil.CompareId(_peerRepository.SelfId, nodeId))
                 {
-                    MistLogger.Debug($"[ConnectionSelector] {gameObject.name}: Connecting {nodeId}");
-                    Transport.Connect(nodeId);
+                    Connect(nodeId).Forget();
                 }
             }
+        }
+
+        private async UniTask Connect(NodeId nodeId)
+        {
+            await UniTask.Yield();
+            MistLogger.Debug($"[ConnectionSelector] {gameObject.name}: Connecting {nodeId}");
+            Transport.Connect(nodeId);
+        }
+
+        private void AddRouting(NodeId sourceId, NodeId viaId)
+        {
+            if (Transport.IsConnected(sourceId))
+            {
+                _routingTable.Remove(sourceId);
+                return;
+            }
+            if (sourceId == _peerRepository.SelfId) return;
+            if (sourceId == viaId) return;
+            MistLogger.Trace($"[ConnectionSelector] {gameObject.name}: {sourceId} - {viaId}");
+            _routingTable[sourceId] = viaId;
         }
 
         private void OnConnectionSelector(byte[] data, NodeId id)
