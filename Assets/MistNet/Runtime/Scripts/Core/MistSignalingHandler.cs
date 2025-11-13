@@ -68,7 +68,7 @@ namespace MistNet
             sendData.ReceiverId = receiverId;
 
             Send(sendData, receiverId);
-            MistLogger.Debug($"[Signaling] SendOffer: {receiverId}");
+            MistLogger.Debug($"[Signaling] SendOffer {_peerRepository.SelfId}: {receiverId}");
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace MistNet
         /// <param name="response"></param>
         public void ReceiveAnswer(SignalingData response)
         {
-            MistLogger.Debug($"[Signaling] ReceiveAnswer: {response.SenderId}");
+            MistLogger.Debug($"[Signaling] ReceiveAnswer {_peerRepository.SelfId}: {response.SenderId}");
             var targetId = response.SenderId;
             var peer = _peerRepository.GetPeer(targetId);
             if (peer == null) return;
@@ -105,7 +105,7 @@ namespace MistNet
         /// <returns></returns>
         public void ReceiveOffer(SignalingData response)
         {
-            MistLogger.Debug($"[Signaling] ReceiveOffer: {response.SenderId}");
+            MistLogger.Debug($"[Signaling] ReceiveOffer {_peerRepository.SelfId}: {response.SenderId}");
             var targetId = response.SenderId;
 
             var peer = _peerRepository.CreatePeer(targetId);
@@ -154,7 +154,7 @@ namespace MistNet
             sendData.Data = JsonConvert.SerializeObject(desc);
             sendData.ReceiverId = targetId;
             Send(sendData, targetId);
-            MistLogger.Debug($"[Signaling] SendAnswer: {targetId}");
+            MistLogger.Debug($"[Signaling] SendAnswer {_peerRepository.SelfId}: {targetId}");
         }
 
         private void SendCandidate(Ice candidate, NodeId targetId)
@@ -170,12 +170,12 @@ namespace MistNet
             // 接続が完了したら、関連するICE候補を削除
             var peer = _peerRepository.GetPeer(targetId).RtcPeer;
             RegisterIceConnectionChangeHandler(peer);
-            MistLogger.Debug($"[Signaling] SendCandidate: {targetId}");
+            MistLogger.Debug($"[Signaling] SendCandidate {_peerRepository.SelfId}: {targetId}");
         }
 
         public async void ReceiveCandidates(SignalingData response)
         {
-            MistLogger.Debug($"[Signaling] ReceiveCandidates: {response.SenderId}");
+            MistLogger.Debug($"[Signaling] ReceiveCandidates {_peerRepository.SelfId}: {response.SenderId}");
             var senderId = response.SenderId;
             var candidatesStr = response.Data;
             var candidatesArray = JsonConvert.DeserializeObject<string[]>(candidatesStr);
