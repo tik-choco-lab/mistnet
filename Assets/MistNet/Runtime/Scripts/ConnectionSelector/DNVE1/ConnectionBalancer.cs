@@ -20,6 +20,7 @@ namespace MistNet
         private readonly Dictionary<NodeId, Vector3> _nodeLocations = new();
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
+        private readonly ILayer _layer;
 
         public ConnectionBalancer(DNVE1 dnve1)
         {
@@ -28,6 +29,7 @@ namespace MistNet
             _areaTracker = dnve1.AreaTracker;
             _routingBase = dnve1.RoutingBase;
             _routingTable = dnve1.RoutingTable;
+            _layer = dnve1.Layer;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }
@@ -88,9 +90,9 @@ namespace MistNet
                 foreach (var nodeId in areaInfo.Nodes.ToList())
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
-                    if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
+                    if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     if(!IdUtil.CompareId(nodeId)) continue;
-                    MistManager.I.Transport.Connect(nodeId);
+                    _layer.Transport.Connect(nodeId);
 
                     i++;
                     if (i >= requestCount) return;
@@ -106,8 +108,8 @@ namespace MistNet
                 var closestNodes = _routingTable.FindClosestNodes(areaId);
                 foreach (var node in closestNodes)
                 {
-                    if (MistManager.I.Transport.IsConnectingOrConnected(node.Id)) continue;
-                    MistManager.I.Transport.Connect(node.Id);
+                    if (_layer.Transport.IsConnectingOrConnected(node.Id)) continue;
+                    _layer.Transport.Connect(node.Id);
                     i++;
                     if (i >= requestCount) return;
                     break;
@@ -120,10 +122,10 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
 
-                    if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
+                    if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     // if (MistManager.I.CompareId(nodeId))
                     {
-                        MistManager.I.Transport.Connect(nodeId);
+                        _layer.Transport.Connect(nodeId);
                     }
 
                     i++;
@@ -186,7 +188,7 @@ namespace MistNet
 
             foreach (var nodeId in candidateNodes)
             {
-                MistManager.I.Transport.Disconnect(nodeId);
+                _layer.Transport.Disconnect(nodeId);
             }
         }
 
