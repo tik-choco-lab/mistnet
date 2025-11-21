@@ -19,6 +19,7 @@ namespace MistNet
         private Area _prevSelfChunk;
         private Area _selfChunk;
         public readonly HashSet<NodeId> ExchangeNodes = new();
+        private readonly ILayer _layer;
 
         public AreaTracker(DNVE1 dnve1)
         {
@@ -26,6 +27,7 @@ namespace MistNet
             _routingTable = dnve1.RoutingTable;
             _dnve1Selector = dnve1.Sender as DNVE1Selector;
             _cts = new CancellationTokenSource();
+            _layer = dnve1.Layer;
             LoopFindMyAreaInfo(_cts.Token).Forget();
         }
 
@@ -63,7 +65,7 @@ namespace MistNet
                 foreach (var nodeInfo in closestNodes)
                 {
                     // 接続していない場合はskip
-                    if (!MistManager.I.Transport.IsConnectingOrConnected(nodeInfo.Id)) continue;
+                    if (!_layer.Transport.IsConnectingOrConnected(nodeInfo.Id)) continue;
                     ExchangeNodes.Add(nodeInfo.Id);
                 }
             }

@@ -62,7 +62,7 @@ namespace MistNet
         public NodeInfo GetNodeInfo(NodeId nodeId)
         {
             var id = IdUtil.ToBytes(nodeId.ToString());
-            _selfId ??= IdUtil.ToBytes(MistManager.I.PeerRepository.SelfId.ToString());
+            _selfId ??= IdUtil.ToBytes(_peerRepository.SelfId.ToString());
             var distance = IdUtil.Xor(_selfId, id);
             var index = IdUtil.LeadingBitIndex(distance);
 

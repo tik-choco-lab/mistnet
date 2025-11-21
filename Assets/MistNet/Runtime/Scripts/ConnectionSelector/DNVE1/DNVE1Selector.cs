@@ -24,6 +24,7 @@ namespace MistNet
             Dnve1.Sender = this;
             Dnve1.RoutingBase = RoutingBase;
             Dnve1.PeerRepository = PeerRepository;
+            Dnve1.Layer = Layer;
 
             _dataStore = new KademliaDataStore();
             Dnve1.DataStore = _dataStore;

@@ -11,5 +11,6 @@ namespace MistNet
         public DNVE1VisibleNodesController VisibleNodesController;
         public RoutingBase RoutingBase;
         public IPeerRepository PeerRepository;
+        public ILayer Layer;
     }
 }
