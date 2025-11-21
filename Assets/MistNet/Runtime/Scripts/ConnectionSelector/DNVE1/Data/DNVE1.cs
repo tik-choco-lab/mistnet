@@ -10,5 +10,6 @@ namespace MistNet
         public ConnectionBalancer ConnectionBalancer;
         public DNVE1VisibleNodesController VisibleNodesController;
         public RoutingBase RoutingBase;
+        public IPeerRepository PeerRepository;
     }
 }

@@ -23,6 +23,7 @@ namespace MistNet
 
             Dnve1.Sender = this;
             Dnve1.RoutingBase = RoutingBase;
+            Dnve1.PeerRepository = PeerRepository;
 
             _dataStore = new KademliaDataStore();
             Dnve1.DataStore = _dataStore;
@@ -45,7 +46,7 @@ namespace MistNet
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
 
-            MistManager.I.World.AddSendFailedCallback((Action<NodeId>) SendFailed);
+            Layer.World.AddSendFailedCallback((Action<NodeId>) SendFailed);
         }
 
         private void SendFailed(NodeId id)

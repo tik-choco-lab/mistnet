@@ -15,10 +15,10 @@ namespace MistNet
         public Kademlia(DNVE1 dnve1)
         {
             _routingTable = dnve1.RoutingTable;
-            _routingTable.Init(this);
+            _routingTable.Init(dnve1);
             _dataStore = dnve1.DataStore;
             _sender = dnve1.Sender;
-            _routingBase = MistManager.I.Routing;
+            _routingBase = dnve1.RoutingBase;
 
             _sender.RegisterReceive(KademliaMessageType.Ping, OnPing);
             _sender.RegisterReceive(KademliaMessageType.Store, OnStore);

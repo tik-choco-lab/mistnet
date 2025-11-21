@@ -12,7 +12,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            MistLogger.Debug($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
+            MistLogger.Debug($"[ConnectionSelector] SelfId {PeerRepository.SelfId}");
         }
 
         public override void OnConnected(NodeId id)
