@@ -5,9 +5,24 @@ namespace MistNet
 {
     public abstract class SelectorBase : MonoBehaviour
     {
+        protected IPeerRepository PeerRepository;
+        protected ILayer Layer;
+        protected RoutingBase RoutingBase;
+
+        public virtual void Init(IPeerRepository peerRepository, ILayer layer)
+        {
+            PeerRepository = peerRepository;
+            Layer = layer;
+        }
+
+        public void SetRoutingBase(RoutingBase routingBase)
+        {
+            RoutingBase = routingBase;
+        }
+
         protected virtual void Start()
         {
-            MistManager.I.World.RegisterReceive(MistNetMessageType.ConnectionSelector, OnMessageReceived);
+            Layer.World.RegisterReceive(MistNetMessageType.ConnectionSelector, OnMessageReceived);
         }
 
         public virtual void OnConnected(NodeId id)
@@ -45,14 +60,14 @@ namespace MistNet
 
         protected void SendAll(string data)
         {
-            MistManager.I.World.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
+            Layer.World.SendAll(MistNetMessageType.ConnectionSelector, CreateData(data));
         }
 
         protected void Send(string data, NodeId targetId)
         {
             MistLogger.Debug($"[Debug][Send] {data}");
             var bytes = CreateData(data);
-            MistManager.I.World.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
+            Layer.World.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
 
             if (MistStats.I == null) return;
             MistStats.I.TotalEvalSendBytes += bytes.Length;

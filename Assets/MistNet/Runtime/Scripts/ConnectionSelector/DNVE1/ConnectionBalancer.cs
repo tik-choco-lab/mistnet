@@ -21,14 +21,13 @@ namespace MistNet
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
 
-        public ConnectionBalancer(IDNVE1MessageSender sender, KademliaDataStore dataStore,
-            KademliaRoutingTable routingTable, AreaTracker areaTracker)
+        public ConnectionBalancer(DNVE1 dnve1)
         {
-            _sender = sender;
-            _dataStore = dataStore;
-            _areaTracker = areaTracker;
-            _routingBase = MistManager.I.Routing;
-            _routingTable = routingTable;
+            _sender = dnve1.Sender;
+            _dataStore = dnve1.DataStore;
+            _areaTracker = dnve1.AreaTracker;
+            _routingBase = dnve1.RoutingBase;
+            _routingTable = dnve1.RoutingTable;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }

@@ -19,7 +19,7 @@ namespace MistNet.DNVE2
             var dataStore = new NodeListStore();
             _exchanger = new DNVE2NodeListExchanger(this, dataStore);
             _balancer = new DNVE2ConnectionBalancer(dataStore);
-            _visibleController = new VisibleNodesController(dataStore);
+            _visibleController = new VisibleNodesController(dataStore, RoutingBase);
         }
 
         private void OnDestroy()

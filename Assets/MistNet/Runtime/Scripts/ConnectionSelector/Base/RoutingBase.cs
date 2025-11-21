@@ -11,6 +11,14 @@ namespace MistNet
         public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
 
         protected readonly Dictionary<NodeId, NodeId> _routingTable = new();
+        protected IPeerRepository PeerRepository;
+        protected ILayer Layer;
+
+        public virtual void Init(IPeerRepository peerRepository, ILayer layer)
+        {
+            PeerRepository = peerRepository;
+            Layer = layer;
+        }
 
         public virtual void OnConnected(NodeId id)
         {
@@ -41,7 +49,7 @@ namespace MistNet
 
         public virtual void AddRouting(NodeId sourceId, NodeId fromId)
         {
-            if (sourceId == MistManager.I.PeerRepository.SelfId) return;
+            if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
             MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
@@ -88,7 +96,7 @@ namespace MistNet
 
         private void AddNode(NodeId id)
         {
-            if (id == MistManager.I.PeerRepository.SelfId) return; // 自分自身のノードは追加しない
+            if (id == PeerRepository.SelfId) return; // 自分自身のノードは追加しない
             if (_nodes.ContainsKey(id)) return;
             var node = new Node
             {
@@ -99,7 +107,7 @@ namespace MistNet
 
         public void UpdateNode(NodeId id, Node node)
         {
-            if (id == MistManager.I.PeerRepository.SelfId) return; // 自分自身のノードは更新しない
+            if (id == PeerRepository.SelfId) return; // 自分自身のノードは更新しない
             MistLogger.Info($"[ConnectionSelector] AddNode: {id}");
 
             if (ConnectedNodes.Contains(node.Id))

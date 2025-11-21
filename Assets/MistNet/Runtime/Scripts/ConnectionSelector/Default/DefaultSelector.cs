@@ -8,6 +8,7 @@ namespace MistNet
     {
         private readonly HashSet<string> _connectingOrConnectedNodes = new();
         [SerializeField] private RoutingBase routingBase;
+
         protected override void Start()
         {
             base.Start();
@@ -40,15 +41,15 @@ namespace MistNet
             foreach (var nodeIdStr in nodes)
             {
                 var nodeId = new NodeId(nodeIdStr);
-                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
+                if (nodeId == PeerRepository.SelfId) continue;
                 if (!_connectingOrConnectedNodes.Add(nodeId)) continue;
 
                 MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");
 
                 // idの大きさを比較
-                if (IdUtil.CompareId(nodeId))
+                if (IdUtil.CompareId(PeerRepository.SelfId, nodeId))
                 {
-                    MistManager.I.Transport.Connect(nodeId);
+                    Layer.Transport.Connect(nodeId);
                 }
             }
         }

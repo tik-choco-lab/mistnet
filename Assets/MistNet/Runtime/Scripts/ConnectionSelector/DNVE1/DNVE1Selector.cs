@@ -15,19 +15,32 @@ namespace MistNet
         private DNVE1VisibleNodesController _dnve1VisibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
-        private RoutingBase _routingBase;
+        public DNVE1 Dnve1 = new ();
 
         protected override void Start()
         {
             base.Start();
 
+            Dnve1.Sender = this;
+            Dnve1.RoutingBase = RoutingBase;
+
             _dataStore = new KademliaDataStore();
+            Dnve1.DataStore = _dataStore;
+
             _routingTable = new KademliaRoutingTable();
-            _routingBase = MistManager.I.Routing;
-            _kademlia = new Kademlia(this, _dataStore, _routingTable);
-            _areaTracker = new AreaTracker(_kademlia, _routingTable, this);
-            _connectionBalancer = new ConnectionBalancer(this, _dataStore, _routingTable, _areaTracker);
-            _dnve1VisibleNodesController = new DNVE1VisibleNodesController(_connectionBalancer);
+            Dnve1.RoutingTable = _routingTable;
+
+            _kademlia = new Kademlia(Dnve1);
+            Dnve1.Kademlia = _kademlia;
+
+            _areaTracker = new AreaTracker(Dnve1);
+            Dnve1.AreaTracker = _areaTracker;
+
+            _connectionBalancer = new ConnectionBalancer(Dnve1);
+            Dnve1.ConnectionBalancer = _connectionBalancer;
+
+            _dnve1VisibleNodesController = new DNVE1VisibleNodesController(Dnve1);
+            Dnve1.VisibleNodesController = _dnve1VisibleNodesController;
 
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
@@ -81,7 +94,7 @@ namespace MistNet
             var closestNodes = JsonConvert.DeserializeObject<ResponseFindNode>(message.Payload);
             foreach (var node in closestNodes.Nodes)
             {
-                _routingBase.AddRouting(node.Id, fromId);
+                RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
             }
         }

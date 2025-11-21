@@ -20,12 +20,11 @@ namespace MistNet
         private Area _selfChunk;
         public readonly HashSet<NodeId> ExchangeNodes = new();
 
-        public AreaTracker(Kademlia kademlia, KademliaRoutingTable routingTable,
-            DNVE1Selector dnve1Selector)
+        public AreaTracker(DNVE1 dnve1)
         {
-            _kademlia = kademlia;
-            _routingTable = routingTable;
-            _dnve1Selector = dnve1Selector;
+            _kademlia = dnve1.Kademlia;
+            _routingTable = dnve1.RoutingTable;
+            _dnve1Selector = dnve1.Sender as DNVE1Selector;
             _cts = new CancellationTokenSource();
             LoopFindMyAreaInfo(_cts.Token).Forget();
         }
