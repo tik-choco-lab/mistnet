@@ -13,11 +13,13 @@ namespace MistNet
         private MistSignalingWebRTC _mistSignalingWebRtc;
         private readonly Selector _selector;
         private readonly IPeerRepository _peerRepository;
+        private readonly ILayer _layer;
 
-        public MistTransportLayer(Selector selector, IPeerRepository peerRepository)
+        public MistTransportLayer(Selector selector, IPeerRepository peerRepository, ILayer layer)
         {
             _selector = selector;
             _peerRepository = peerRepository;
+            _layer = layer;
         }
 
         public void Dispose()
@@ -30,8 +32,8 @@ namespace MistNet
             _mistSignalingWebRtc = new MistSignalingWebRTC
             (
                 _peerRepository,
-                MistManager.I.World.RegisterReceive,
-                MistManager.I.World.Send
+                _layer.World.RegisterReceive,
+                _layer.World.Send
             );
         }
 
