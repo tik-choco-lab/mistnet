@@ -38,7 +38,7 @@ namespace MistNet
         public void Connect(NodeId id)
         {
             if (id == _peerRepository.SelfId) return;
-
+            if (IsConnectingOrConnected(id)) return;
             _mistSignalingWebRtc.Connect(id);
         }
 
@@ -126,8 +126,10 @@ namespace MistNet
             if (peerData.PeerEntity == null) return false;
             if (peerData.PeerEntity.RtcPeer == null) return false;
 
-            return peerData.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
-                or RTCPeerConnectionState.Connecting;
+            var state = peerData.PeerEntity.RtcPeer.ConnectionState;
+            return state is RTCPeerConnectionState.Connected
+                or RTCPeerConnectionState.Connecting
+                or RTCPeerConnectionState.New;
         }
 
         public bool IsConnected(NodeId id)
