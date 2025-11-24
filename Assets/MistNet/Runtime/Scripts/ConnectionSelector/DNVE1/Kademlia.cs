@@ -14,7 +14,6 @@ namespace MistNet
         public Kademlia(DNVE1 dnve1)
         {
             _routingTable = dnve1.RoutingTable;
-            _routingTable.Init(dnve1);
             _dataStore = dnve1.DataStore;
             _sender = dnve1.Sender;
 

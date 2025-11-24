@@ -15,34 +15,34 @@ namespace MistNet
         private DNVE1VisibleNodesController _dnve1VisibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
-        public DNVE1 Dnve1 = new ();
+        private readonly DNVE1 _dnve1 = new ();
 
         protected override void Start()
         {
             base.Start();
 
-            Dnve1.Sender = this;
-            Dnve1.RoutingBase = RoutingBase;
-            Dnve1.PeerRepository = PeerRepository;
-            Dnve1.Layer = Layer;
+            _dnve1.Sender = this;
+            _dnve1.RoutingBase = RoutingBase;
+            _dnve1.PeerRepository = PeerRepository;
+            _dnve1.Layer = Layer;
 
             _dataStore = new KademliaDataStore();
-            Dnve1.DataStore = _dataStore;
-
             _routingTable = new KademliaRoutingTable();
-            Dnve1.RoutingTable = _routingTable;
+            _dnve1.DataStore = _dataStore;
+            _dnve1.RoutingTable = _routingTable;
 
-            _kademlia = new Kademlia(Dnve1);
-            Dnve1.Kademlia = _kademlia;
+            _kademlia = new Kademlia(_dnve1);
+            _dnve1.Kademlia = _kademlia;
+            _routingTable.Init(_dnve1);
 
-            _areaTracker = new AreaTracker(Dnve1);
-            Dnve1.AreaTracker = _areaTracker;
+            _areaTracker = new AreaTracker(_dnve1);
+            _dnve1.AreaTracker = _areaTracker;
 
-            _connectionBalancer = new ConnectionBalancer(Dnve1);
-            Dnve1.ConnectionBalancer = _connectionBalancer;
+            _connectionBalancer = new ConnectionBalancer(_dnve1);
+            _dnve1.ConnectionBalancer = _connectionBalancer;
 
-            _dnve1VisibleNodesController = new DNVE1VisibleNodesController(Dnve1);
-            Dnve1.VisibleNodesController = _dnve1VisibleNodesController;
+            _dnve1VisibleNodesController = new DNVE1VisibleNodesController(_dnve1);
+            _dnve1.VisibleNodesController = _dnve1VisibleNodesController;
 
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
