@@ -23,12 +23,12 @@ namespace MistNet.DNVE3
             _cts.Dispose();
         }
 
-        public DNVE3Exchanger(IMessageSender sender, INodeListStore dataStore, DNVE3DataStore dnve3DataStore)
+        public DNVE3Exchanger(IMessageSender sender, INodeListStore dataStore, DNVE3DataStore dnve3DataStore, RoutingBase routingBase)
         {
             _sender = sender;
             _dataStore = dataStore;
             _dnveDataStore = dnve3DataStore;
-            _routingBase = MistManager.I.Routing;
+            _routingBase = routingBase;
             _sender.RegisterReceive(DNVEMessageType.Heartbeat, OnHeartbeatReceived);
             SendLoop(_cts.Token).Forget();
         }

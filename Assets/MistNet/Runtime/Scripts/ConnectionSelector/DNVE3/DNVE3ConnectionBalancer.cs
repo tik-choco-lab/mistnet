@@ -16,6 +16,8 @@ namespace MistNet.DNVE3
         private readonly IMessageSender _sender;
         private readonly NodeListStore _dataStore;
         private readonly RoutingBase _routing;
+        private readonly ILayer _layer;
+        private readonly IPeerRepository _peerRepository;
 
         public void Dispose()
         {
@@ -23,12 +25,14 @@ namespace MistNet.DNVE3
             _cts.Dispose();
         }
         
-        public DNVE3ConnectionBalancer(IMessageSender sender, NodeListStore dataStore, DNVE3DataStore dnveDataStore)
+        public DNVE3ConnectionBalancer(IMessageSender sender, NodeListStore dataStore, DNVE3DataStore dnveDataStore, ILayer layer, RoutingBase routingBase, IPeerRepository peerRepository)
         {
+            _layer = layer;
             _sender = sender;
             _dnveDataStore = dnveDataStore;
             _dataStore = dataStore;
-            _routing = MistManager.I.Routing;
+            _routing = routingBase;
+            _peerRepository = peerRepository;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(DNVEMessageType.RequestNodeList, OnRequestNodeListReceived);
             _sender.RegisterReceive(DNVEMessageType.NodeList, OnNodeListReceived);
@@ -93,9 +97,9 @@ namespace MistNet.DNVE3
             foreach (var node in selectedNodes)
             {
                 var nodeId = node.Id;
-                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
-                if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
-                MistManager.I.Transport.Connect(nodeId);
+                if (nodeId == _peerRepository.SelfId) continue;
+                if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                _layer.Transport.Connect(nodeId);
             }
 
             // AOI対象ノードは切断しない
@@ -105,10 +109,10 @@ namespace MistNet.DNVE3
 
             foreach (var nodeId in nodesToDisconnect)
             {
-                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
+                if (nodeId == _peerRepository.SelfId) continue;
 
-                if (!MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
-                MistManager.I.Transport.Disconnect(nodeId);
+                if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                _layer.Transport.Disconnect(nodeId);
             }
         }
 
