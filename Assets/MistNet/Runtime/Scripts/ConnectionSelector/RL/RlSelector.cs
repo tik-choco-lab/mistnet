@@ -17,7 +17,7 @@ namespace MistNet
         protected override void Start()
         {
             base.Start();
-            MistLogger.Info($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
+            MistLogger.Info($"[ConnectionSelector] SelfId {PeerRepository.SelfId}");
             _evalSender = evalClient;
             evalClient.RegisterReceive(EvalMessageType.NodeRequest, OnRequest);
             evalClient.RegisterReceive(EvalMessageType.NodeReset, OnReset);
@@ -33,7 +33,7 @@ namespace MistNet
         {
             MistLogger.Info("[ConnectionSelector] Resetting connections...");
             MistEventLogger.I.LogEvent(EventType.ConnectionReset, $"全切断");
-            MistManager.I.Transport.DisconnectAll();
+            Layer.Transport.DisconnectAll();
             routing.ClearNodes();
 
             await UniTask.Delay(TimeSpan.FromSeconds(EvalConfig.Data.NodeResetIntervalSeconds));
@@ -55,14 +55,14 @@ namespace MistNet
                     NodeStart().Forget();
                     break;
                 case RequestActionType.Connect:
-                    if (nodeId == MistManager.I.PeerRepository.SelfId) return;
+                    if (nodeId == PeerRepository.SelfId) return;
                     MistLogger.Info($"[Action] Connect {nodeId}");
-                    MistManager.I.Transport.Connect(nodeId);
+                    Layer.Transport.Connect(nodeId);
                     break;
                 case RequestActionType.Disconnect:
-                    if (nodeId == MistManager.I.PeerRepository.SelfId) return;
+                    if (nodeId == PeerRepository.SelfId) return;
                     MistLogger.Info($"[Action] Disconnect {nodeId}");
-                    MistManager.I.Transport.Disconnect(nodeId);
+                    Layer.Transport.Disconnect(nodeId);
                     break;
                 case RequestActionType.SendNodeInfo:
                     MistLogger.Info($"[Action] SendNodeInfo {nodeId}");
@@ -100,7 +100,7 @@ namespace MistNet
             var message = new OptMessage
             {
                 Type = OptMessageType.RequestNodeList,
-                Payload = MistManager.I.PeerRepository.SelfId,
+                Payload = PeerRepository.SelfId,
             };
 
             var json = JsonConvert.SerializeObject(message);
