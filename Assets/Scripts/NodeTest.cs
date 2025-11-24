@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace MistNet.Minimal
 {
-    public class Node : MonoBehaviour
+    public class NodeTest : MonoBehaviour
     {
         private MistSignalingWebSocket _mistSignalingWebSocket;
         private PeerRepository _peerRepository;
