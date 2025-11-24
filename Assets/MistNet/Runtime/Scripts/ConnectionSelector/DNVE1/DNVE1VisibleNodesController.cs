@@ -14,10 +14,10 @@ namespace MistNet
         private readonly CancellationTokenSource _cts = new();
         // 表示中のNode List
 
-        public DNVE1VisibleNodesController(ConnectionBalancer connectionBalancer)
+        public DNVE1VisibleNodesController(DNVE1 dnve1)
         {
-            _connectionBalancer = connectionBalancer;
-            _routingBase = MistManager.I.Routing;
+            _connectionBalancer = dnve1.ConnectionBalancer;
+            _routingBase = dnve1.RoutingBase;
             LoopVisibleNodes(_cts.Token).Forget();
         }
 

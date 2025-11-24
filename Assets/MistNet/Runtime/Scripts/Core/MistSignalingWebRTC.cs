@@ -10,11 +10,13 @@ namespace MistNet
     {
         private readonly MistSignalingHandler _mistSignalingHandler;
         private readonly Dictionary<SignalingType, Action<SignalingData>> _functions;
+        private readonly WLSend _wlSend;
 
-        public MistSignalingWebRTC(IPeerRepository peerRepository)
+        public MistSignalingWebRTC(IPeerRepository peerRepository, WLRegisterReceive wlRegisterReceive, WLSend wlSend)
         {
             _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC, peerRepository);
             _mistSignalingHandler.Send += SendSignalingMessage;
+            _wlSend = wlSend;
             // Functionの登録
             _functions = new Dictionary<SignalingType, Action<SignalingData>>
             {
@@ -23,7 +25,8 @@ namespace MistNet
                 { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
             };
             
-            MistManager.I.World.RegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
+            // MistManager.I.World.RegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
+            wlRegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
         }
 
         /// <summary>
@@ -39,18 +42,18 @@ namespace MistNet
                 Data = JsonConvert.SerializeObject(sendData)
             };
             var data = MemoryPackSerializer.Serialize(message);
-            MistManager.I.World.Send(MistNetMessageType.Signaling, data, targetId);
+            _wlSend(MistNetMessageType.Signaling, data, targetId);
         }
 
         /// <summary>
         /// 受信
         /// </summary>
-        private void ReceiveSignalingMessage(byte[] bytes, NodeId sourceId)
+        private void ReceiveSignalingMessage(byte[] bytes, NodeId senderId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
             var response = JsonConvert.DeserializeObject<SignalingData>(receiveData.Data);
             var type = response.Type;
-            MistLogger.Trace($"[Signaling][WebRTC][{type}] {sourceId}");
+            MistLogger.Trace($"[Signaling][WebRTC][{type}] {response.SenderId}");
             _functions[type](response);
         }
 

@@ -11,4 +11,7 @@ namespace MistNet
     }
 
     public delegate void MessageReceivedHandler(byte[] data, NodeId fromId);
+
+    public delegate void WLRegisterReceive(MistNetMessageType type, MessageReceivedHandler receiver);
+    public delegate void WLSend(MistNetMessageType type, byte[] data, NodeId targetId);
 }

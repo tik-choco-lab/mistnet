@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MistNet
 {
@@ -59,7 +60,7 @@ namespace MistNet
                 Type = type,
             };
 
-            foreach (var peerId in _selector.RoutingBase.ConnectedNodes)
+            foreach (var peerId in _selector.RoutingBase.ConnectedNodes.ToArray())
             {
                 MistLogger.Trace($"[SEND][{peerId}] {type.ToString()}");
                 message.TargetId = peerId;
@@ -114,7 +115,7 @@ namespace MistNet
         private void ProcessMessageForSelf(MistMessage message, NodeId senderId)
         {
             _selector.RoutingBase.AddRouting(new NodeId(message.Id), senderId);
-            _onMessageDict[message.Type](message.Payload, new NodeId(message.Id));
+            _onMessageDict[message.Type](message.Payload, senderId);
         }
 
         public void Dispose()

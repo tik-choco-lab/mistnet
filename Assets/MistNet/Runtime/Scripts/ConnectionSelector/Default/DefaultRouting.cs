@@ -1,14 +1,10 @@
-using System;
-using System.Linq;
-using Random = UnityEngine.Random;
-
 namespace MistNet
 {
     public class DefaultRouting : RoutingBase
     {
         public override void AddRouting(NodeId sourceId, NodeId fromId)
         {
-            if (sourceId == MistManager.I.PeerRepository.SelfId) return;
+            if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
             if (_routingTable.TryAdd(sourceId, fromId))

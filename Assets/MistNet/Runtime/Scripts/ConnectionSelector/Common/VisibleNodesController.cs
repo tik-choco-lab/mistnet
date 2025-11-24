@@ -13,10 +13,10 @@ namespace MistNet
         private readonly RoutingBase _routingBase;
         private readonly CancellationTokenSource _cts = new();
 
-        public VisibleNodesController(INodeListStore dataStore)
+        public VisibleNodesController(INodeListStore dataStore, RoutingBase routingBase)
         {
             _dataStore = dataStore;
-            _routingBase = MistManager.I.Routing;
+            _routingBase = routingBase;
             LoopVisibleNodes(_cts.Token).Forget();
         }
 

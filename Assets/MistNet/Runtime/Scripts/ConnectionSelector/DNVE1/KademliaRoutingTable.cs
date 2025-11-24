@@ -7,30 +7,32 @@ namespace MistNet
 {
     public class KademliaRoutingTable
     {
-        public NodeInfo SelfNode { get; private set; } = new NodeInfo();
+        public NodeInfo SelfNode { get; private set; } = new();
         private readonly KBucket[] _buckets = new KBucket[IdUtil.BitLength];
         private byte[] _selfId;
         private Kademlia _kademlia;
+        private IPeerRepository _peerRepository;
 
-        public void Init(Kademlia kademlia)
+        public void Init(DNVE1 dnve1)
         {
-            _kademlia = kademlia;
+            _kademlia = dnve1.Kademlia;
+            _peerRepository = dnve1.PeerRepository;
         }
 
         public void AddNode(NodeInfo nodeInfo)
         {
-            if (nodeInfo.Id == MistManager.I.PeerRepository.SelfId) return;
+            if (nodeInfo.Id == _peerRepository.SelfId) return;
 
             nodeInfo.LastSeen = DateTime.UtcNow;
             var id = IdUtil.ToBytes(nodeInfo.Id.ToString());
-            _selfId ??= IdUtil.ToBytes(MistManager.I.PeerRepository.SelfId.ToString());
+            _selfId ??= IdUtil.ToBytes(_peerRepository.SelfId.ToString());
             var distance = IdUtil.Xor(_selfId, id);
             var index = IdUtil.LeadingBitIndex(distance);
 
             if (index == -1)
             {
                 MistLogger.Error(
-                    $"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {MistManager.I.PeerRepository.SelfId} Cannot determine bucket index.");
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeInfo.Id}. self: {_peerRepository.SelfId} Cannot determine bucket index.");
             }
 
             _buckets[index] ??= new KBucket(_kademlia);
@@ -40,14 +42,14 @@ namespace MistNet
         public void RemoveNode(NodeId nodeId)
         {
             var id = IdUtil.ToBytes(nodeId.ToString());
-            _selfId ??= IdUtil.ToBytes(MistManager.I.PeerRepository.SelfId.ToString());
+            _selfId ??= IdUtil.ToBytes(_peerRepository.SelfId.ToString());
             var distance = IdUtil.Xor(_selfId, id);
             var index = IdUtil.LeadingBitIndex(distance);
 
             if (index == -1)
             {
                 MistLogger.Error(
-                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {MistManager.I.PeerRepository.SelfId} Cannot determine bucket index.");
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {_peerRepository.SelfId} Cannot determine bucket index.");
                 return;
             }
 
@@ -60,14 +62,14 @@ namespace MistNet
         public NodeInfo GetNodeInfo(NodeId nodeId)
         {
             var id = IdUtil.ToBytes(nodeId.ToString());
-            _selfId ??= IdUtil.ToBytes(MistManager.I.PeerRepository.SelfId.ToString());
+            _selfId ??= IdUtil.ToBytes(_peerRepository.SelfId.ToString());
             var distance = IdUtil.Xor(_selfId, id);
             var index = IdUtil.LeadingBitIndex(distance);
 
             if (index == -1)
             {
                 MistLogger.Error(
-                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {MistManager.I.PeerRepository.SelfId} Cannot determine bucket index.");
+                    $"[KademliaRoutingTable] Invalid node ID: {nodeId}. self: {_peerRepository.SelfId} Cannot determine bucket index.");
                 return null;
             }
 

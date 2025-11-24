@@ -20,12 +20,14 @@ namespace MistNet
         public IAOILayer AOI { get; private set; }
         public IWorldLayer World { get; private set; }
         public ITransportLayer Transport { get; private set; }
+        public ILayer Layer { get; private set; }
 
         public void Awake()
         {
             MistConfig.ReadConfig();
             OptConfig.ReadConfig();
 
+            Layer = new MistLayer();
             PeerRepository = new PeerRepository();
             _mistSyncManager = new MistSyncManager();
             I = this;
@@ -34,6 +36,8 @@ namespace MistNet
             PeerRepository.Init(Transport);
             World = new MistWorldLayer(Transport, Selector, PeerRepository);
             AOI = new MistAOILayer(World, Selector, PeerRepository);
+            Layer.Init(AOI, World, Transport);
+            Selector.Init(PeerRepository, Layer);
 
             Transport.Init();
         }

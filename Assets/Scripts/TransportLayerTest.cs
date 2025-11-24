@@ -7,15 +7,16 @@ namespace MistNet.Minimal
     public class TransportLayerTest : ITransportLayer
     {
         private readonly IPeerRepository _peerRepository;
-        private MistSignalingWebRTC _mistSignalingWebRtc;
+        private readonly MistSignalingWebRTC _mistSignalingWebRtc;
 
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
         private Action<MistMessage, NodeId> _onMessageAction;
 
-        public TransportLayerTest(IPeerRepository peerRepository)
+        public TransportLayerTest(IPeerRepository peerRepository, WLRegisterReceive wlRegisterReceive, WLSend wlSend)
         {
             _peerRepository = peerRepository;
+            _mistSignalingWebRtc = new MistSignalingWebRTC(_peerRepository, wlRegisterReceive, wlSend);
         }
 
         public void Dispose()
@@ -25,7 +26,6 @@ namespace MistNet.Minimal
 
         public void Init()
         {
-            _mistSignalingWebRtc = new MistSignalingWebRTC(_peerRepository);
         }
 
         public void Connect(NodeId id)
@@ -81,13 +81,13 @@ namespace MistNet.Minimal
 
         public void OnConnected(NodeId id)
         {
-            MistLogger.Info($"[Connected] {id}");
+            MistLogger.Info($"[Connected] {_peerRepository.SelfId}: {id}");
             _onConnectedAction?.Invoke(id);
         }
 
         public void OnDisconnected(NodeId id)
         {
-            MistLogger.Info($"[Disconnected] {id}");
+            MistLogger.Info($"[Disconnected] {_peerRepository.SelfId}: {id}");
             _peerRepository.RemovePeer(id);
             _onDisconnectedAction?.Invoke(id);
         }

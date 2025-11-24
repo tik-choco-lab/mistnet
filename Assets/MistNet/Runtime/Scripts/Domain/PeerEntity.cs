@@ -79,7 +79,7 @@ namespace MistNet
 
         public async UniTask<RTCSessionDescription> CreateOffer(CancellationToken ct)
         {
-            MistLogger.Debug($"[Signaling][CreateOffer] {Id}");
+            MistLogger.Debug($"[Signaling][CreateOffer] target: {Id}");
 
             CreateDataChannel();
 

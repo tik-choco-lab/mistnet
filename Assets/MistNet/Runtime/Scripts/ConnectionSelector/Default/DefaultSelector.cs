@@ -6,21 +6,22 @@ namespace MistNet
 {
     public class DefaultSelector : SelectorBase
     {
-        private readonly HashSet<string> _connectedNodes = new();
+        private readonly HashSet<string> _connectingOrConnectedNodes = new();
         [SerializeField] private RoutingBase routingBase;
+
         protected override void Start()
         {
             base.Start();
-            MistLogger.Debug($"[ConnectionSelector] SelfId {MistManager.I.PeerRepository.SelfId}");
+            MistLogger.Debug($"[ConnectionSelector] SelfId {PeerRepository.SelfId}");
         }
 
         public override void OnConnected(NodeId id)
         {
             MistLogger.Debug($"[ConnectionSelector] OnConnected: {id}");
-            if (!_connectedNodes.Add(id)) return;
+            if (!_connectingOrConnectedNodes.Add(id)) return;
             routingBase.AddMessageNode(id);
 
-            var dataStr = string.Join(",", _connectedNodes);
+            var dataStr = string.Join(",", _connectingOrConnectedNodes);
             SendAll(dataStr);
             RequestObject(id);
         }
@@ -28,7 +29,7 @@ namespace MistNet
         public override void OnDisconnected(NodeId id)
         {
             MistLogger.Debug($"[ConnectionSelector] OnDisconnected: {id}");
-            _connectedNodes.Remove(id);
+            _connectingOrConnectedNodes.Remove(id);
             routingBase.AddMessageNode(id);
         }
 
@@ -40,15 +41,15 @@ namespace MistNet
             foreach (var nodeIdStr in nodes)
             {
                 var nodeId = new NodeId(nodeIdStr);
-                if (nodeId == MistManager.I.PeerRepository.SelfId) continue;
-                if (!_connectedNodes.Add(nodeId)) continue;
+                if (nodeId == PeerRepository.SelfId) continue;
+                if (!_connectingOrConnectedNodes.Add(nodeId)) continue;
 
                 MistLogger.Debug($"[ConnectionSelector] Connecting: {nodeId}");
 
                 // idの大きさを比較
-                if (IdUtil.CompareId(nodeId))
+                if (IdUtil.CompareId(PeerRepository.SelfId, nodeId))
                 {
-                    MistManager.I.Transport.Connect(nodeId);
+                    Layer.Transport.Connect(nodeId);
                 }
             }
         }

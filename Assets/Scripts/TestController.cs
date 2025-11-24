@@ -6,10 +6,10 @@ namespace MistNet.Minimal
 {
     public class TestController : MonoBehaviour
     {
-        [SerializeField] private Node nodePrefab;
+        [SerializeField] private NodeTest nodeTestPrefab;
         [SerializeField] private int nodeCount = 10;
 
-        private readonly List<Node> _nodes = new();
+        private readonly List<NodeTest> _nodes = new();
 
         private void Start()
         {
@@ -29,8 +29,7 @@ namespace MistNet.Minimal
                     Random.Range(-50f, 50f)
                 );
 
-                var obj = Instantiate(nodePrefab, position, Quaternion.identity);
-                obj.name = $"Node_{i}";
+                var obj = Instantiate(nodeTestPrefab, position, Quaternion.identity);
                 _nodes.Add(obj);
             }
         }
