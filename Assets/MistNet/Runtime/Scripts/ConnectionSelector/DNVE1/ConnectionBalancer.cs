@@ -180,6 +180,8 @@ namespace MistNet
                 foreach (var nodeId in connectedExchangeNodes)
                 {
                     if (count >= targetCount) break;
+                    if (visibleNodes.Contains(nodeId)) continue;
+
                     candidateNodes.Add(nodeId);
                     count++;
                 }
