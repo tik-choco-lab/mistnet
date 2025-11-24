@@ -7,7 +7,7 @@ namespace MistNet
 {
     public class KademliaRoutingTable
     {
-        public NodeInfo SelfNode { get; private set; } = new NodeInfo();
+        public NodeInfo SelfNode { get; private set; } = new();
         private readonly KBucket[] _buckets = new KBucket[IdUtil.BitLength];
         private byte[] _selfId;
         private Kademlia _kademlia;

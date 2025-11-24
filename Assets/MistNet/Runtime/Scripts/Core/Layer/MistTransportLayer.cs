@@ -63,7 +63,11 @@ namespace MistNet
 
         public void Send(NodeId targetId, MistMessage data, bool isForward = false)
         {
-            if (!IsConnected(targetId)) return;
+            if (!IsConnected(targetId))
+            {
+                OnDisconnected(targetId);
+                return;
+            }
 
             if (!isForward)
             {

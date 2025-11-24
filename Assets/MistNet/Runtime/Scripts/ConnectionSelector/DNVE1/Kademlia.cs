@@ -10,7 +10,6 @@ namespace MistNet
         private readonly IDNVE1MessageSender _sender;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
-        private readonly RoutingBase _routingBase;
 
         public Kademlia(DNVE1 dnve1)
         {
@@ -18,7 +17,6 @@ namespace MistNet
             _routingTable.Init(dnve1);
             _dataStore = dnve1.DataStore;
             _sender = dnve1.Sender;
-            _routingBase = dnve1.RoutingBase;
 
             _sender.RegisterReceive(KademliaMessageType.Ping, OnPing);
             _sender.RegisterReceive(KademliaMessageType.Store, OnStore);
