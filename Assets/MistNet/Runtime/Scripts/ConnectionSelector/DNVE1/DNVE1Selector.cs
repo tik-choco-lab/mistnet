@@ -60,6 +60,7 @@ namespace MistNet
         {
             var message = JsonConvert.DeserializeObject<KademliaMessage>(data);
             _routingTable.AddNode(message.Sender);
+            _dnve1.LastMessageTimes[id] = DateTime.UtcNow;
 
             if (Receivers.TryGetValue(message.Type, out var handler))
             {
@@ -79,7 +80,11 @@ namespace MistNet
                 MistLogger.Debug($"[Debug][Send] Loopback {JsonConvert.SerializeObject(message)}");
                 OnMessage(JsonConvert.SerializeObject(message), targetId);
             }
-            else Send(JsonConvert.SerializeObject(message), targetId);
+            else
+            {
+                _dnve1.LastMessageTimes[targetId] = DateTime.UtcNow;
+                Send(JsonConvert.SerializeObject(message), targetId);
+            }
         }
 
         public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)

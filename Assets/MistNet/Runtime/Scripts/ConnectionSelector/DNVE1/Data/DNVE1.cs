@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace MistNet
 {
     public class DNVE1
@@ -12,5 +15,6 @@ namespace MistNet
         public RoutingBase RoutingBase;
         public IPeerRepository PeerRepository;
         public ILayer Layer;
+        public readonly Dictionary<NodeId, DateTime> LastMessageTimes = new ();
     }
 }

@@ -22,6 +22,7 @@ namespace MistNet
         private readonly KademliaRoutingTable _routingTable;
         private readonly ILayer _layer;
         private readonly IPeerRepository _peerRepository;
+        private readonly DNVE1 _dnve1;
 
         public ConnectionBalancer(DNVE1 dnve1)
         {
@@ -32,6 +33,7 @@ namespace MistNet
             _routingTable = dnve1.RoutingTable;
             _layer = dnve1.Layer;
             _peerRepository = dnve1.PeerRepository;
+            _dnve1 = dnve1;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }
@@ -154,42 +156,58 @@ namespace MistNet
             if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
-
+            requestCount += 5; // 少し多めに切断しておく 探索のための枠を確保するため
             var connectedNodes = _routingBase.ConnectedNodes;
 
-            // 保護すべきノード（情報交換ノード + 表示ノード）
-            var exchangeNodes = _areaTracker.ExchangeNodes;
-            var visibleNodes = _routingBase.MessageNodes;
-            var safeConnectedNodes = connectedNodes
-                .Where(n => exchangeNodes.Contains(n) || visibleNodes.Contains(n))
+            // 最後に通信した時間が最も遅い順にソート
+            var sortedNodes = connectedNodes
+                .OrderBy(n => _dnve1.LastMessageTimes.TryGetValue(n, out var time) ? time : DateTime.MinValue)
+                .Where(n => !_routingBase.MessageNodes.Contains(n))
                 .ToList();
 
-            // 切断候補ノード（safe以外）
-            var candidateNodes = connectedNodes.Except(safeConnectedNodes).ToList();
-
-            if (candidateNodes.Count < requestCount)
+            var disconnectedCount = 0;
+            for (var i = 0; i < sortedNodes.Count && disconnectedCount < requestCount; i++)
             {
-                // 切断候補が足りない場合はexchangeNodesから ExchangeNodeCount分を残して切断する
-                // connectedNodes かつ exchangeNodes
-                var connectedExchangeNodes = connectedNodes.Intersect(exchangeNodes).ToList();
-                var targetCount = connectedExchangeNodes.Count - OptConfig.Data.ExchangeNodeCount;
-                if (targetCount <= 0) return; // 切断するノードがない場合は終了
-                var count = 0;
-                // candidateに追加していく
-                foreach (var nodeId in connectedExchangeNodes)
-                {
-                    if (count >= targetCount) break;
-                    if (visibleNodes.Contains(nodeId)) continue;
-
-                    candidateNodes.Add(nodeId);
-                    count++;
-                }
-            }
-
-            foreach (var nodeId in candidateNodes)
-            {
+                var nodeId = sortedNodes[i];
                 _layer.Transport.Disconnect(nodeId);
+                disconnectedCount++;
             }
+
+            // var connectedNodes = _routingBase.ConnectedNodes;
+            //
+            // // 保護すべきノード（情報交換ノード + 表示ノード）
+            // var exchangeNodes = _areaTracker.ExchangeNodes;
+            // var visibleNodes = _routingBase.MessageNodes;
+            // var safeConnectedNodes = connectedNodes
+            //     .Where(n => exchangeNodes.Contains(n) || visibleNodes.Contains(n))
+            //     .ToList();
+            //
+            // // 切断候補ノード（safe以外）
+            // var candidateNodes = connectedNodes.Except(safeConnectedNodes).ToList();
+            //
+            // if (candidateNodes.Count < requestCount)
+            // {
+            //     // 切断候補が足りない場合はexchangeNodesから ExchangeNodeCount分を残して切断する
+            //     // connectedNodes かつ exchangeNodes
+            //     var connectedExchangeNodes = connectedNodes.Intersect(exchangeNodes).ToList();
+            //     var targetCount = connectedExchangeNodes.Count - OptConfig.Data.ExchangeNodeCount;
+            //     if (targetCount <= 0) return; // 切断するノードがない場合は終了
+            //     var count = 0;
+            //     // candidateに追加していく
+            //     foreach (var nodeId in connectedExchangeNodes)
+            //     {
+            //         if (count >= targetCount) break;
+            //         if (visibleNodes.Contains(nodeId)) continue;
+            //
+            //         candidateNodes.Add(nodeId);
+            //         count++;
+            //     }
+            // }
+            //
+            // foreach (var nodeId in candidateNodes)
+            // {
+            //     _layer.Transport.Disconnect(nodeId);
+            // }
         }
 
         public void Dispose()
