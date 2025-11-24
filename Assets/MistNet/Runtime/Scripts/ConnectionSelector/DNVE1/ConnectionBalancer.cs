@@ -93,7 +93,7 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                    if(!IdUtil.CompareId(_peerRepository.SelfId, nodeId)) continue;
+                    if (!IdUtil.CompareId(_peerRepository.SelfId, nodeId)) continue;
                     _layer.Transport.Connect(nodeId);
 
                     i++;
@@ -125,10 +125,7 @@ namespace MistNet
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
 
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                    // if (MistManager.I.CompareId(nodeId))
-                    {
-                        _layer.Transport.Connect(nodeId);
-                    }
+                    _layer.Transport.Connect(nodeId);
 
                     i++;
                     if (i >= requestCount) return;
