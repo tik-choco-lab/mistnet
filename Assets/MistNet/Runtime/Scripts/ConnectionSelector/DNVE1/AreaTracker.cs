@@ -62,11 +62,12 @@ namespace MistNet
                 var closestNodes = _routingTable.FindClosestNodes(target);
                 _dnve1Selector.FindValue(closestNodes, target);
 
+                var count = 0;
                 foreach (var nodeInfo in closestNodes)
                 {
-                    // 接続していない場合はskip
-                    if (!_layer.Transport.IsConnectingOrConnected(nodeInfo.Id)) continue;
+                    count++;
                     ExchangeNodes.Add(nodeInfo.Id);
+                    if (count >= DNVE1Selector.Alpha) break;
                 }
             }
         }
