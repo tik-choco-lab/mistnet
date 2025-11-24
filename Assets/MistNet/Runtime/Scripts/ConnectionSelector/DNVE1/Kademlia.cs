@@ -174,7 +174,7 @@ namespace MistNet
             var responseFindNode = new ResponseFindNode()
             {
                 Key = target,
-                Nodes = closestNodes,
+                Nodes = closestNodes.ToHashSet(),
             };
             var response = new KademliaMessage
             {

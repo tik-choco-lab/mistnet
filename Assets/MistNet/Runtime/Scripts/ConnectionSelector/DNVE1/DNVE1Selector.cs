@@ -7,7 +7,7 @@ namespace MistNet
 {
     public class DNVE1Selector : SelectorBase, IDNVE1MessageSender
     {
-        public const int Alpha = 12; // Number of parallel requests
+        public const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
         private KademliaRoutingTable _routingTable;
         private KademliaDataStore _dataStore;
@@ -119,7 +119,7 @@ namespace MistNet
             _dataStore.Store(response.Key, response.Value);
         }
 
-        public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
+        public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
         {
             if (closestNodes == null) return;
             var count = 0;
