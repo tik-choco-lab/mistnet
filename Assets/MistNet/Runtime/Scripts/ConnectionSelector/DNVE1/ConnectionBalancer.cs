@@ -21,6 +21,7 @@ namespace MistNet
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
         private readonly ILayer _layer;
+        private readonly IPeerRepository _peerRepository;
 
         public ConnectionBalancer(DNVE1 dnve1)
         {
@@ -30,6 +31,7 @@ namespace MistNet
             _routingBase = dnve1.RoutingBase;
             _routingTable = dnve1.RoutingTable;
             _layer = dnve1.Layer;
+            _peerRepository = dnve1.PeerRepository;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);
         }
@@ -91,7 +93,7 @@ namespace MistNet
                 {
                     if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                    if(!IdUtil.CompareId(nodeId)) continue;
+                    if(!IdUtil.CompareId(_peerRepository.SelfId, nodeId)) continue;
                     _layer.Transport.Connect(nodeId);
 
                     i++;
