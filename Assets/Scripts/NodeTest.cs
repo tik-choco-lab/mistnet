@@ -117,7 +117,7 @@ namespace MistNet.Minimal
                 var nextHopId = targetId;
                 if (!Transport.IsConnected(targetId))
                 {
-                    if (!_routingTable.TryGetValue(new NodeId(message.TargetId), out nextHopId)) return;
+                    if (!_routingTable.TryGetValue(targetId, out nextHopId)) return;
                 }
                 message.HopCount--;
                 MistLogger.Trace($"[Test][Send][Forward] {_selfId}: {message.TargetId} {nextHopId}");
