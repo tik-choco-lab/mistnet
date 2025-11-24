@@ -26,7 +26,7 @@ namespace MistNet.Evaluation
             _webSocketHandler = new WebSocketHandler(url: Data.ServerUrl);
             _webSocketHandler.OnMessage += OnMessage;
             await _webSocketHandler.ConnectAsync();
-            _ = new NetworkPartitionCheck(this, MistManager.I.PeerRepository);
+            _ = new NetworkPartitionCheck(this, MistManager.I.PeerRepository, MistManager.I.Layer);
 
             var nodeSettings = new EvalNodeSettings
             {

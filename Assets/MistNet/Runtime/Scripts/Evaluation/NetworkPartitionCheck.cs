@@ -13,13 +13,15 @@ namespace MistNet.Runtime.Evaluation
         private EvalMessage _evalMessage;
         private readonly IEvalMessageSender _sender;
         private readonly IPeerRepository _peerRepository;
+        private readonly ILayer _layer;
 
-        public NetworkPartitionCheck(IEvalMessageSender sender, IPeerRepository peerRepository)
+        public NetworkPartitionCheck(IEvalMessageSender sender, IPeerRepository peerRepository, ILayer layer)
         {
             sender.RegisterReceive(EvalMessageType.NetworkPartitionCheck, OnNetworkPartitionCheck);
             _sender = sender;
             _peerRepository = peerRepository;
-            MistManager.I.World.RegisterReceive(MistNetMessageType.Gossip, OnGossipReceived);
+            _layer = layer;
+            _layer.World.RegisterReceive(MistNetMessageType.Gossip, OnGossipReceived);
         }
 
         private void OnNetworkPartitionCheck(string payload)
@@ -34,7 +36,7 @@ namespace MistNet.Runtime.Evaluation
 
             _receivedMessages.Enqueue(_message.Payload);
             SendToEvalServer(_message.Payload);
-            MistManager.I.World.SendAll(MistNetMessageType.Gossip, bytes);
+            _layer.World.SendAll(MistNetMessageType.Gossip, bytes);
         }
 
         private void OnGossipReceived(byte[] data, NodeId id)
@@ -59,7 +61,7 @@ namespace MistNet.Runtime.Evaluation
             if (_receivedMessages.Count > MaxQueueSize)
                 _receivedMessages.Dequeue(); // 古いものから削除
 
-            MistManager.I.World.SendAll(MistNetMessageType.Gossip, data);
+            _layer.World.SendAll(MistNetMessageType.Gossip, data);
             SendToEvalServer(message.Payload);
         }
 
