@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
@@ -17,8 +16,8 @@ namespace MistNet.DNVE2
             base.Start();
 
             var dataStore = new NodeListStore();
-            _exchanger = new DNVE2NodeListExchanger(this, dataStore);
-            _balancer = new DNVE2ConnectionBalancer(dataStore);
+            _exchanger = new DNVE2NodeListExchanger(this, dataStore, RoutingBase, PeerRepository);
+            _balancer = new DNVE2ConnectionBalancer(dataStore, RoutingBase, PeerRepository, Layer);
             _visibleController = new VisibleNodesController(dataStore, RoutingBase);
         }
 
@@ -53,7 +52,7 @@ namespace MistNet.DNVE2
 
         public void Send(DNVEMessage message)
         {
-            message.Sender = MistManager.I.PeerRepository.SelfId;
+            message.Sender = PeerRepository.SelfId;
             var json = JsonConvert.SerializeObject(message);
             MistLogger.Debug($"[DNVE2Selector] Send: {json} to {message.Receiver}");
             Send(json, message.Receiver);

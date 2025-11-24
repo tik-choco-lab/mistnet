@@ -12,11 +12,15 @@ namespace MistNet.DNVE2
         private readonly INodeListStore _dataStore;
         private NodeId _selfId;
         private readonly RoutingBase _routing;
+        private readonly IPeerRepository _peerRepository;
+        private readonly ILayer _layer;
 
-        public DNVE2ConnectionBalancer(INodeListStore dataStore)
+        public DNVE2ConnectionBalancer(INodeListStore dataStore, RoutingBase routing, IPeerRepository peerRepository, ILayer layer)
         {
             _dataStore  = dataStore;
-            _routing = MistManager.I.Routing;
+            _routing = routing;
+            _peerRepository = peerRepository;
+            _layer = layer;
             LoopBalanceConnections(_cts.Token).Forget();
         }
 
@@ -28,7 +32,7 @@ namespace MistNet.DNVE2
                     cancellationToken: token);
 
                 var allNodes = _dataStore.GetAllNodes().ToHashSet();
-                _selfId ??= MistManager.I.PeerRepository.SelfId;
+                _selfId ??= _peerRepository.SelfId;
                 if (_selfId == null) return;
                 if (!_dataStore.TryGet(_selfId, out var selfNode)) return;
 
@@ -49,9 +53,8 @@ namespace MistNet.DNVE2
             foreach (var nodeId in nodesToDisconnect)
             {
                 if (nodeId == _selfId) continue;
-                if (MistManager.I.Transport.IsConnectingOrConnected(nodeId)) continue;
-                // if (MistManager.I.CompareId(nodeId)) continue;
-                MistManager.I.Transport.Disconnect(nodeId);
+                if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                _layer.Transport.Disconnect(nodeId);
             }
         }
 
@@ -60,9 +63,8 @@ namespace MistNet.DNVE2
             foreach (var node in closestNodes)
             {
                 if (node.Id == _selfId) continue;
-                if (MistManager.I.Transport.IsConnectingOrConnected(node.Id)) continue;
-                // if (MistManager.I.CompareId(node.Id)) continue;
-                MistManager.I.Transport.Connect(node.Id);
+                if (_layer.Transport.IsConnectingOrConnected(node.Id)) continue;
+                _layer.Transport.Connect(node.Id);
             }
         }
 

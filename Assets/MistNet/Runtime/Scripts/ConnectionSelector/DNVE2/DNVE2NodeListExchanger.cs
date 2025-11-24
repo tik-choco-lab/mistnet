@@ -15,14 +15,16 @@ namespace MistNet.DNVE2
         private DNVEMessage _message;
         private NodeId _selfId;
         private readonly RoutingBase _routingBase;
+        private readonly IPeerRepository _peerRepository;
 
-        public DNVE2NodeListExchanger(IMessageSender sender, INodeListStore store)
+        public DNVE2NodeListExchanger(IMessageSender sender, INodeListStore store, RoutingBase routingBase, IPeerRepository peerRepository)
         {
             _sender = sender;
             _store = store;
             _sender.RegisterReceive(DNVEMessageType.NodeList, OnNodeListReceived);
             _sender.RegisterOnConnected(OnConnected);
-            _routingBase = MistManager.I.Routing;
+            _routingBase = routingBase;
+            _peerRepository = peerRepository;
             LoopExchangeNodeList(_cts.Token).Forget();
         }
 
@@ -65,7 +67,7 @@ namespace MistNet.DNVE2
                 UpdateSelfNode();
 
                 var allNodes = _store.GetAllNodes().ToHashSet();
-                foreach (var connectedNode in MistManager.I.Routing.ConnectedNodes)
+                foreach (var connectedNode in _routingBase.ConnectedNodes)
                 {
                     if (!_store.TryGet(connectedNode, out var node))
                         continue;
@@ -87,7 +89,7 @@ namespace MistNet.DNVE2
 
         private void UpdateSelfNode()
         {
-            _selfId ??= MistManager.I.PeerRepository.SelfId;
+            _selfId ??= _peerRepository.SelfId;
             var position = MistSyncManager.I.SelfSyncObject.transform.position;
 
             if (!_store.TryGet(_selfId, out var node))
