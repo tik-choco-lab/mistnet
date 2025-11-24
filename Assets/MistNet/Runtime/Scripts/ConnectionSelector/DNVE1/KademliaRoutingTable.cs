@@ -89,11 +89,15 @@ namespace MistNet
                 return new HashSet<NodeInfo>();
             }
 
+            // return allNodes
+            //     .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
+            //     .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
+            //     .Take(KBucket.K)
+            //     .Select(tuple => tuple.Node)
+            //     .ToHashSet();
             return allNodes
-                .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
-                .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
+                .OrderBy(n => n, new XorDistanceComparer(targetId))
                 .Take(KBucket.K)
-                .Select(tuple => tuple.Node)
                 .ToHashSet();
         }
 

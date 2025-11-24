@@ -56,6 +56,7 @@ namespace MistNet
             }
             _kademlia.Ping(oldest);
             _pendingNodeList[oldest] = newNode; // 置き換え候補を記録
+            MistLogger.Debug($"[KBucket] PING sent to {oldest.Id} for replacement with {newNode.Id}");
             ReplaceByTimeout(oldest).Forget();  // タイムアウトで置き換えを実行
         }
 

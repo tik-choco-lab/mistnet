@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -99,6 +100,7 @@ namespace MistNet
                 RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
             }
+            MistLogger.Debug($"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
         }
 
         private void OnFindValueResponse(KademliaMessage message)

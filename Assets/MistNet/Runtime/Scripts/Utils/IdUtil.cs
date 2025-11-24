@@ -71,5 +71,33 @@ namespace MistNet.Utils
             return 0;
         }
     }
+    public readonly struct XorDistanceComparer : IComparer<NodeInfo>
+    {
+        private readonly byte[] _targetId;
 
+        public XorDistanceComparer(byte[] targetId)
+        {
+            _targetId = targetId;
+        }
+
+        public int Compare(NodeInfo x, NodeInfo y)
+        {
+            var xBytes = x.IdBytes;
+            var yBytes = y.IdBytes;
+            var tBytes = _targetId;
+
+            for (int i = 0; i < tBytes.Length; i++)
+            {
+                var xDist = (byte)(xBytes[i] ^ tBytes[i]);
+                var yDist = (byte)(yBytes[i] ^ tBytes[i]);
+
+                if (xDist != yDist)
+                {
+                    return xDist.CompareTo(yDist);
+                }
+            }
+
+            return 0; // 完全一致
+        }
+    }
 }

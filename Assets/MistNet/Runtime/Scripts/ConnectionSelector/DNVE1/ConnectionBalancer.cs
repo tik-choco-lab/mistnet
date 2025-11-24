@@ -38,7 +38,7 @@ namespace MistNet
 
         private void OnLocation(KademliaMessage message)
         {
-            MistLogger.Info($"[ConnectionBalancer] OnLocation: {message.Sender.Id} {message.Payload}");
+            MistLogger.Trace($"[ConnectionBalancer] OnLocation: {message.Sender.Id} {message.Payload}");
             _nodeLocations[message.Sender.Id] = JsonUtility.FromJson<Vector3>(message.Payload);
         }
 
