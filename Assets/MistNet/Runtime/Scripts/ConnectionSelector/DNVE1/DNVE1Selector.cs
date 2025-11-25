@@ -167,7 +167,13 @@ namespace MistNet
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             foreach (var nodeId in newAreaInfo.Nodes)
             {
-                areaInfo.Nodes.Add(nodeId);
+                if (!areaInfo.Nodes.Add(nodeId))
+                {
+                    // 期限更新
+                    areaInfo.ExpireAt[nodeId] = expireTime;
+                    continue;
+                }
+
                 areaInfo.ExpireAt[nodeId] = expireTime;
             }
 
