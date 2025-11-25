@@ -75,6 +75,7 @@ namespace MistNet
 
         public void Send(NodeId targetId, KademliaMessage message)
         {
+            if (RoutingBase.ConnectedNodes.Count == 0) return;
             message.Sender = _routingTable.SelfNode;
             if (targetId == _routingTable.SelfNode.Id)
             {
