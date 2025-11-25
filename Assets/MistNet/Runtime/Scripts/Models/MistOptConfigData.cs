@@ -13,7 +13,7 @@ namespace MistNet
         [JsonProperty("chunkLoadSize")] public int ChunkLoadSize = 1;
         [JsonProperty("chunkSize")] public int ChunkSize = 128; // m
         [JsonProperty("aoiRange")] public int AoiRange = 64; // m
-        [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 5f;
+        [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 2f;
         [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f; // DNVE3も使用
         [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
         [JsonProperty("expireSeconds")] public float ExpireSeconds = 10f; // dataStoreの中身で自動削除するまでの秒数 // DNVE3も使用
