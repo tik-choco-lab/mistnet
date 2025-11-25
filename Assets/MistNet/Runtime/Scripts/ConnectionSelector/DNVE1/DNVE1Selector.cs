@@ -167,14 +167,9 @@ namespace MistNet
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             foreach (var nodeId in newAreaInfo.Nodes)
             {
-                if (!areaInfo.Nodes.Add(nodeId))
-                {
-                    // 期限更新
-                    areaInfo.ExpireAt[nodeId] = expireTime;
-                    continue;
-                }
-
+                areaInfo.Nodes.Add(nodeId);
                 areaInfo.ExpireAt[nodeId] = expireTime;
+                MistLogger.Debug($"[Kademlia] Merged node {nodeId} into AreaInfo");
             }
 
             var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
@@ -183,7 +178,7 @@ namespace MistNet
 
         private static bool IsAreaInfo(ResponseFindValue response)
         {
-            return response.Value.Contains("expireAt");
+            return response.Value.IndexOf("expireAt", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
