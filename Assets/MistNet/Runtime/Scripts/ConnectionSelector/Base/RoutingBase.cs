@@ -6,7 +6,7 @@ namespace MistNet
 {
     public abstract class RoutingBase : MonoBehaviour
     {
-        private const float ExpireSeconds = 5f;
+        private const float ExpireSeconds = 2f;
         public IReadOnlyDictionary<NodeId, Node> Nodes => _nodes;
         protected readonly Dictionary<NodeId, Node> _nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
         public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
