@@ -120,7 +120,7 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
-                value = RemoveExpiredNodes(value);
+                value = RemoveExpiredNodes(targetKey, value);
                 MistLogger.Debug($"[FindValue][RCV] found {value}");
 
                 SendValue(message.Sender, targetKey, value);
@@ -129,7 +129,7 @@ namespace MistNet
             SendClosestNodes(message.Sender, targetKey);
         }
 
-        private static string RemoveExpiredNodes(string value)
+        private string RemoveExpiredNodes(byte[] targetKey, string value)
         {
             var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             var now = DateTime.UtcNow;
@@ -144,6 +144,8 @@ namespace MistNet
             }
 
             value = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(targetKey, value);
+
             return value;
         }
 
