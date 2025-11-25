@@ -183,42 +183,6 @@ namespace MistNet
                 _layer.Transport.Disconnect(nodeId);
                 disconnectedCount++;
             }
-
-            // var connectedNodes = _routingBase.ConnectedNodes;
-            //
-            // // 保護すべきノード（情報交換ノード + 表示ノード）
-            // var exchangeNodes = _areaTracker.ExchangeNodes;
-            // var visibleNodes = _routingBase.MessageNodes;
-            // var safeConnectedNodes = connectedNodes
-            //     .Where(n => exchangeNodes.Contains(n) || visibleNodes.Contains(n))
-            //     .ToList();
-            //
-            // // 切断候補ノード（safe以外）
-            // var candidateNodes = connectedNodes.Except(safeConnectedNodes).ToList();
-            //
-            // if (candidateNodes.Count < requestCount)
-            // {
-            //     // 切断候補が足りない場合はexchangeNodesから ExchangeNodeCount分を残して切断する
-            //     // connectedNodes かつ exchangeNodes
-            //     var connectedExchangeNodes = connectedNodes.Intersect(exchangeNodes).ToList();
-            //     var targetCount = connectedExchangeNodes.Count - OptConfig.Data.ExchangeNodeCount;
-            //     if (targetCount <= 0) return; // 切断するノードがない場合は終了
-            //     var count = 0;
-            //     // candidateに追加していく
-            //     foreach (var nodeId in connectedExchangeNodes)
-            //     {
-            //         if (count >= targetCount) break;
-            //         if (visibleNodes.Contains(nodeId)) continue;
-            //
-            //         candidateNodes.Add(nodeId);
-            //         count++;
-            //     }
-            // }
-            //
-            // foreach (var nodeId in candidateNodes)
-            // {
-            //     _layer.Transport.Disconnect(nodeId);
-            // }
         }
 
         public void Dispose()

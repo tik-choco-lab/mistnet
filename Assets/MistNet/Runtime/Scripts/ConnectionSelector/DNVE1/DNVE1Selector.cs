@@ -142,8 +142,6 @@ namespace MistNet
 
             MistLogger.Debug(
                 $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
-            // TODO: mergeしていないのでは？ 上書きが発生してしまう
-
 
             if (!IsAreaInfo(response))
             {

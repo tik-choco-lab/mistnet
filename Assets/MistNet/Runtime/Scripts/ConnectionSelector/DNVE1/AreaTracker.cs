@@ -55,7 +55,6 @@ namespace MistNet
         /// <param name="surroundingChunks"></param>
         private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
-            // ExchangeNodes.Clear();
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
@@ -63,25 +62,7 @@ namespace MistNet
                 MistLogger.Debug($"[Debug][AreaTracker] FindMyAreaNodes: Area={area} ClosestNodes={closestNodes.Count}");
 
                 _dnve1Selector.FindValue(closestNodes, target);
-
-                // var count = 0;
-                // foreach (var nodeInfo in closestNodes)
-                // {
-                //     count++;
-                //     ExchangeNodes.Add(nodeInfo.Id);
-                //
-                //     DebugShowDistance(target, nodeInfo);
-                //
-                //     if (count >= DNVE1Selector.Alpha) break;
-                // }
             }
-        }
-
-        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
-        {
-            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
-            var index = IdUtil.LeadingBitIndex(bits);
-            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void AddNodeToArea(Area chunk, NodeInfo node)
