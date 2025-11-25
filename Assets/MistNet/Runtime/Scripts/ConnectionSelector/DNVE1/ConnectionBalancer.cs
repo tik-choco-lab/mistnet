@@ -91,9 +91,10 @@ namespace MistNet
             if (_dataStore.TryGetValue(chunkId, out var data))
             {
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes.ToList())
+                PruneExpiredNodes(chunkId, areaInfo);
+
+                foreach (var nodeId in areaInfo.Nodes)
                 {
-                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     _layer.Transport.Connect(nodeId);
 
@@ -121,10 +122,9 @@ namespace MistNet
                 if (!_dataStore.TryGetValue(areaId, out data)) continue;
 
                 var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                foreach (var nodeId in areaInfo.Nodes.ToList())
+                PruneExpiredNodes(areaId, areaInfo);
+                foreach (var nodeId in areaInfo.Nodes)
                 {
-                    if (RemoveExpiredNode(areaInfo, nodeId)) continue;
-
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     _layer.Transport.Connect(nodeId);
 
@@ -137,17 +137,28 @@ namespace MistNet
             }
         }
 
-        private static bool RemoveExpiredNode(AreaInfo areaInfo, NodeId nodeId)
+        /// <summary>
+        /// 期限切れノードをまとめて削除し、変更があれば保存する
+        /// </summary>
+        private void PruneExpiredNodes(byte[] chunkId, AreaInfo areaInfo)
         {
-            var time = areaInfo.ExpireAt[nodeId];
-            if (time >= DateTime.UtcNow) return false;
+            var expiredNodes = areaInfo.ExpireAt
+                .Where(kvp => kvp.Value < DateTime.UtcNow)
+                .Select(kvp => kvp.Key)
+                .ToList();
 
-            // 有効期限切れ
-            areaInfo.Nodes.Remove(nodeId);
-            areaInfo.ExpireAt.Remove(nodeId);
+            if (expiredNodes.Count == 0) return;
 
-            MistLogger.Debug($"[ConnectionBalancer] Removed expired node {nodeId} from AreaInfo");
-            return true;
+            foreach (var nodeId in expiredNodes)
+            {
+                areaInfo.Nodes.Remove(nodeId);
+                areaInfo.ExpireAt.Remove(nodeId);
+                MistLogger.Debug($"[ConnectionBalancer] Removed expired node {nodeId} from AreaInfo");
+            }
+
+            // まとめて保存
+            var json = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(chunkId, json);
         }
 
         private void SelectDisconnection()

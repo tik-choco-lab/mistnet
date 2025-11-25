@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class Kademlia
     {
-        public const char SplitChar = '|';
+        private const char SplitChar = '|';
         private readonly IDNVE1MessageSender _sender;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
