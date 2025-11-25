@@ -105,6 +105,11 @@ namespace MistNet
             {
                 RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
+
+                // xor距離をdebug表示してみる 10進数で
+                var bits = IdUtil.Xor(closestNodes.Key, IdUtil.ToBytes(node.Id));
+                var distance = bits.Aggregate(0, (current, t) => current + t);
+                MistLogger.Debug($"[Debug][FindNode] Distance: {distance}");
             }
             MistLogger.Debug($"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
         }
@@ -119,12 +124,6 @@ namespace MistNet
                 MistLogger.Error($"[FindValue] Value not found for target {BitConverter.ToString(response.Key)}");
                 return;
             }
-
-            // xor距離をdebug表示してみる 10進数で
-            var bits = IdUtil.Xor(response.Key, IdUtil.ToBytes(PeerRepository.SelfId.ToString()));
-            // 1のところを合計してみる
-            var distance = bits.Aggregate(0, (current, t) => current + t);
-            MistLogger.Debug($"[Debug][FindValue] Distance to self: {distance}");
         }
 
         public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
