@@ -20,6 +20,11 @@ namespace MistNet.Utils
             return byteId;
         }
 
+        /// <summary>
+        /// 0が最も遠い、159が最も近い
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <returns>Index 0 ～ 159</returns>
         public static int LeadingBitIndex(byte[] distance)
         {
             for (var i = 0; i < distance.Length; i++)

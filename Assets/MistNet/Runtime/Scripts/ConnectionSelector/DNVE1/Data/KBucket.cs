@@ -8,7 +8,7 @@ namespace MistNet
     public class KBucket
     {
         private const float PingTimeoutSeconds = 5f;
-        public static int K = 10;
+        public static int K = 20;
         public IReadOnlyList<NodeInfo> Nodes => _nodes.AsReadOnly();
         private readonly List<NodeInfo> _nodes;
         private readonly Dictionary<NodeInfo, NodeInfo> _pendingNodeList = new();

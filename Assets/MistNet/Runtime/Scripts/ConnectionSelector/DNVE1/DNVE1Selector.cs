@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using MistNet.Utils;
 using Newtonsoft.Json;
 
@@ -121,8 +122,8 @@ namespace MistNet
         private static void DebugShowDistance(ResponseFindNode closestNodes, NodeInfo node)
         {
             var bits = IdUtil.Xor(closestNodes.Key, IdUtil.ToBytes(node.Id));
-            var distance = bits.Aggregate(0, (current, t) => current + t);
-            MistLogger.Debug($"[Debug][FindNode] Distance: {distance}");
+            var index = IdUtil.LeadingBitIndex(bits);
+            MistLogger.Debug($"[Debug][FindNode] Index: [{index}]");
         }
 
         private void OnFindValueResponse(KademliaMessage message)
@@ -135,6 +136,10 @@ namespace MistNet
                 MistLogger.Error($"[FindValue] Value not found for target {BitConverter.ToString(response.Key)}");
                 return;
             }
+
+            MistLogger.Debug(
+                $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
+            _dataStore.Store(response.Key, response.Value);
         }
 
         public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
