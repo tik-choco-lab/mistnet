@@ -74,7 +74,7 @@ namespace MistNet
         {
             if (ConnectedNodes.Contains(targetId)) return targetId;
 
-            MistLogger.Info($"[RoutingTable] Get {targetId}");
+            MistLogger.Trace($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;
