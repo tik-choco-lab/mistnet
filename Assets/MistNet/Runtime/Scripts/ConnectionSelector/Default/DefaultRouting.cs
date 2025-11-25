@@ -4,8 +4,6 @@ namespace MistNet
     {
         public override void AddRouting(NodeId sourceId, NodeId fromId)
         {
-            base.AddRouting(sourceId, fromId);
-            return;
             if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
@@ -20,8 +18,6 @@ namespace MistNet
 
         public override NodeId Get(NodeId targetId)
         {
-            return base.Get(targetId);
-
             MistLogger.Trace($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
