@@ -105,13 +105,23 @@ namespace MistNet
             {
                 RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
-
-                // xor距離をdebug表示してみる 10進数で
-                var bits = IdUtil.Xor(closestNodes.Key, IdUtil.ToBytes(node.Id));
-                var distance = bits.Aggregate(0, (current, t) => current + t);
-                MistLogger.Debug($"[Debug][FindNode] Distance: {distance}");
+#if UNITY_EDITOR
+                DebugShowDistance(closestNodes, node);
+#endif
             }
             MistLogger.Debug($"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
+        }
+
+        /// <summary>
+        /// xor距離をdebug表示してみる 10進数で
+        /// </summary>
+        /// <param name="closestNodes"></param>
+        /// <param name="node"></param>
+        private static void DebugShowDistance(ResponseFindNode closestNodes, NodeInfo node)
+        {
+            var bits = IdUtil.Xor(closestNodes.Key, IdUtil.ToBytes(node.Id));
+            var distance = bits.Aggregate(0, (current, t) => current + t);
+            MistLogger.Debug($"[Debug][FindNode] Distance: {distance}");
         }
 
         private void OnFindValueResponse(KademliaMessage message)

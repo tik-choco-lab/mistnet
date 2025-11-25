@@ -125,10 +125,11 @@ namespace MistNet
 
                 SendValue(message.Sender, targetKey, value);
             }
-            else
-            {
-                SendClosestNodes(message.Sender, targetKey);
-            }
+
+            // else
+            // {
+            SendClosestNodes(message.Sender, targetKey);
+            // }
         }
 
         private static string RemoveExpiredNodes(string value)
@@ -144,6 +145,7 @@ namespace MistNet
                     MistLogger.Debug($"[Kademlia] Removed expired node {nodeId} from AreaInfo");
                 }
             }
+
             value = JsonConvert.SerializeObject(areaInfo);
             return value;
         }
@@ -169,7 +171,8 @@ namespace MistNet
         private void SendClosestNodes(NodeInfo sender, byte[] target)
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
-            MistLogger.Debug($"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
+            MistLogger.Debug(
+                $"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
             var responseFindNode = new ResponseFindNode()
             {
