@@ -18,7 +18,7 @@ namespace MistNet
         private readonly HashSet<Area> _surroundingChunks = new();
         private Area _prevSelfChunk;
         private Area _selfChunk;
-        public readonly HashSet<NodeId> ExchangeNodes = new();
+        // public readonly HashSet<NodeId> ExchangeNodes = new();
         private readonly ILayer _layer;
 
         public AreaTracker(DNVE1 dnve1)
@@ -55,21 +55,33 @@ namespace MistNet
         /// <param name="surroundingChunks"></param>
         private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
         {
-            ExchangeNodes.Clear();
+            // ExchangeNodes.Clear();
             foreach (var area in surroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
+                MistLogger.Debug($"[Debug][AreaTracker] FindMyAreaNodes: Area={area} ClosestNodes={closestNodes.Count}");
+
                 _dnve1Selector.FindValue(closestNodes, target);
 
-                var count = 0;
-                foreach (var nodeInfo in closestNodes)
-                {
-                    count++;
-                    ExchangeNodes.Add(nodeInfo.Id);
-                    if (count >= DNVE1Selector.Alpha) break;
-                }
+                // var count = 0;
+                // foreach (var nodeInfo in closestNodes)
+                // {
+                //     count++;
+                //     ExchangeNodes.Add(nodeInfo.Id);
+                //
+                //     DebugShowDistance(target, nodeInfo);
+                //
+                //     if (count >= DNVE1Selector.Alpha) break;
+                // }
             }
+        }
+
+        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
+        {
+            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
+            var index = IdUtil.LeadingBitIndex(bits);
+            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void AddNodeToArea(Area chunk, NodeInfo node)

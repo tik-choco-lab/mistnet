@@ -8,7 +8,6 @@ namespace MistNet
 {
     public class DNVE1Selector : SelectorBase, IDNVE1MessageSender
     {
-        public const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
         private KademliaRoutingTable _routingTable;
         private KademliaDataStore _dataStore;
@@ -149,8 +148,18 @@ namespace MistNet
             {
                 count++;
                 _kademlia.FindValue(node, target);
-                if (count >= Alpha) break;
+#if UNITY_EDITOR
+                DebugShowDistance(target, node);
+#endif
+                if (count >= OptConfig.Data.Alpha) break;
             }
+        }
+
+        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
+        {
+            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
+            var index = IdUtil.LeadingBitIndex(bits);
+            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void FindNode(HashSet<NodeInfo> closestNodes, byte[] target)
@@ -160,7 +169,7 @@ namespace MistNet
             {
                 _kademlia.FindNode(node, target);
                 count++;
-                if (count >= Alpha) break;
+                if (count >= OptConfig.Data.Alpha) break;
             }
         }
 
