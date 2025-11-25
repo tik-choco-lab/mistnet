@@ -15,8 +15,11 @@ namespace MistNet
         private ConnectionBalancer _connectionBalancer;
         private DNVE1VisibleNodesController _dnve1VisibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
-        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
-        private readonly DNVE1 _dnve1 = new ();
+
+        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId =
+            new();
+
+        private readonly DNVE1 _dnve1 = new();
 
         protected override void Start()
         {
@@ -48,7 +51,7 @@ namespace MistNet
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
 
-            Layer.World.AddSendFailedCallback((Action<NodeId>) SendFailed);
+            Layer.World.AddSendFailedCallback((Action<NodeId>)SendFailed);
         }
 
         private void SendFailed(NodeId id)
@@ -109,7 +112,9 @@ namespace MistNet
                 DebugShowDistance(closestNodes, node);
 #endif
             }
-            MistLogger.Debug($"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
+
+            MistLogger.Debug(
+                $"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
         }
 
         /// <summary>
@@ -137,7 +142,42 @@ namespace MistNet
 
             MistLogger.Debug(
                 $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
-            _dataStore.Store(response.Key, response.Value);
+            // TODO: mergeしていないのでは？ 上書きが発生してしまう
+
+
+            if (!IsAreaInfo(response))
+            {
+                _dataStore.Store(response.Key, response.Value);
+                return;
+            }
+
+            UpdateAreaInfo(response);
+        }
+
+        private void UpdateAreaInfo(ResponseFindValue response)
+        {
+            var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(response.Value);
+            if (!_dataStore.TryGetValue(response.Key, out var existingValue))
+            {
+                _dataStore.Store(response.Key, response.Value);
+                return;
+            }
+
+            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
+            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
+            foreach (var nodeId in newAreaInfo.Nodes)
+            {
+                areaInfo.Nodes.Add(nodeId);
+                areaInfo.ExpireAt[nodeId] = expireTime;
+            }
+
+            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(response.Key, areaInfoStr);
+        }
+
+        private static bool IsAreaInfo(ResponseFindValue response)
+        {
+            return response.Value.Contains("expireAt");
         }
 
         public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
