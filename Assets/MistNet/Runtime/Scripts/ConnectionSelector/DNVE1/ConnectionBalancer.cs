@@ -21,7 +21,6 @@ namespace MistNet
         private KademliaMessage _message;
         private readonly KademliaRoutingTable _routingTable;
         private readonly ILayer _layer;
-        private readonly IPeerRepository _peerRepository;
         private readonly DNVE1 _dnve1;
 
         public ConnectionBalancer(DNVE1 dnve1)
@@ -32,7 +31,6 @@ namespace MistNet
             _routingBase = dnve1.RoutingBase;
             _routingTable = dnve1.RoutingTable;
             _layer = dnve1.Layer;
-            _peerRepository = dnve1.PeerRepository;
             _dnve1 = dnve1;
             LoopBalanceConnections(_cts.Token).Forget();
             _sender.RegisterReceive(KademliaMessageType.Location, OnLocation);

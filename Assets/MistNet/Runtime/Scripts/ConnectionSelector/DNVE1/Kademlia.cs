@@ -171,7 +171,7 @@ namespace MistNet
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
             MistLogger.Debug(
-                $"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
+                $"[FindValue][RCV] closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
             var responseFindNode = new ResponseFindNode()
             {
