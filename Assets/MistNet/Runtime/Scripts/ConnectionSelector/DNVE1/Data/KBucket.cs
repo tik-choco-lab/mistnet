@@ -8,7 +8,7 @@ namespace MistNet
     public class KBucket
     {
         private const float PingTimeoutSeconds = 5f;
-        public static int K = 20;
+        public static int K = 10;
         public IReadOnlyList<NodeInfo> Nodes => _nodes.AsReadOnly();
         private readonly List<NodeInfo> _nodes;
         private readonly Dictionary<NodeInfo, NodeInfo> _pendingNodeList = new();
@@ -81,6 +81,7 @@ namespace MistNet
             await UniTask.Delay(TimeSpan.FromSeconds(PingTimeoutSeconds)); // PING 待ち時間
             if (_pendingNodeList.ContainsKey(node))
             {
+                MistLogger.Debug($"[KBucket] No PING response from {node.Id}, replacing with {_pendingNodeList[node].Id}");
                 // PING 応答がなかった場合、置き換え
                 _nodes.Remove(node);
                 _nodes.Add(_pendingNodeList[node]);
