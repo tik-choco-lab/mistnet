@@ -126,10 +126,7 @@ namespace MistNet
                 SendValue(message.Sender, targetKey, value);
             }
 
-            // else
-            // {
             SendClosestNodes(message.Sender, targetKey);
-            // }
         }
 
         private static string RemoveExpiredNodes(string value)
