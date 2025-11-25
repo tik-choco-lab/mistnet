@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MistNet.Utils;
 using Newtonsoft.Json;
 
 namespace MistNet
@@ -119,9 +120,11 @@ namespace MistNet
                 return;
             }
 
-            MistLogger.Debug(
-                $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
-            _dataStore.Store(response.Key, response.Value);
+            // xor距離をdebug表示してみる 10進数で
+            var bits = IdUtil.Xor(response.Key, IdUtil.ToBytes(PeerRepository.SelfId.ToString()));
+            // 1のところを合計してみる
+            var distance = bits.Aggregate(0, (current, t) => current + t);
+            MistLogger.Debug($"[Debug][FindValue] Distance to self: {distance}");
         }
 
         public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
