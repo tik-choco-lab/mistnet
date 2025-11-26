@@ -75,7 +75,7 @@ namespace MistNet
             MistLogger.Debug($"[Signaling] SendOffer {_peerRepository.SelfId}: {receiverId}");
 
             // 接続監視を開始
-            WaitForIceConnection(receiverId, ConnectionTimeoutSeconds).Forget();
+            WaitForConnection(receiverId, ConnectionTimeoutSeconds).Forget();
         }
 
         /// <summary>
@@ -164,13 +164,13 @@ namespace MistNet
             MistLogger.Debug($"[Signaling] SendAnswer {_peerRepository.SelfId}: {targetId}");
 
             // 接続監視を開始
-            WaitForIceConnection(targetId, ConnectionTimeoutSeconds).Forget();
+            WaitForConnection(targetId, ConnectionTimeoutSeconds).Forget();
         }
 
         /// <summary>
-        /// 指定時間内にIceConnectionStateがConnectedにならなければPeerを削除する
+        /// 指定時間内にConnectionStateがConnectedにならなければPeerを削除する
         /// </summary>
-        private async UniTaskVoid WaitForIceConnection(NodeId targetId, float timeoutSec)
+        private async UniTaskVoid WaitForConnection(NodeId targetId, float timeoutSec)
         {
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSec));
             try
@@ -179,36 +179,41 @@ namespace MistNet
                 var peer = _peerRepository.GetPeer(targetId);
                 if (peer == null) return;
 
-                // 接続完了(Connected) または 切断(Closed/Disconnected)になるまで待機
+                // ★修正: 「接続完了」または「失敗」の状態になるまで待つ
                 await UniTask.WaitUntil(() =>
                 {
-                    // 途中でPeerが消された場合は終了
+                    // 途中でPeerが消された場合はWait終了
                     if (_peerRepository.GetPeer(targetId) == null) return true;
 
+                    // IceConnectionStateで判定を統一
                     var state = peer.RtcPeer.IceConnectionState;
+
+                    // 以下の状態になったら「結果が出た」としてWaitを終了する
                     return state == RTCIceConnectionState.Connected ||
-                           state == RTCIceConnectionState.Completed ||
+                           state == RTCIceConnectionState.Completed || // 成功
                            state == RTCIceConnectionState.Closed ||
                            state == RTCIceConnectionState.Disconnected ||
-                           state == RTCIceConnectionState.Failed;
+                           state == RTCIceConnectionState.Failed;      // 失敗
                 }, cancellationToken: cts.Token);
 
-                // タイムアウトせずに抜けた場合のチェック
-                if (peer.RtcPeer.IceConnectionState == RTCIceConnectionState.Connected)
+                // Waitを抜けた後の最終判定
+                var finalState = peer.RtcPeer.IceConnectionState;
+                if (finalState == RTCIceConnectionState.Connected ||
+                    finalState == RTCIceConnectionState.Completed)
                 {
-                    MistLogger.Debug($"[Signaling] Connection Established: {targetId}");
+                    MistLogger.Debug($"[Signaling] Connection Established ({finalState}): {targetId}");
                 }
                 else
                 {
-                    // 明示的にClosedなどで終了した場合
-                    MistLogger.Debug($"[Signaling] Connection Closed or Disconnected during wait: {targetId}");
+                    // 失敗ステート、もしくはNew/Checkingのままタイムアウト以外の要因で抜けた場合
+                    MistLogger.Debug($"[Signaling] Connection Failed or Closed ({finalState}): {targetId}");
                     _peerRepository.RemovePeer(targetId);
                 }
             }
             catch (OperationCanceledException)
             {
                 // タイムアウト発生時の処理
-                MistLogger.Warning($"[Signaling] Connection Timeout (IceConnectionState did not reach Connected): {targetId}");
+                MistLogger.Warning($"[Signaling] Connection Timeout (IceConnectionState did not reach Connected/Completed): {targetId}");
                 _peerRepository.RemovePeer(targetId);
             }
             finally
