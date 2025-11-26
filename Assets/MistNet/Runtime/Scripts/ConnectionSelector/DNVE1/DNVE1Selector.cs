@@ -109,7 +109,7 @@ namespace MistNet
                 RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
 #if UNITY_EDITOR
-                DebugShowDistance(closestNodes, node);
+                DebugShowDistance(closestNodes.Key, node);
 #endif
             }
 
@@ -120,13 +120,13 @@ namespace MistNet
         /// <summary>
         /// xor距離をdebug表示してみる 10進数で
         /// </summary>
-        /// <param name="closestNodes"></param>
-        /// <param name="node"></param>
-        private static void DebugShowDistance(ResponseFindNode closestNodes, NodeInfo node)
+        /// <param name="target"></param>
+        /// <param name="nodeInfo"></param>
+        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
         {
-            var bits = IdUtil.Xor(closestNodes.Key, IdUtil.ToBytes(node.Id));
+            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
             var index = IdUtil.LeadingBitIndex(bits);
-            MistLogger.Debug($"[Debug][FindNode] Index: [{index}]");
+            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void OnFindValueResponse(KademliaMessage message)
@@ -192,13 +192,6 @@ namespace MistNet
 #endif
                 if (count >= OptConfig.Data.Alpha) break;
             }
-        }
-
-        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
-        {
-            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
-            var index = IdUtil.LeadingBitIndex(bits);
-            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void FindNode(HashSet<NodeInfo> closestNodes, byte[] target)

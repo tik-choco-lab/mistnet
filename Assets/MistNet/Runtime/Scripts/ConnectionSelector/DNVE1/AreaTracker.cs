@@ -14,7 +14,15 @@ namespace MistNet
         private readonly CancellationTokenSource _cts;
 
         public static Area MyArea => new(MistSyncManager.I.SelfSyncObject.transform.position);
-        public IEnumerable<Area> SurroundingChunks => _surroundingChunks;
+        public IEnumerable<Area> SurroundingChunks
+        {
+            get
+            {
+                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, _selfChunk);
+                return _surroundingChunks;
+            }
+        }
+
         private readonly HashSet<Area> _surroundingChunks = new();
         private Area _prevSelfChunk;
         private Area _selfChunk;
@@ -38,10 +46,7 @@ namespace MistNet
                 _selfChunk ??= new Area();
                 _selfChunk.Set(selfNodePosition);
 
-                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, _selfChunk);
-
-                FindMyAreaNodes(_surroundingChunks);
-
+                FindMyAreaNodes();
                 AddNodeToArea(_selfChunk, _routingTable.SelfNode);
             }
         }
@@ -49,10 +54,9 @@ namespace MistNet
         /// <summary>
         /// NOTE: ConnectionBalancerで自身の位置を周りに送信している
         /// </summary>
-        /// <param name="surroundingChunks"></param>
-        private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
+        private void FindMyAreaNodes()
         {
-            foreach (var area in surroundingChunks)
+            foreach (var area in SurroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
