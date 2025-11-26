@@ -10,7 +10,9 @@ namespace MistNet
 {
     public class MistSignalingHandler : IDisposable
     {
-        private const float TimeoutSeconds = 5f;
+        private const float CreateSdpTimeoutSeconds = 5f; // SDP生成用
+        private const float ConnectionTimeoutSeconds = 10f; // 接続確立待ち用
+
         public Action<SignalingData, NodeId> Send;
         private readonly CancellationTokenSource _cts = new();
         private readonly PeerActiveProtocol _activeProtocol;
@@ -36,6 +38,7 @@ namespace MistNet
         public async UniTask SendOffer(NodeId receiverId)
         {
             var peer = _peerRepository.CreatePeer(receiverId);
+
             if (peer.RtcPeer.ConnectionState == RTCPeerConnectionState.Connecting)
             {
                 MistLogger.Warning($"[Warning][Signaling] Peer is connecting: {receiverId}");
@@ -50,7 +53,8 @@ namespace MistNet
             peer.OnCandidate = ice => SendCandidate(ice, receiverId);
 
             RTCSessionDescription? desc;
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
+            // SDP生成のタイムアウト
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(CreateSdpTimeoutSeconds));
             try
             {
                 desc = await peer.CreateOffer(cts.Token);
@@ -69,6 +73,9 @@ namespace MistNet
 
             Send(sendData, receiverId);
             MistLogger.Debug($"[Signaling] SendOffer {_peerRepository.SelfId}: {receiverId}");
+
+            // 接続監視を開始
+            WaitForIceConnection(receiverId, ConnectionTimeoutSeconds).Forget();
         }
 
         /// <summary>
@@ -137,7 +144,7 @@ namespace MistNet
                 return;
             }
             RTCSessionDescription? desc;
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(CreateSdpTimeoutSeconds));
             try
             {
                 desc = await peerEntity.CreateAnswer(sdp, cts.Token);
@@ -155,6 +162,57 @@ namespace MistNet
             sendData.ReceiverId = targetId;
             Send(sendData, targetId);
             MistLogger.Debug($"[Signaling] SendAnswer {_peerRepository.SelfId}: {targetId}");
+
+            // 接続監視を開始
+            WaitForIceConnection(targetId, ConnectionTimeoutSeconds).Forget();
+        }
+
+        /// <summary>
+        /// 指定時間内にIceConnectionStateがConnectedにならなければPeerを削除する
+        /// </summary>
+        private async UniTaskVoid WaitForIceConnection(NodeId targetId, float timeoutSec)
+        {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSec));
+            try
+            {
+                // Peerを取得
+                var peer = _peerRepository.GetPeer(targetId);
+                if (peer == null) return;
+
+                // 接続完了(Connected) または 切断(Closed/Disconnected)になるまで待機
+                await UniTask.WaitUntil(() =>
+                {
+                    // 途中でPeerが消された場合は終了
+                    if (_peerRepository.GetPeer(targetId) == null) return true;
+
+                    var state = peer.RtcPeer.IceConnectionState;
+                    return state == RTCIceConnectionState.Connected ||
+                           state == RTCIceConnectionState.Closed ||
+                           state == RTCIceConnectionState.Disconnected;
+                }, cancellationToken: cts.Token);
+
+                // タイムアウトせずに抜けた場合のチェック
+                if (peer.RtcPeer.IceConnectionState == RTCIceConnectionState.Connected)
+                {
+                    MistLogger.Debug($"[Signaling] Connection Established: {targetId}");
+                }
+                else
+                {
+                    // 明示的にClosedなどで終了した場合
+                    MistLogger.Debug($"[Signaling] Connection Closed or Disconnected during wait: {targetId}");
+                    _peerRepository.RemovePeer(targetId);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // タイムアウト発生時の処理
+                MistLogger.Warning($"[Signaling] Connection Timeout (IceConnectionState did not reach Connected): {targetId}");
+                _peerRepository.RemovePeer(targetId);
+            }
+            finally
+            {
+                cts.Dispose();
+            }
         }
 
         private void SendCandidate(Ice candidate, NodeId targetId)
@@ -168,8 +226,9 @@ namespace MistNet
             Send(sendData, targetId);
 
             // 接続が完了したら、関連するICE候補を削除
-            var peer = _peerRepository.GetPeer(targetId).RtcPeer;
-            RegisterIceConnectionChangeHandler(peer);
+            var peer = _peerRepository.GetPeer(targetId);
+            if(peer != null) RegisterIceConnectionChangeHandler(peer.RtcPeer);
+
             MistLogger.Debug($"[Signaling] SendCandidate {_peerRepository.SelfId}: {targetId}");
         }
 
@@ -180,7 +239,6 @@ namespace MistNet
             var candidatesStr = response.Data;
             var candidatesArray = JsonConvert.DeserializeObject<string[]>(candidatesStr);
             var peer = await GetPeer(senderId, _cts.Token);
-            // setRemoteDescriptionが完了するまで待つ
             if (!await WaitForRemoteOfferOrPrAnswerWithTimeout(peer)) return;
             foreach (var candidateStr in candidatesArray)
             {
@@ -210,7 +268,6 @@ namespace MistNet
 
             try
             {
-                // UniTask.WhenAnyで待機。SignalingStateが条件を満たすか、タイムアウトを待つ
                 await UniTask.WhenAny(
                     UniTask.WaitUntil(() => peerEntity.RtcPeer?.SignalingState is RTCSignalingState.HaveRemoteOffer
                         or RTCSignalingState.HaveRemotePrAnswer, cancellationToken: cts.Token),
@@ -225,9 +282,7 @@ namespace MistNet
             }
             catch (OperationCanceledException)
             {
-                // 既に接続が完了している場合は、タイムアウトしても問題ない
                 if (peerEntity.RtcPeer.SignalingState is RTCSignalingState.Stable or RTCSignalingState.Closed) return false;
-
                 MistLogger.Error("[Signaling][Candidate] Timeout");
                 return false;
             }
@@ -241,7 +296,6 @@ namespace MistNet
                 if (peer != null) return peer;
                 await UniTask.Yield();
             }
-
             return null;
         }
 
@@ -256,20 +310,18 @@ namespace MistNet
                 SenderId = _peerRepository.SelfId,
                 RoomId = MistConfig.Data.RoomId
             };
-
             return sendData;
         }
-        
+
         private static void RegisterIceConnectionChangeHandler(RTCPeerConnection peer)
         {
+            peer.OnIceConnectionChange -= PeerOnIceConnectionChange; // 重複登録防止
             peer.OnIceConnectionChange += PeerOnIceConnectionChange;
-            return;
 
             void PeerOnIceConnectionChange(RTCIceConnectionState state)
             {
                 if (state == RTCIceConnectionState.Closed || state == RTCIceConnectionState.Failed || state == RTCIceConnectionState.Disconnected)
                 {
-                    // 接続が切断された場合の処理を追加
                     peer.OnIceConnectionChange -= PeerOnIceConnectionChange;
                 }
             }
