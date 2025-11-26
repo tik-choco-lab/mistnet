@@ -162,7 +162,7 @@ namespace MistNet
         private void SelectDisconnection()
         {
             // 表示しているNodeと情報交換Node以外の中から切断していく
-            if (_routingBase.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
+            if (_routingBase.ConnectedNodes.Count < OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
             requestCount += 5; // 少し多めに切断しておく 探索のための枠を確保するため
