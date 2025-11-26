@@ -79,7 +79,6 @@ namespace MistNet
         private void SelectConnection()
         {
             if (_routingBase.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount) return;
-            // var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
             var requestCount = OptConfig.Data.Alpha;
             if (requestCount <= 0) return;
             // var i = 0;
@@ -100,11 +99,6 @@ namespace MistNet
                 {
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     _candidateNodes.Add(nodeId);
-                    // _layer.Transport.Connect(nodeId);
-
-                    // i++;
-                    // if (i >= requestCount) return;
-                    // break;
                 }
             }
 
@@ -123,11 +117,6 @@ namespace MistNet
                     {
                         if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                         _candidateNodes.Add(nodeId);
-                        // _layer.Transport.Connect(nodeId);
-                        //
-                        // i++;
-                        // if (i >= requestCount) return;
-                        // break; // 1つずつ接続のため break
                     }
                 }
 
@@ -137,13 +126,7 @@ namespace MistNet
                 {
                     if (_layer.Transport.IsConnectingOrConnected(node.Id)) continue;
                     _candidateNodes.Add(node.Id);
-                    // _layer.Transport.Connect(node.Id);
-                    // i++;
-                    // if (i >= requestCount) return;
-                    // break; // 1つずつ接続のため break
                 }
-
-                // if (i >= requestCount) return;
             }
 
             // 実際に接続を試みる
@@ -188,7 +171,6 @@ namespace MistNet
             if (_routingBase.ConnectedNodes.Count < OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
-            requestCount += 5; // 少し多めに切断しておく 探索のための枠を確保するため
             var connectedNodes = _routingBase.ConnectedNodes;
 
             // 最後に通信した時間が最も遅い順にソート

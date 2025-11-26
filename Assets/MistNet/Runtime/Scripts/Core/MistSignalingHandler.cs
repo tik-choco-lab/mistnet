@@ -10,8 +10,8 @@ namespace MistNet
 {
     public class MistSignalingHandler : IDisposable
     {
-        private const float CreateSdpTimeoutSeconds = 5f; // SDP生成用
-        private const float ConnectionTimeoutSeconds = 10f; // 接続確立待ち用
+        private const float CreateSdpTimeoutSeconds = 4f; // SDP生成用
+        private const float ConnectionTimeoutSeconds = 6f; // 接続確立待ち用
 
         public Action<SignalingData, NodeId> Send;
         private readonly CancellationTokenSource _cts = new();
