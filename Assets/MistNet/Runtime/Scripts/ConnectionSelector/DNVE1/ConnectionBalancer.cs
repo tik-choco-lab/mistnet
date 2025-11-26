@@ -77,7 +77,7 @@ namespace MistNet
         {
             if (_routingBase.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount) return;
             var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
-
+            requestCount += 5;
             if (requestCount <= 0) return;
             var i = 0;
 
@@ -107,6 +107,24 @@ namespace MistNet
             {
                 if (area.Equals(selfChunk)) continue; // 自分のChunkはスキップ
                 var areaId = IdUtil.ToBytes(area.ToString());
+
+                // AOI内のノード接続
+                if (_dataStore.TryGetValue(areaId, out data))
+                {
+                    var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
+                    PruneExpiredNodes(areaId, areaInfo);
+                    foreach (var nodeId in areaInfo.Nodes)
+                    {
+                        if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                        _layer.Transport.Connect(nodeId);
+
+                        i++;
+                        if (i >= requestCount) return;
+                        break; // 1つずつ接続のため break
+                    }
+                }
+
+                // 情報交換リストを取得するためのノード接続
                 var closestNodes = _routingTable.FindClosestNodes(areaId);
                 foreach (var node in closestNodes)
                 {
@@ -114,21 +132,7 @@ namespace MistNet
                     _layer.Transport.Connect(node.Id);
                     i++;
                     if (i >= requestCount) return;
-                    break;
-                }
-
-                if (!_dataStore.TryGetValue(areaId, out data)) continue;
-
-                var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(data);
-                PruneExpiredNodes(areaId, areaInfo);
-                foreach (var nodeId in areaInfo.Nodes)
-                {
-                    if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                    _layer.Transport.Connect(nodeId);
-
-                    i++;
-                    if (i >= requestCount) return;
-                    break;
+                    break; // 1つずつ接続のため break
                 }
 
                 if (i >= requestCount) return;
