@@ -73,13 +73,18 @@ namespace MistNet
             }
         }
 
+        // 接続候補リスト
+        private readonly HashSet<NodeId> _candidateNodes = new();
+
         private void SelectConnection()
         {
             if (_routingBase.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount) return;
             var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
             requestCount += 5;
             if (requestCount <= 0) return;
-            var i = 0;
+            // var i = 0;
+
+            _candidateNodes.Clear();
 
             // dataStoreから接続候補を探す
             // 自身のいるChunkを優先的に
@@ -94,11 +99,12 @@ namespace MistNet
                 foreach (var nodeId in areaInfo.Nodes)
                 {
                     if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                    _layer.Transport.Connect(nodeId);
+                    _candidateNodes.Add(nodeId);
+                    // _layer.Transport.Connect(nodeId);
 
-                    i++;
-                    if (i >= requestCount) return;
-                    break;
+                    // i++;
+                    // if (i >= requestCount) return;
+                    // break;
                 }
             }
 
@@ -116,11 +122,12 @@ namespace MistNet
                     foreach (var nodeId in areaInfo.Nodes)
                     {
                         if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                        _layer.Transport.Connect(nodeId);
-
-                        i++;
-                        if (i >= requestCount) return;
-                        break; // 1つずつ接続のため break
+                        _candidateNodes.Add(nodeId);
+                        // _layer.Transport.Connect(nodeId);
+                        //
+                        // i++;
+                        // if (i >= requestCount) return;
+                        // break; // 1つずつ接続のため break
                     }
                 }
 
@@ -129,13 +136,25 @@ namespace MistNet
                 foreach (var node in closestNodes)
                 {
                     if (_layer.Transport.IsConnectingOrConnected(node.Id)) continue;
-                    _layer.Transport.Connect(node.Id);
-                    i++;
-                    if (i >= requestCount) return;
-                    break; // 1つずつ接続のため break
+                    _candidateNodes.Add(node.Id);
+                    // _layer.Transport.Connect(node.Id);
+                    // i++;
+                    // if (i >= requestCount) return;
+                    // break; // 1つずつ接続のため break
                 }
 
-                if (i >= requestCount) return;
+                // if (i >= requestCount) return;
+            }
+
+            // 実際に接続を試みる
+            // ランダムに並び変え
+            var randomizedNodes = _candidateNodes.OrderBy(_ => UnityEngine.Random.value).ToList();
+            for (var i = 0; i < requestCount; i++)
+            {
+                if (_candidateNodes.Count == 0) break;
+                var nodeId = randomizedNodes[i];
+                _candidateNodes.Remove(nodeId);
+                _layer.Transport.Connect(nodeId);
             }
         }
 
