@@ -5,7 +5,7 @@ namespace MistNet
     public class MistOptConfigData
     {
         [JsonProperty("visibleCount")] public int VisibleCount = 5;
-        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 20;
+        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 32;
 
         // DNVE1 ---------------
         [JsonProperty("exchangeNodeCount")] public int ExchangeNodeCount = 12; // 情報交換用のノード数
