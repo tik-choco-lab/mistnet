@@ -79,8 +79,8 @@ namespace MistNet
         private void SelectConnection()
         {
             if (_routingBase.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount) return;
-            var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
-            requestCount += 5;
+            // var requestCount = OptConfig.Data.MaxConnectionCount - _routingBase.ConnectedNodes.Count;
+            var requestCount = OptConfig.Data.Alpha;
             if (requestCount <= 0) return;
             // var i = 0;
 
