@@ -187,8 +187,10 @@ namespace MistNet
 
                     var state = peer.RtcPeer.IceConnectionState;
                     return state == RTCIceConnectionState.Connected ||
+                           state == RTCIceConnectionState.Completed ||
                            state == RTCIceConnectionState.Closed ||
-                           state == RTCIceConnectionState.Disconnected;
+                           state == RTCIceConnectionState.Disconnected ||
+                           state == RTCIceConnectionState.Failed;
                 }, cancellationToken: cts.Token);
 
                 // タイムアウトせずに抜けた場合のチェック
