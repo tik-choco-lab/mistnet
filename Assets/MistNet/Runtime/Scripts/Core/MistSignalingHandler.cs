@@ -184,6 +184,7 @@ namespace MistNet
                 {
                     // 途中でPeerが消された場合はWait終了
                     if (_peerRepository.GetPeer(targetId) == null) return true;
+                    if (peer.RtcPeer == null) return true;
 
                     // IceConnectionStateで判定を統一
                     var state = peer.RtcPeer.IceConnectionState;
@@ -196,10 +197,15 @@ namespace MistNet
                            state == RTCIceConnectionState.Failed;      // 失敗
                 }, cancellationToken: cts.Token);
 
+                if (peer.RtcPeer == null)
+                {
+                    _peerRepository.RemovePeer(targetId);
+                    return;
+                }
+
                 // Waitを抜けた後の最終判定
                 var finalState = peer.RtcPeer.IceConnectionState;
-                if (finalState == RTCIceConnectionState.Connected ||
-                    finalState == RTCIceConnectionState.Completed)
+                if (finalState is RTCIceConnectionState.Connected or RTCIceConnectionState.Completed)
                 {
                     MistLogger.Debug($"[Signaling] Connection Established ({finalState}): {targetId}");
                 }
