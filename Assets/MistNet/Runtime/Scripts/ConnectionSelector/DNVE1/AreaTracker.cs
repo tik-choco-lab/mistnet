@@ -41,8 +41,7 @@ namespace MistNet
             while (!token.IsCancellationRequested)
             {
                 // TODO: 速度が上がるほど心拍数を上げるのが良いと思う
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds),
-                    cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
                 var selfNodePosition = MistSyncManager.I.SelfSyncObject.transform.position;
                 _selfChunk ??= new Area();
                 _selfChunk.Set(selfNodePosition);
