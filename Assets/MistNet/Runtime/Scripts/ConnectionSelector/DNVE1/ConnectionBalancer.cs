@@ -48,7 +48,6 @@ namespace MistNet
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds), cancellationToken: token);
                 SelectConnection();
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds), cancellationToken: token);
                 SelectDisconnection();
                 SendLocation();
             }
