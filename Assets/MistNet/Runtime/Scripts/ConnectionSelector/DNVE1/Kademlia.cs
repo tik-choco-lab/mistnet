@@ -81,7 +81,7 @@ namespace MistNet
 
         private void OnStore(KademliaMessage message)
         {
-            MistLogger.Debug($"[Store][RCV] {message.Payload}");
+            MistLogger.Debug($"[Store][RECEIVE] {message.Payload}");
             var parts = message.Payload.Split(SplitChar);
             if (parts.Length != 2)
             {
@@ -121,7 +121,7 @@ namespace MistNet
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
                 value = RemoveExpiredNodes(targetKey, value);
-                MistLogger.Debug($"[FindValue][RCV] found {value}");
+                MistLogger.Debug($"[FindValue][RECEIVE] found {value}");
 
                 SendValue(message.Sender, targetKey, value);
             }
@@ -171,7 +171,7 @@ namespace MistNet
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
             MistLogger.Debug(
-                $"[FindValue][RCV] closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
+                $"[FindValue][RECEIVE] closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
             var responseFindNode = new ResponseFindNode()
             {

@@ -169,7 +169,6 @@ namespace MistNet
             if (_routingBase.ConnectedNodes.Count < OptConfig.Data.MaxConnectionCount) return;
 
             var requestCount = _routingBase.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
-            requestCount += OptConfig.Data.SafeMargin;
             var connectedNodes = _routingBase.ConnectedNodes;
 
             // 最後に通信した時間が最も遅い順にソート

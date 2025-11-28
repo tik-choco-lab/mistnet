@@ -8,14 +8,12 @@ namespace MistNet
         [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 34;
 
         // DNVE1 ---------------
-        [JsonProperty("exchangeNodeCount")] public int ExchangeNodeCount = 12; // 情報交換用のノード数
-        [JsonProperty("safeMargin")] public int SafeMargin = 3;
         [JsonProperty("chunkLoadSize")] public int ChunkLoadSize = 1;
         [JsonProperty("chunkSize")] public int ChunkSize = 128; // m
         [JsonProperty("aoiRange")] public float AoiRange = 64f; // m
-        [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 2f;
-        [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 2f; // DNVE3も使用
-        [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 2f;
+        [JsonProperty("areaTrackerIntervalSeconds")] public float AreaTrackerIntervalSeconds = 1f;
+        [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 1f; // DNVE3も使用
+        [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 1f;
         [JsonProperty("expireSeconds")] public float ExpireSeconds = 4f; // dataStoreの中身で自動削除するまでの秒数 // DNVE3も使用
         [JsonProperty("kademliaK")] public int KademliaK = 20; // KademliaのK値
         [JsonProperty("hopCount")] public int HopCount = 3; // メッセージの最大ホップ数
