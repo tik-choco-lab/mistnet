@@ -5,7 +5,7 @@ namespace MistNet
     public class MistOptConfigData
     {
         [JsonProperty("visibleCount")] public int VisibleCount = 5;
-        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 34;
+        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 40;
 
         // DNVE1 ---------------
         [JsonProperty("chunkLoadSize")] public int ChunkLoadSize = 1;
