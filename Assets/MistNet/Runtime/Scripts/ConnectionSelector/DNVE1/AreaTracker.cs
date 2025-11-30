@@ -14,12 +14,18 @@ namespace MistNet
         private readonly CancellationTokenSource _cts;
 
         public static Area MyArea => new(MistSyncManager.I.SelfSyncObject.transform.position);
-        public IEnumerable<Area> SurroundingChunks => _surroundingChunks;
+        public IEnumerable<Area> SurroundingChunks
+        {
+            get
+            {
+                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, _selfChunk);
+                return _surroundingChunks;
+            }
+        }
+
         private readonly HashSet<Area> _surroundingChunks = new();
         private Area _prevSelfChunk;
         private Area _selfChunk;
-        public readonly HashSet<NodeId> ExchangeNodes = new();
-        private readonly ILayer _layer;
 
         public AreaTracker(DNVE1 dnve1)
         {
@@ -27,7 +33,6 @@ namespace MistNet
             _routingTable = dnve1.RoutingTable;
             _dnve1Selector = dnve1.Sender as DNVE1Selector;
             _cts = new CancellationTokenSource();
-            _layer = dnve1.Layer;
             LoopFindMyAreaInfo(_cts.Token).Forget();
         }
 
@@ -35,16 +40,13 @@ namespace MistNet
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds),
-                    cancellationToken: token);
+                // TODO: 速度が上がるほど心拍数を上げるのが良いと思う
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.AreaTrackerIntervalSeconds), cancellationToken: token);
                 var selfNodePosition = MistSyncManager.I.SelfSyncObject.transform.position;
                 _selfChunk ??= new Area();
                 _selfChunk.Set(selfNodePosition);
 
-                GetSurroundingChunks(OptConfig.Data.ChunkLoadSize, _selfChunk);
-
-                FindMyAreaNodes(_surroundingChunks);
-
+                FindMyAreaNodes();
                 AddNodeToArea(_selfChunk, _routingTable.SelfNode);
             }
         }
@@ -52,22 +54,15 @@ namespace MistNet
         /// <summary>
         /// NOTE: ConnectionBalancerで自身の位置を周りに送信している
         /// </summary>
-        /// <param name="surroundingChunks"></param>
-        private void FindMyAreaNodes(HashSet<Area> surroundingChunks)
+        private void FindMyAreaNodes()
         {
-            ExchangeNodes.Clear();
-            foreach (var area in surroundingChunks)
+            foreach (var area in SurroundingChunks)
             {
                 var target = IdUtil.ToBytes(area.ToString());
                 var closestNodes = _routingTable.FindClosestNodes(target);
-                _dnve1Selector.FindValue(closestNodes, target);
+                MistLogger.Debug($"[Debug][AreaTracker] FindMyAreaNodes: Area={area} ClosestNodes={closestNodes.Count}");
 
-                foreach (var nodeInfo in closestNodes)
-                {
-                    // 接続していない場合はskip
-                    if (!_layer.Transport.IsConnectingOrConnected(nodeInfo.Id)) continue;
-                    ExchangeNodes.Add(nodeInfo.Id);
-                }
+                _dnve1Selector.FindValue(closestNodes, target);
             }
         }
 

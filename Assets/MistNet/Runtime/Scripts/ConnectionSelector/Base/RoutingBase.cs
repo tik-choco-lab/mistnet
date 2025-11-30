@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,10 +6,12 @@ namespace MistNet
 {
     public abstract class RoutingBase : MonoBehaviour
     {
+        private const float ExpireSeconds = 2f;
         public IReadOnlyDictionary<NodeId, Node> Nodes => _nodes;
         protected readonly Dictionary<NodeId, Node> _nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
         public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
         public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
+        private Dictionary<NodeId, DateTime> _expireAt = new();
 
         protected readonly Dictionary<NodeId, NodeId> _routingTable = new();
         protected IPeerRepository PeerRepository;
@@ -52,12 +55,14 @@ namespace MistNet
             if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
+            if (_expireAt.TryGetValue(sourceId, out var expireTime))
+            {
+                if (DateTime.UtcNow < expireTime) return; // まだ有効期限内なら更新しない
+            }
             MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
-            // if (_routingTable.TryAdd(sourceId, fromId))
-            // {
-            //     return;
-            // }
+
             _routingTable[sourceId] = fromId;
+            _expireAt[sourceId] = DateTime.UtcNow.AddSeconds(ExpireSeconds);
         }
 
         public virtual void Add(NodeId sourceId, NodeId fromId)
@@ -69,7 +74,7 @@ namespace MistNet
         {
             if (ConnectedNodes.Contains(targetId)) return targetId;
 
-            MistLogger.Info($"[RoutingTable] Get {targetId}");
+            MistLogger.Trace($"[RoutingTable] Get {targetId}");
             if (_routingTable.TryGetValue(targetId, out var value))
             {
                 return value;

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using MistNet.Utils;
 using Newtonsoft.Json;
 
 namespace MistNet
 {
     public class DNVE1Selector : SelectorBase, IDNVE1MessageSender
     {
-        private const int Alpha = 3; // Number of parallel requests
         private Kademlia _kademlia;
         private KademliaRoutingTable _routingTable;
         private KademliaDataStore _dataStore;
@@ -14,8 +15,11 @@ namespace MistNet
         private ConnectionBalancer _connectionBalancer;
         private DNVE1VisibleNodesController _dnve1VisibleNodesController;
         private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandler> Receivers = new();
-        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId = new();
-        private readonly DNVE1 _dnve1 = new ();
+
+        private static readonly Dictionary<KademliaMessageType, DNVE1MessageReceivedHandlerWithFromId> ReceiversWithId =
+            new();
+
+        private readonly DNVE1 _dnve1 = new();
 
         protected override void Start()
         {
@@ -47,7 +51,7 @@ namespace MistNet
             RegisterReceive(KademliaMessageType.ResponseNode, OnFindNodeResponse);
             RegisterReceive(KademliaMessageType.ResponseValue, OnFindValueResponse);
 
-            Layer.World.AddSendFailedCallback((Action<NodeId>) SendFailed);
+            Layer.World.AddSendFailedCallback((Action<NodeId>)SendFailed);
         }
 
         private void SendFailed(NodeId id)
@@ -59,6 +63,7 @@ namespace MistNet
         {
             var message = JsonConvert.DeserializeObject<KademliaMessage>(data);
             _routingTable.AddNode(message.Sender);
+            _dnve1.LastMessageTimes[id] = DateTime.UtcNow;
 
             if (Receivers.TryGetValue(message.Type, out var handler))
             {
@@ -72,13 +77,18 @@ namespace MistNet
 
         public void Send(NodeId targetId, KademliaMessage message)
         {
+            if (RoutingBase.ConnectedNodes.Count == 0) return;
             message.Sender = _routingTable.SelfNode;
             if (targetId == _routingTable.SelfNode.Id)
             {
                 MistLogger.Debug($"[Debug][Send] Loopback {JsonConvert.SerializeObject(message)}");
                 OnMessage(JsonConvert.SerializeObject(message), targetId);
             }
-            else Send(JsonConvert.SerializeObject(message), targetId);
+            else
+            {
+                _dnve1.LastMessageTimes[targetId] = DateTime.UtcNow;
+                Send(JsonConvert.SerializeObject(message), targetId);
+            }
         }
 
         public void RegisterReceive(KademliaMessageType type, DNVE1MessageReceivedHandler receiver)
@@ -98,7 +108,25 @@ namespace MistNet
             {
                 RoutingBase.AddRouting(node.Id, fromId);
                 _routingTable.AddNode(node);
+#if UNITY_EDITOR
+                DebugShowDistance(closestNodes.Key, node);
+#endif
             }
+
+            MistLogger.Debug(
+                $"[Debug][KademliaController] FindNode response from {fromId}: {string.Join(", ", closestNodes.Nodes.Select(nf => nf.Id))}");
+        }
+
+        /// <summary>
+        /// xor距離をdebug表示してみる 10進数で
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="nodeInfo"></param>
+        private static void DebugShowDistance(byte[] target, NodeInfo nodeInfo)
+        {
+            var bits = IdUtil.Xor(target, IdUtil.ToBytes(nodeInfo.Id));
+            var index = IdUtil.LeadingBitIndex(bits);
+            MistLogger.Debug($"[Debug][AreaTracker]   Index={index} NodeId={nodeInfo.Id} ");
         }
 
         private void OnFindValueResponse(KademliaMessage message)
@@ -114,10 +142,44 @@ namespace MistNet
 
             MistLogger.Debug(
                 $"[Debug][KademliaController] Found value for target {BitConverter.ToString(response.Key)}: {response.Value}");
-            _dataStore.Store(response.Key, response.Value);
+
+            if (!IsAreaInfo(response))
+            {
+                _dataStore.Store(response.Key, response.Value);
+                return;
+            }
+
+            UpdateAreaInfo(response);
         }
 
-        public void FindValue(HashSet<NodeInfo> closestNodes, byte[] target)
+        private void UpdateAreaInfo(ResponseFindValue response)
+        {
+            var newAreaInfo = JsonConvert.DeserializeObject<AreaInfo>(response.Value);
+            if (!_dataStore.TryGetValue(response.Key, out var existingValue))
+            {
+                _dataStore.Store(response.Key, response.Value);
+                return;
+            }
+
+            var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(existingValue);
+            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
+            foreach (var nodeId in newAreaInfo.Nodes)
+            {
+                areaInfo.Nodes.Add(nodeId);
+                areaInfo.ExpireAt[nodeId] = expireTime;
+                MistLogger.Debug($"[Kademlia] Merged node {nodeId} into AreaInfo");
+            }
+
+            var areaInfoStr = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(response.Key, areaInfoStr);
+        }
+
+        private static bool IsAreaInfo(ResponseFindValue response)
+        {
+            return response.Value.IndexOf("expireAt", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        public void FindValue(IEnumerable<NodeInfo> closestNodes, byte[] target)
         {
             if (closestNodes == null) return;
             var count = 0;
@@ -125,7 +187,10 @@ namespace MistNet
             {
                 count++;
                 _kademlia.FindValue(node, target);
-                if (count >= Alpha) break;
+#if UNITY_EDITOR
+                DebugShowDistance(target, node);
+#endif
+                if (count >= OptConfig.Data.Alpha) break;
             }
         }
 
@@ -136,7 +201,7 @@ namespace MistNet
             {
                 _kademlia.FindNode(node, target);
                 count++;
-                if (count >= Alpha) break;
+                if (count >= OptConfig.Data.Alpha) break;
             }
         }
 

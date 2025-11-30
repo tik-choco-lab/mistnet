@@ -56,6 +56,7 @@ namespace MistNet
             }
             _kademlia.Ping(oldest);
             _pendingNodeList[oldest] = newNode; // 置き換え候補を記録
+            MistLogger.Debug($"[KBucket] PING sent to {oldest.Id} for replacement with {newNode.Id}");
             ReplaceByTimeout(oldest).Forget();  // タイムアウトで置き換えを実行
         }
 
@@ -80,6 +81,7 @@ namespace MistNet
             await UniTask.Delay(TimeSpan.FromSeconds(PingTimeoutSeconds)); // PING 待ち時間
             if (_pendingNodeList.ContainsKey(node))
             {
+                MistLogger.Debug($"[KBucket] No PING response from {node.Id}, replacing with {_pendingNodeList[node].Id}");
                 // PING 応答がなかった場合、置き換え
                 _nodes.Remove(node);
                 _nodes.Add(_pendingNodeList[node]);

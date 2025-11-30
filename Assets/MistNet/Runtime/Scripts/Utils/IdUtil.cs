@@ -20,6 +20,11 @@ namespace MistNet.Utils
             return byteId;
         }
 
+        /// <summary>
+        /// 0が最も遠い、159が最も近い
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <returns>Index 0 ～ 159</returns>
         public static int LeadingBitIndex(byte[] distance)
         {
             for (var i = 0; i < distance.Length; i++)
@@ -71,5 +76,33 @@ namespace MistNet.Utils
             return 0;
         }
     }
+    public readonly struct XorDistanceComparer : IComparer<NodeInfo>
+    {
+        private readonly byte[] _targetId;
 
+        public XorDistanceComparer(byte[] targetId)
+        {
+            _targetId = targetId;
+        }
+
+        public int Compare(NodeInfo x, NodeInfo y)
+        {
+            var xBytes = x.IdBytes;
+            var yBytes = y.IdBytes;
+            var tBytes = _targetId;
+
+            for (int i = 0; i < tBytes.Length; i++)
+            {
+                var xDist = (byte)(xBytes[i] ^ tBytes[i]);
+                var yDist = (byte)(yBytes[i] ^ tBytes[i]);
+
+                if (xDist != yDist)
+                {
+                    return xDist.CompareTo(yDist);
+                }
+            }
+
+            return 0; // 完全一致
+        }
+    }
 }

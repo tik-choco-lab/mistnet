@@ -79,22 +79,20 @@ namespace MistNet
             return bucket.Nodes.FirstOrDefault(n => n.Id.Equals(nodeId));
         }
 
-        public HashSet<NodeInfo> FindClosestNodes(byte[] targetId)
+        public List<NodeInfo> FindClosestNodes(byte[] targetId)
         {
             var allNodes = GetAllNodes();
 
             if (allNodes.Count == 0)
             {
                 MistLogger.Warning("[KademliaRoutingTable] No nodes found in routing table.");
-                return new HashSet<NodeInfo>();
+                return new List<NodeInfo>();
             }
 
             return allNodes
-                .Select(n => (Node: n, Distance: IdUtil.Xor(targetId, IdUtil.ToBytes(n.Id.ToString()))))
-                .OrderBy(tuple => tuple.Distance, new ByteArrayDistanceComparer())
+                .OrderBy(n => n, new XorDistanceComparer(targetId))
                 .Take(KBucket.K)
-                .Select(tuple => tuple.Node)
-                .ToHashSet();
+                .ToList();
         }
 
         private List<NodeInfo> GetAllNodes()

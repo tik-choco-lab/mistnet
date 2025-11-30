@@ -6,7 +6,7 @@ namespace MistNet
 {
     public class Kademlia
     {
-        public const char SplitChar = '|';
+        private const char SplitChar = '|';
         private readonly IDNVE1MessageSender _sender;
         private readonly KademliaDataStore _dataStore;
         private readonly KademliaRoutingTable _routingTable;
@@ -81,7 +81,7 @@ namespace MistNet
 
         private void OnStore(KademliaMessage message)
         {
-            MistLogger.Debug($"[Store][RCV] {message.Payload}");
+            MistLogger.Debug($"[Store][RECEIVE] {message.Payload}");
             var parts = message.Payload.Split(SplitChar);
             if (parts.Length != 2)
             {
@@ -120,18 +120,16 @@ namespace MistNet
             var targetKey = Convert.FromBase64String(message.Payload);
             if (_dataStore.TryGetValue(targetKey, out var value))
             {
-                value = RemoveExpiredNodes(value);
-                MistLogger.Debug($"[FindValue][RCV] found {value}");
+                value = RemoveExpiredNodes(targetKey, value);
+                MistLogger.Debug($"[FindValue][RECEIVE] found {value}");
 
                 SendValue(message.Sender, targetKey, value);
             }
-            else
-            {
-                SendClosestNodes(message.Sender, targetKey);
-            }
+
+            SendClosestNodes(message.Sender, targetKey);
         }
 
-        private static string RemoveExpiredNodes(string value)
+        private string RemoveExpiredNodes(byte[] targetKey, string value)
         {
             var areaInfo = JsonConvert.DeserializeObject<AreaInfo>(value);
             var now = DateTime.UtcNow;
@@ -144,7 +142,10 @@ namespace MistNet
                     MistLogger.Debug($"[Kademlia] Removed expired node {nodeId} from AreaInfo");
                 }
             }
+
             value = JsonConvert.SerializeObject(areaInfo);
+            _dataStore.Store(targetKey, value);
+
             return value;
         }
 
@@ -169,12 +170,13 @@ namespace MistNet
         private void SendClosestNodes(NodeInfo sender, byte[] target)
         {
             var closestNodes = _routingTable.FindClosestNodes(target);
-            MistLogger.Debug($"[FindValue][RCV] not found, closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
+            MistLogger.Debug(
+                $"[FindValue][RECEIVE] closest nodes: {string.Join(", ", closestNodes.Select(n => n.Id))}");
 
             var responseFindNode = new ResponseFindNode()
             {
                 Key = target,
-                Nodes = closestNodes,
+                Nodes = closestNodes.ToHashSet(),
             };
             var response = new KademliaMessage
             {
