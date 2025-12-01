@@ -19,7 +19,7 @@ namespace MistNet
         {
             if (!syncObject.IsOwner) return;
 
-            _areaSize = EvalConfig.Data.MaxAreaSize;
+            _areaSize = EvalConfig.Data.MaxAreaSize / 2;
             var maxMoveSpeed = EvalConfig.Data.MaxMoveSpeed;
             var x = Random.Range(-maxMoveSpeed, maxMoveSpeed);
             var y = yFixed ? 0 : Random.Range(-maxMoveSpeed, maxMoveSpeed);
