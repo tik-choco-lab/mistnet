@@ -13,13 +13,16 @@ namespace MistNet
     {
         private const float WaitReconnectTimeSec = 3f;
         private const string DataChannelLabel = "data";
+        private const string LocationChannelLabel = "location";
 
         public RTCPeerConnection RtcPeer;
 
         public NodeId Id;
         private RTCDataChannel _dataChannel;
+        private RTCDataChannel _locationChannel;
 
         public readonly Action<byte[], NodeId> OnMessage;
+        public readonly Action<byte[], NodeId> OnLocationMessage;
         public Action<Ice> OnCandidate;
         public readonly Action<NodeId> OnConnected;
         public readonly Action<NodeId> OnDisconnected;
@@ -27,6 +30,7 @@ namespace MistNet
 
         private AudioSource _outputAudioSource;
         private RTCRtpSender _sender;
+        private bool _isConnectedCalled;
 
         private readonly CancellationTokenSource _cts = new();
 
@@ -34,6 +38,7 @@ namespace MistNet
         {
             Id = id;
             OnMessage += transport.OnMessage;
+            OnLocationMessage += transport.OnLocationMessage;
             OnConnected += transport.OnConnected;
             OnDisconnected += transport.OnDisconnected;
 
@@ -72,7 +77,9 @@ namespace MistNet
         {
             RtcPeer?.Dispose();
             _dataChannel?.Dispose();
+            _locationChannel?.Dispose();
             _dataChannel = null;
+            _locationChannel = null;
             RtcPeer = null;
             _cts.Cancel();
         }
@@ -141,23 +148,53 @@ namespace MistNet
 
         private void CreateDataChannel()
         {
+            // 通常のデータチャンネル（reliable、順序保証あり）
             var config = new RTCDataChannelInit();
             _dataChannel = RtcPeer.CreateDataChannel(DataChannelLabel, config);
             _dataChannel.OnMessage = OnMessageDataChannel;
             _dataChannel.OnOpen = OnOpenDataChannel;
             _dataChannel.OnClose = OnCloseDataChannel;
+            
+            // 位置同期専用の高速チャンネル（unreliable、順序保証なし、再送なし）
+            var locationConfig = new RTCDataChannelInit
+            {
+                ordered = false,
+                maxRetransmits = 0
+            };
+            _locationChannel = RtcPeer.CreateDataChannel(LocationChannelLabel, locationConfig);
+            _locationChannel.OnMessage = OnLocationMessageDataChannel;
+            _locationChannel.OnOpen = () => MistLogger.Debug($"[LocationChannel] Opened: {Id}");
+            _locationChannel.OnClose = () => MistLogger.Debug($"[LocationChannel] Closed: {Id}");
         }
 
         private void SetDataChannel()
         {
             RtcPeer.OnDataChannel = channel =>
             {
-                MistLogger.Debug("OnDataChannel");
-                _dataChannel = channel;
-                _dataChannel.OnOpen = OnOpenDataChannel;
-                _dataChannel.OnClose = OnCloseDataChannel;
-                _dataChannel.OnMessage = OnMessageDataChannel;
-                OnOpenDataChannel();
+                MistLogger.Debug($"OnDataChannel: {channel.Label} State: {channel.ReadyState}");
+                
+                if (channel.Label == LocationChannelLabel)
+                {
+                    // 位置同期専用チャンネル
+                    _locationChannel = channel;
+                    _locationChannel.OnMessage = OnLocationMessageDataChannel;
+                    _locationChannel.OnOpen = () => MistLogger.Debug($"[LocationChannel] Opened: {Id}");
+                    _locationChannel.OnClose = () => MistLogger.Debug($"[LocationChannel] Closed: {Id}");
+                }
+                else
+                {
+                    // 通常のデータチャンネル
+                    _dataChannel = channel;
+                    _dataChannel.OnOpen = OnOpenDataChannel;
+                    _dataChannel.OnClose = OnCloseDataChannel;
+                    _dataChannel.OnMessage = OnMessageDataChannel;
+                    
+                    // すでにOpenの場合は即座に呼び出す
+                    if (_dataChannel.ReadyState == RTCDataChannelState.Open)
+                    {
+                        OnOpenDataChannel();
+                    }
+                }
             };
         }
 
@@ -206,6 +243,36 @@ namespace MistNet
 
             _dataChannel.Send(data);
         }
+        
+        /// <summary>
+        /// 位置同期専用の高速チャンネルで送信
+        /// unreliableなため、パケットロスが発生しても再送されない
+        /// </summary>
+        public void SendLocation(byte[] data)
+        {
+            if (_locationChannel == null)
+            {
+                // LocationChannelがまだ開いていない場合は、通常のDataChannelで送信
+                Send(data);
+                return;
+            }
+
+            if (_locationChannel.ReadyState != RTCDataChannelState.Open)
+            {
+                // まだOpenでない場合は通常のDataChannelにフォールバック
+                Send(data);
+                return;
+            }
+
+            // 評価用
+            if (MistStats.I != null)
+            {
+                MistStats.I.TotalSendBytes += data.Length;
+                MistStats.I.TotalMessageCount++;
+            }
+
+            _locationChannel.Send(data);
+        }
 
         public void Close()
         {
@@ -238,6 +305,9 @@ namespace MistNet
 
         private async void OnOpenDataChannel()
         {
+            if (_isConnectedCalled) return;
+            _isConnectedCalled = true;
+            
             await UniTask.Yield(); // DataChannelの状態が安定するまで待つ
             OnConnected?.Invoke(Id); // DataChannelが開いていないと、例えばInstantiateができないため、ここで呼ぶ
         }
@@ -250,6 +320,12 @@ namespace MistNet
         {
             if (MistStats.I != null) MistStats.I.TotalReceiveBytes += data.Length;
             OnMessage?.Invoke(data, Id);
+        }
+        
+        private void OnLocationMessageDataChannel(byte[] data)
+        {
+            if (MistStats.I != null) MistStats.I.TotalReceiveBytes += data.Length;
+            OnLocationMessage?.Invoke(data, Id);
         }
 
         private void OnIceCandidate(RTCIceCandidate candidate)

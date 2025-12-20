@@ -38,7 +38,8 @@ namespace MistNet
         {
             _layer.AOI.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
-            _layer.AOI.AddRPC(MistNetMessageType.Location, ReceiveLocation);
+            // 位置同期は専用の高速チャンネルで受信
+            _layer.AOI.RegisterLocationReceive(ReceiveLocation);
             _layer.AOI.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
             _layer.AOI.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }

@@ -10,6 +10,7 @@ namespace MistNet
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
         private Action<MistMessage, NodeId> _onMessageAction;
+        private Action<byte[], NodeId> _onLocationMessageAction;
         private MistSignalingWebRTC _mistSignalingWebRtc;
         private readonly Selector _selector;
         private readonly IPeerRepository _peerRepository;
@@ -80,6 +81,20 @@ namespace MistNet
             var peerData = _peerRepository.PeerDict[targetId];
             peerData.PeerEntity.Send(bytes);
         }
+        
+        /// <summary>
+        /// 位置同期専用の高速チャンネルで送信（unreliable、順序保証なし）
+        /// </summary>
+        public void SendLocation(NodeId targetId, byte[] data)
+        {
+            if (!IsConnected(targetId))
+            {
+                return;
+            }
+
+            var peerData = _peerRepository.PeerDict[targetId];
+            peerData.PeerEntity.SendLocation(data);
+        }
 
         public void AddConnectCallback(Delegate callback)
         {
@@ -94,6 +109,11 @@ namespace MistNet
         public void RegisterReceive(Action<MistMessage, NodeId> callback)
         {
             _onMessageAction += callback;
+        }
+        
+        public void RegisterLocationReceive(Action<byte[], NodeId> callback)
+        {
+            _onLocationMessageAction += callback;
         }
 
         public void OnConnected(NodeId id)
@@ -120,6 +140,11 @@ namespace MistNet
             message.HopCount--;
             MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
             _onMessageAction?.Invoke(message, senderId);
+        }
+        
+        public void OnLocationMessage(byte[] data, NodeId senderId)
+        {
+            _onLocationMessageAction?.Invoke(data, senderId);
         }
 
         public bool IsConnectingOrConnected(NodeId id)

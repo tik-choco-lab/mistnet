@@ -91,6 +91,27 @@ namespace MistNet
                 _worldLayer.Send(type, data, nodeId);
             }
         }
+        
+        /// <summary>
+        /// 位置同期専用の高速チャンネルで全ノードに送信
+        /// unreliable・順序保証なしで、リアルタイム性を優先
+        /// </summary>
+        public void SendAllLocation(byte[] data)
+        {
+            var messageNode = _selector.RoutingBase.MessageNodes;
+            foreach (var nodeId in messageNode)
+            {
+                _worldLayer.SendLocation(data, nodeId);
+            }
+        }
+        
+        /// <summary>
+        /// 位置同期受信コールバックを登録
+        /// </summary>
+        public void RegisterLocationReceive(Action<byte[], NodeId> callback)
+        {
+            _worldLayer.RegisterLocationReceive(callback);
+        }
 
         public async UniTask<GameObject> InstantiatePlayerAsync(string prefabAddress, Vector3 position,
             Quaternion rotation, ObjectId objId = null)

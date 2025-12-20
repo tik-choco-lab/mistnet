@@ -90,10 +90,10 @@ namespace MistNet
                 MistLogger.Debug($"[STATS][Download]\t{FormatBps(receiveBps)}");
 
                 var evalSendBps = TotalEvalSendBytes * 8 / IntervalSendSizeTimeSec;
-                MistLogger.Debug($"[STATS][EvalUpload]\t{FormatBps(evalSendBps)}");
+                MistLogger.Debug($"[STATS][World][Upload]\t{FormatBps(evalSendBps)}");
 
                 var evalReceiveBps = TotalEvalReceiveBytes * 8 / IntervalSendSizeTimeSec;
-                MistLogger.Debug($"[STATS][EvalDownload]\t{FormatBps(evalReceiveBps)}");
+                MistLogger.Debug($"[STATS][World][Download]\t{FormatBps(evalReceiveBps)}");
                 
                 // メッセージ数
                 MistLogger.Debug($"[STATS][MessageCount] {TotalMessageCount}");
