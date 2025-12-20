@@ -64,6 +64,11 @@ namespace MistNet.Minimal
             peerData.PeerEntity.Send(bytes);
         }
 
+        public void SendLocation(NodeId targetId, byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
         public void AddConnectCallback(Delegate callback)
         {
             _onConnectedAction += (Action<NodeId>)callback;
@@ -77,6 +82,11 @@ namespace MistNet.Minimal
         public void RegisterReceive(Action<MistMessage, NodeId> callback)
         {
             _onMessageAction += callback;
+        }
+
+        public void RegisterLocationReceive(Action<byte[], NodeId> callback)
+        {
+            throw new NotImplementedException();
         }
 
         public void OnConnected(NodeId id)
@@ -98,6 +108,11 @@ namespace MistNet.Minimal
             message.HopCount--;
             MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
             _onMessageAction?.Invoke(message, senderId);
+        }
+
+        public void OnLocationMessage(byte[] data, NodeId senderId)
+        {
+            throw new NotImplementedException();
         }
 
         public bool IsConnectingOrConnected(NodeId id)

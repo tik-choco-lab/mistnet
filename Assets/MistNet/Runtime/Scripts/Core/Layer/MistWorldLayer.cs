@@ -67,6 +67,26 @@ namespace MistNet
                 _transport.Send(peerId, message, isForward:false);
             }
         }
+        
+        /// <summary>
+        /// 位置同期専用の高速チャンネルで送信
+        /// </summary>
+        public void SendLocation(byte[] data, NodeId targetId)
+        {
+            if (!_transport.IsConnected(targetId))
+            {
+                return;
+            }
+            _transport.SendLocation(targetId, data);
+        }
+        
+        /// <summary>
+        /// 位置同期受信コールバックを登録
+        /// </summary>
+        public void RegisterLocationReceive(Action<byte[], NodeId> callback)
+        {
+            _transport.RegisterLocationReceive(callback);
+        }
 
         private void OnMessage(MistMessage message, NodeId senderId)
         {

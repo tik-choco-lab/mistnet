@@ -11,6 +11,17 @@ namespace MistNet
         void RemoveRPC(string key);
         void RPC(NodeId targetId, string key, params object[] args);
         void SendAll(MistNetMessageType type, byte[] data);
+        
+        /// <summary>
+        /// 位置同期専用の高速チャンネルで全ノードに送信
+        /// </summary>
+        void SendAllLocation(byte[] data);
+        
+        /// <summary>
+        /// 位置同期受信コールバックを登録
+        /// </summary>
+        void RegisterLocationReceive(Action<byte[], NodeId> callback);
+        
         void RPCOther(string key, params object[] args);
         void RPCAll(string key, params object[] args);
         void OnRPC(byte[] data, NodeId sourceId);
