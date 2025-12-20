@@ -51,6 +51,10 @@ namespace MistNet
         private float _currentSyncInterval;
         private float _timeSinceLastReceive;
         
+        // パケット順序保護用
+        private ushort _sendSequence;
+        private ushort _lastReceivedSequence;
+        
         // 距離計算用
         private static Transform _selfPlayerTransform;
 
@@ -126,6 +130,7 @@ namespace MistNet
             _sendData.Rotation = currentRotation.eulerAngles;
             _sendData.Velocity = velocity;
             _sendData.Time = syncInterval;
+            _sendData.Sequence = _sendSequence++;  // 0〜65535でラップ
             
             var data = MemoryPackSerializer.Serialize(_sendData);
             
@@ -165,12 +170,35 @@ namespace MistNet
             if (_syncObject == null) return;
             if (_syncObject.IsOwner) return;
 
+            // パケット順序保護: unreliableチャンネルでは古いパケットが後から届くことがある
+            // 古いパケットは無視してラバーバンド現象を防止
+            if (!IsNewerSequence(location.Sequence, _lastReceivedSequence))
+            {
+                return;
+            }
+            _lastReceivedSequence = location.Sequence;
+
             // ターゲット位置・回転・速度を更新
             _targetPosition = location.Position;
             _targetRotation = Quaternion.Euler(location.Rotation);
             _receivedVelocity = location.Velocity;
             _currentSyncInterval = location.Time;
             _timeSinceLastReceive = 0f;
+        }
+
+        /// <summary>
+        /// シーケンス番号の比較（ラップアラウンド対応）
+        /// 例: 65535 → 0 へのラップを正しく「新しい」と判定
+        /// </summary>
+        private static bool IsNewerSequence(ushort incoming, ushort last)
+        {
+            // 最初のパケット
+            if (last == 0 && incoming == 0) return true;
+            
+            // 符号付き差分で比較（ラップアラウンド対応）
+            // 差分が正なら新しい、負なら古い
+            var diff = (short)(incoming - last);
+            return diff > 0;
         }
 
         private void InterpolationLocation()
