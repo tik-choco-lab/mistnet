@@ -42,7 +42,9 @@ namespace MistNet.DNVE3
         {
             while (!token.IsCancellationRequested)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds),
+                var interval = OptConfig.Data.ConnectionBalancerIntervalSeconds;
+                var jitter = UnityEngine.Random.Range(0f, interval * 0.2f);
+                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
                     cancellationToken: token);
 
                 if (_dnveDataStore.SelfData == null) continue;
@@ -55,7 +57,7 @@ namespace MistNet.DNVE3
                     SendRequestNodeList(importantNodes[i].nodeId);
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.ConnectionBalancerIntervalSeconds),
+                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
                     cancellationToken: token);
 
                 SelectConnection();
@@ -93,7 +95,7 @@ namespace MistNet.DNVE3
                     selectedNodes.Add(closest);
             }
 
-            // selectedNodesに含まれないノードを切断し、selectedNodesに含まれるノードに接続を試みる
+            // selectedNodesに含まれるノードに接続を試みる
             foreach (var node in selectedNodes)
             {
                 var nodeId = node.Id;
@@ -104,17 +106,25 @@ namespace MistNet.DNVE3
 
             if (_routing.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
 
-            // AOI対象ノードは切断しない
+            var requestCount = _routing.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
+            requestCount += OptConfig.Data.ForceDisconnectCount;
+
+            // selectedNodesに含まれず、かつAOI対象外のノードを切断候補とする
+            // 通信時刻が古い順にソート（LRU）
             var nodesToDisconnect = _routing.ConnectedNodes
                 .Where(id => selectedNodes.All(n => n.Id != id) && !_routing.MessageNodes.Contains(id))
+                .OrderBy(id => _dnveDataStore.LastMessageTimes.TryGetValue(id, out var time) ? time : DateTime.MinValue)
                 .ToList();
 
-            foreach (var nodeId in nodesToDisconnect)
+            var disconnectedCount = 0;
+            for (var i = 0; i < nodesToDisconnect.Count && disconnectedCount < requestCount; i++)
             {
+                var nodeId = nodesToDisconnect[i];
                 if (nodeId == _peerRepository.SelfId) continue;
 
                 if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                 _layer.Transport.Disconnect(nodeId);
+                disconnectedCount++;
             }
         }
 
