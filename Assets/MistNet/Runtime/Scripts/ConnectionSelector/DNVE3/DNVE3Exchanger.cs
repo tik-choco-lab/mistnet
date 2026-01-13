@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
@@ -92,7 +93,7 @@ namespace MistNet.DNVE3
                 // send
                 var json = JsonConvert.SerializeObject(selfHistData);
 
-                foreach (var nodeId in _routingBase.ConnectedNodes)
+                foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
                 {
                     var message = new DNVEMessage
                     {
