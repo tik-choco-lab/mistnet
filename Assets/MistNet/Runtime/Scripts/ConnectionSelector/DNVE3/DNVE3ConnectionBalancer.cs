@@ -143,7 +143,6 @@ namespace MistNet.DNVE3
         private void OnRequestNodeListReceived(DNVEMessage receiveMessage)
         {
             // NodeList要求を受信したら、自分のNodeListを送信する
-            // TODO: 自動で_dataStoreの古いノードを削除したい
             var allNodes = _dataStore.GetAllNodes().ToHashSet();
             var connectedAllNodes = allNodes
                 .Where(n => _routing.ConnectedNodes.Contains(n.Id))
@@ -161,10 +160,12 @@ namespace MistNet.DNVE3
         private void OnNodeListReceived(DNVEMessage receiveMessage)
         {
             var nodes = JsonConvert.DeserializeObject<List<Node>>(receiveMessage.Payload);
+            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             foreach (var node in nodes)
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
+                _dnveDataStore.ExpireNodeTimes[node.Id] = expireTime;
             }
         }
 

@@ -124,6 +124,8 @@ namespace MistNet.DNVE3
             {
                 _dnveDataStore.NodeMaps.Remove(nodeId);
                 _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
+                _dnveDataStore.LastMessageTimes.Remove(nodeId);
+                _dataStore.Remove(nodeId);
             }
         }
 
