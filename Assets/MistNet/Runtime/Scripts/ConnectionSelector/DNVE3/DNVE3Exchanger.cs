@@ -39,6 +39,13 @@ namespace MistNet.DNVE3
             _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
+
+            var node = new Node
+            {
+                Id = message.Sender,
+                Position = data.Position
+            };
+            _dataStore.AddOrUpdate(node);
         }
 
         private List<Node> GetNodes()
