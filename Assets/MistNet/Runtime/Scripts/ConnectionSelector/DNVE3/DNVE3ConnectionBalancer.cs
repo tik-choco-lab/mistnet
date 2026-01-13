@@ -102,6 +102,8 @@ namespace MistNet.DNVE3
                 _layer.Transport.Connect(nodeId);
             }
 
+            if (_routing.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
+
             // AOI対象ノードは切断しない
             var nodesToDisconnect = _routing.ConnectedNodes
                 .Where(id => selectedNodes.All(n => n.Id != id) && !_routing.MessageNodes.Contains(id))
