@@ -11,6 +11,12 @@ namespace MistNet.DNVE3
 {
     public class DNVE3ConnectionBalancer : IDisposable
     {
+        private const float JitterRatio = 0.2f;              // インターバルに対するジッターの割合
+        private const float DirectionThreshold = 0.7f;      // 同一方向判定の閾値（約45度）
+        private const float ScoreSelectedNode = 10000f;      // ヒストグラム選択ノードの加点
+        private const float ScoreAoiNodeUnknownPos = 100f;   // 位置不明のAOIノードへの加点
+        private const float PenaltyNoMessageHistory = 1000f; // 通信実績がないノードへの減点
+
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
         private readonly IMessageSender _sender;
@@ -43,7 +49,7 @@ namespace MistNet.DNVE3
             while (!token.IsCancellationRequested)
             {
                 var interval = OptConfig.Data.ConnectionBalancerIntervalSeconds;
-                var jitter = UnityEngine.Random.Range(0f, interval * 0.2f);
+                var jitter = UnityEngine.Random.Range(0f, interval * JitterRatio);
                 await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
                     cancellationToken: token);
 
@@ -81,7 +87,7 @@ namespace MistNet.DNVE3
                 {
                     var vec = node.Position.ToVector3() - selfPos;
                     var dot = Vector3.Dot(vec.normalized, dir);
-                    if (dot < 0.7f) continue; // 同じ方向じゃない場合スキップ（閾値は調整可）
+                    if (dot < DirectionThreshold) continue; // 同じ方向じゃない場合スキップ（閾値は調整可）
 
                     var dist = vec.magnitude;
                     if (dist < minDist)
@@ -95,37 +101,92 @@ namespace MistNet.DNVE3
                     selectedNodes.Add(closest);
             }
 
-            // selectedNodesに含まれるノードに接続を試みる
+            var selectedNodeIds = selectedNodes.Select(n => n.Id).ToHashSet();
+
+            // 1. 切断処理（スコアベース）
+            // 常に余裕（バッファ1）を持たせるために MaxConnectionCount - 1 をターゲットにする
+            var targetConnectionCount = OptConfig.Data.MaxConnectionCount - 1;
+            if (_routing.ConnectedNodes.Count > targetConnectionCount)
+            {
+                var numToDisconnect = _routing.ConnectedNodes.Count - targetConnectionCount;
+                numToDisconnect += OptConfig.Data.ForceDisconnectCount;
+
+                var nodesWithScore = _routing.ConnectedNodes
+                    .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
+                    .OrderBy(x => x.Score)
+                    .ToList();
+
+                var disconnectedCount = 0;
+                for (var i = 0; i < nodesWithScore.Count && disconnectedCount < numToDisconnect; i++)
+                {
+                    var nodeId = nodesWithScore[i].Id;
+                    if (nodeId == _peerRepository.SelfId) continue;
+                    if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                    
+                    _layer.Transport.Disconnect(nodeId);
+                    disconnectedCount++;
+                }
+            }
+
+            // 2. 接続処理
             foreach (var node in selectedNodes)
             {
                 var nodeId = node.Id;
                 if (nodeId == _peerRepository.SelfId) continue;
                 if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+
+                // 接続上限に達している場合は、最もスコアの低いノードを1つ切断して枠を空ける（強制入れ替え）
+                if (_routing.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount)
+                {
+                    var worstNode = _routing.ConnectedNodes
+                        .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
+                        .OrderBy(x => x.Score)
+                        .FirstOrDefault();
+
+                    if (worstNode != null)
+                    {
+                        _layer.Transport.Disconnect(worstNode.Id);
+                    }
+                }
+                
                 _layer.Transport.Connect(nodeId);
             }
+        }
 
-            if (_routing.ConnectedNodes.Count <= OptConfig.Data.MaxConnectionCount) return;
+        private float CalculateNodeScore(NodeId id, HashSet<NodeId> selectedNodeIds, Vector3 selfPos)
+        {
+            var score = 0f;
 
-            var requestCount = _routing.ConnectedNodes.Count - OptConfig.Data.MaxConnectionCount;
-            requestCount += OptConfig.Data.ForceDisconnectCount;
+            // 1. ヒストグラム選択ノード（最優先）
+            if (selectedNodeIds.Contains(id)) score += ScoreSelectedNode;
 
-            // selectedNodesに含まれず、かつAOI対象外のノードを切断候補とする
-            // 通信時刻が古い順にソート（LRU）
-            var nodesToDisconnect = _routing.ConnectedNodes
-                .Where(id => selectedNodes.All(n => n.Id != id) && !_routing.MessageNodes.Contains(id))
-                .OrderBy(id => _dnveDataStore.LastMessageTimes.TryGetValue(id, out var time) ? time : DateTime.MinValue)
-                .ToList();
-
-            var disconnectedCount = 0;
-            for (var i = 0; i < nodesToDisconnect.Count && disconnectedCount < requestCount; i++)
+            // 2. AOI内ノード（距離に基づく）
+            if (_routing.MessageNodes.Contains(id))
             {
-                var nodeId = nodesToDisconnect[i];
-                if (nodeId == _peerRepository.SelfId) continue;
-
-                if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
-                _layer.Transport.Disconnect(nodeId);
-                disconnectedCount++;
+                if (_dataStore.TryGet(id, out var node))
+                {
+                    var dist = Vector3.Distance(selfPos, node.Position.ToVector3());
+                    score += Mathf.Max(0, OptConfig.Data.AoiRange - dist);
+                }
+                else
+                {
+                    // 位置不明だがAOI対象なら一応加点
+                    score += ScoreAoiNodeUnknownPos;
+                }
             }
+
+            // 3. 通信実績（LRU）
+            if (_dnveDataStore.LastMessageTimes.TryGetValue(id, out var lastTime))
+            {
+                var elapsed = (float)(DateTime.UtcNow - lastTime).TotalSeconds;
+                score -= elapsed; // 新しいほど減点が少ない
+            }
+            else
+            {
+                score -= PenaltyNoMessageHistory; // 通信実績なしは大幅減点
+            }
+
+            return score;
         }
 
         private void SendRequestNodeList(NodeId nodeId)
