@@ -111,7 +111,6 @@ namespace MistNet.DNVE3
                     }
                 }
 
-                _dnveDataStore.SelfData.Hists = (float[,])_dnveDataStore.MergedHistogram.Clone();
                 var json = JsonConvert.SerializeObject(_dnveDataStore.SelfData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
