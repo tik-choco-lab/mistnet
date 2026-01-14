@@ -7,6 +7,8 @@ namespace MistNet
 {
     public class MistTransportLayer : ITransportLayer
     {
+        private readonly System.Collections.Generic.Dictionary<NodeId, DateTime> _connectAttemptAt = new();
+        private const double ConnectRetrySeconds = 8.0;
         private Action<NodeId> _onConnectedAction;
         private Action<NodeId> _onDisconnectedAction;
         private Action<MistMessage, NodeId> _onMessageAction;
@@ -41,7 +43,30 @@ namespace MistNet
         public void Connect(NodeId id)
         {
             if (id == _peerRepository.SelfId) return;
-            if (IsConnectingOrConnected(id)) return;
+            if (IsConnected(id))
+            {
+                _connectAttemptAt.Remove(id);
+                return;
+            }
+
+            if (IsConnectingOrConnected(id))
+            {
+                var now = DateTime.UtcNow;
+                if (!_connectAttemptAt.TryGetValue(id, out var at))
+                {
+                    _connectAttemptAt[id] = now;
+                    return;
+                }
+
+                if ((now - at).TotalSeconds < ConnectRetrySeconds) return;
+
+                _peerRepository.RemovePeer(id);
+                _connectAttemptAt[id] = now;
+                _mistSignalingWebRtc.Connect(id);
+                return;
+            }
+
+            _connectAttemptAt[id] = DateTime.UtcNow;
             _mistSignalingWebRtc.Connect(id);
         }
 
@@ -51,6 +76,7 @@ namespace MistNet
 
             _selector.RoutingBase.RemoveMessageNode(id);
             _selector.RoutingBase.Remove(id);
+            _connectAttemptAt.Remove(id);
             OnDisconnected(id);
         }
 
@@ -68,7 +94,6 @@ namespace MistNet
         {
             if (!IsConnected(targetId))
             {
-                OnDisconnected(targetId);
                 return;
             }
 
@@ -119,6 +144,7 @@ namespace MistNet
         public void OnConnected(NodeId id)
         {
             MistLogger.Info($"[Connected] {id}");
+            _connectAttemptAt.Remove(id);
             _selector.SelectorBase.OnConnected(id);
             _onConnectedAction?.Invoke(id);
             _selector.RoutingBase.OnConnected(id);
@@ -127,6 +153,7 @@ namespace MistNet
         public void OnDisconnected(NodeId id)
         {
             MistLogger.Info($"[Disconnected] {id}");
+            _connectAttemptAt.Remove(id);
             MistSyncManager.I.RemoveObject(id);
             _selector.SelectorBase.OnDisconnected(id);
             _peerRepository.RemovePeer(id);

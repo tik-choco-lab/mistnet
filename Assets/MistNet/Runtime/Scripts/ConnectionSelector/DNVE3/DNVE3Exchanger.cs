@@ -19,7 +19,6 @@ namespace MistNet.DNVE3
 
         public void Dispose()
         {
-
             _cts.Cancel();
             _cts.Dispose();
         }
@@ -41,11 +40,7 @@ namespace MistNet.DNVE3
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
 
-            var node = new Node
-            {
-                Id = message.Sender,
-                Position = data.Position
-            };
+            var node = new Node { Id = message.Sender, Position = data.Position };
             _dataStore.AddOrUpdate(node);
         }
 
@@ -53,7 +48,6 @@ namespace MistNet.DNVE3
         {
             var nodes = new List<Node>();
             var nodeIds = _routingBase.ConnectedNodes;
-
             if (nodeIds.Count == 0) return nodes;
 
             foreach (var nodeId in nodeIds)
@@ -61,7 +55,6 @@ namespace MistNet.DNVE3
                 if (!_dataStore.TryGet(nodeId, out var node)) continue;
                 nodes.Add(node);
             }
-
             return nodes;
         }
 
@@ -69,38 +62,61 @@ namespace MistNet.DNVE3
         {
             while (!token.IsCancellationRequested)
             {
-                if (token.IsCancellationRequested) break;
-                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.HeartbeatIntervalSeconds),
-                    cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.HeartbeatIntervalSeconds), cancellationToken: token);
                 DeleteOldData();
                 var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
-                // copy渡し
+                
                 _dnveDataStore.SelfData = new SpatialHistogramData
                 {
                     Hists = (float[,])selfHistData.Hists.Clone(),
                     Position = selfHistData.Position,
                 };
 
-                // merge
-                foreach (var (_, data) in _dnveDataStore.NodeMaps)
-                {
-                    var otherPos = data.Position;
-                    var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3());
-                }
-                _dnveDataStore.MergedHistogram = selfHistData.Hists;
+                _dnveDataStore.LocalDensityMap = (float[,])selfHistData.Hists.Clone();
 
-                // send
-                var json = JsonConvert.SerializeObject(selfHistData);
+                Array.Clear(_dnveDataStore.MergedHistogram, 0, _dnveDataStore.MergedHistogram.Length);
+                Array.Clear(_dnveDataStore.ConfidenceMap, 0, _dnveDataStore.ConfidenceMap.Length);
+
+                var dirs = SphericalHistogramUtils.Directions.Length;
+                var bins = SphericalHistogramUtils.DistBins;
+                
+                for (int i = 0; i < dirs; i++)
+                {
+                    for (int j = 0; j < bins; j++)
+                    {
+                        _dnveDataStore.MergedHistogram[i, j] = _dnveDataStore.LocalDensityMap[i, j];
+                        _dnveDataStore.ConfidenceMap[i, j] = 1.0f;
+                    }
+                }
+
+                var now = DateTime.UtcNow;
+                var selfPos = selfHistData.Position.ToVector3();
+                float decayRate = OptConfig.Data.ExpireSeconds > 0 ? 2.0f / OptConfig.Data.ExpireSeconds : 1.0f;
+
+                foreach (var (nodeId, data) in _dnveDataStore.NodeMaps)
+                {
+                    if (!_dnveDataStore.LastMessageTimes.TryGetValue(nodeId, out var lastTime)) continue;
+
+                    var elapsed = (float)(now - lastTime).TotalSeconds;
+                    var weight = Mathf.Exp(-elapsed * decayRate);
+                    var projected = SphericalHistogramUtils.ProjectSphericalHistogram(data.Hists, data.Position.ToVector3(), selfPos);
+                    
+                    for (int i = 0; i < dirs; i++)
+                    {
+                        for (int j = 0; j < bins; j++)
+                        {
+                            _dnveDataStore.MergedHistogram[i, j] += projected[i, j] * weight;
+                            _dnveDataStore.ConfidenceMap[i, j] += weight;
+                        }
+                    }
+                }
+
+                _dnveDataStore.SelfData.Hists = (float[,])_dnveDataStore.MergedHistogram.Clone();
+                var json = JsonConvert.SerializeObject(_dnveDataStore.SelfData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
                 {
-                    var message = new DNVEMessage
-                    {
-                        Type = DNVEMessageType.Heartbeat,
-                        Payload = json,
-                        Receiver = nodeId,
-                    };
+                    var message = new DNVEMessage { Type = DNVEMessageType.Heartbeat, Payload = json, Receiver = nodeId };
                     _sender.Send(message);
                     await UniTask.Yield();
                 }
@@ -113,12 +129,7 @@ namespace MistNet.DNVE3
             var toRemove = new List<NodeId>();
             foreach (var kvp in _dnveDataStore.ExpireNodeTimes)
             {
-                var nodeId = kvp.Key;
-                var lastUpdateTime = kvp.Value;
-                if ((now - lastUpdateTime).TotalSeconds > OptConfig.Data.ExpireSeconds)
-                {
-                    toRemove.Add(nodeId);
-                }
+                if ((now - kvp.Value).TotalSeconds > OptConfig.Data.ExpireSeconds) toRemove.Add(kvp.Key);
             }
             foreach (var nodeId in toRemove)
             {
@@ -132,19 +143,10 @@ namespace MistNet.DNVE3
         private SpatialHistogramData GetSpatialHistogramData(Node[] nodes)
         {
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-            var posArray = new Vector3[nodes.Length];
-            for (int i = 0; i < nodes.Length; i++)
-            {
-                posArray[i] = nodes[i].Position.ToVector3();
-            }
-
+            var posArray = nodes.Select(n => n.Position.ToVector3()).ToArray();
             var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray);
 
-            return new SpatialHistogramData
-            {
-                Hists = hists,
-                Position = new Position(selfPos),
-            };
+            return new SpatialHistogramData { Hists = hists, Position = new Position(selfPos) };
         }
     }
 }
