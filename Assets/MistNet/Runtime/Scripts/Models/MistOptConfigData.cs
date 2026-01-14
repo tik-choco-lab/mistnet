@@ -5,7 +5,7 @@ namespace MistNet
     public class MistOptConfigData
     {
         [JsonProperty("visibleCount")] public int VisibleCount = 5;
-        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 20;
+        [JsonProperty("maxConnectionCount")] public int MaxConnectionCount = 30;
         [JsonProperty("connectionBalancerIntervalSeconds")] public float ConnectionBalancerIntervalSeconds = 1f; // DNVE1,3で使用
         [JsonProperty("visibleNodesIntervalSeconds")] public float VisibleNodesIntervalSeconds = 1f; // DNVE1,3で使用
         [JsonProperty("expireSeconds")] public float ExpireSeconds = 4f; // dataStoreの中身で自動削除するまでの秒数 // DNVE1,3で使用
