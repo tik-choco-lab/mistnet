@@ -11,7 +11,12 @@ namespace MistNet.DNVE3
 {
     public class DNVE3ConnectionBalancer : IDisposable
     {
-        private const float JitterRatio = 0.2f;
+        private const float JitterRatio = 0.2f;              // インターバルに対するジッターの割合
+        private const float DirectionThreshold = 0.7f;      // 同一方向判定の閾値（約45度）
+        private const float ScoreSelectedNode = 10000f;      // ヒストグラム選択ノードの加点
+        private const float ScoreAoiNodeUnknownPos = 100f;   // 位置不明のAOIノードへの加点
+        private const float PenaltyNoMessageHistory = 1000f; // 通信実績がないノードへの減点
+
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
         private readonly IMessageSender _sender;
@@ -19,15 +24,6 @@ namespace MistNet.DNVE3
         private readonly RoutingBase _routing;
         private readonly ILayer _layer;
         private readonly IPeerRepository _peerRepository;
-        
-        private readonly Dictionary<NodeId, DateTime> _disconnectCooldowns = new();
-        private const double CooldownSeconds = 5.0;
-
-        private readonly Dictionary<NodeId, Node> _nearbyNodesCache = new();
-        private const double CacheExpireSeconds = 30.0;
-
-        private readonly Dictionary<NodeId, DateTime> _recentlyVisible = new();
-        private const double VisibleGraceSeconds = 30.0;
 
         public void Dispose()
         {
@@ -54,160 +50,171 @@ namespace MistNet.DNVE3
             {
                 var interval = OptConfig.Data.ConnectionBalancerIntervalSeconds;
                 var jitter = UnityEngine.Random.Range(0f, interval * JitterRatio);
-                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
+                    cancellationToken: token);
 
-                if (_dnveDataStore.SelfData == null || _dnveDataStore.MergedHistogram == null) continue;
-                
-                var importantNodes = FindImportantNode();
+                if (_dnveDataStore.SelfData == null) continue;
+                if (_dnveDataStore.MergedHistogram == null) continue;
+                var importantNodes= FindImportantNode();
+
                 var count = Math.Min(OptConfig.Data.ExchangeCount, importantNodes.Count);
-                for (var i = 0; i < count; i++) SendRequestNodeList(importantNodes[i].nodeId);
+                for (var i = 0; i < count; i++)
+                {
+                    SendRequestNodeList(importantNodes[i].nodeId);
+                }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
+                    cancellationToken: token);
+
                 SelectConnection();
             }
         }
 
         private void SelectConnection()
         {
+            var allNodes = _dataStore.GetAllNodes().ToList();
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-            var now = DateTime.UtcNow;
 
-            var expiredCooldowns = _disconnectCooldowns.Where(kv => (now - kv.Value).TotalSeconds > CooldownSeconds).Select(kv => kv.Key).ToList();
-            foreach (var id in expiredCooldowns) _disconnectCooldowns.Remove(id);
+            var directions = SphericalHistogramUtils.Directions;
+            var selectedNodes = new List<Node>();
 
-            var expiredCache = _nearbyNodesCache.Where(kv => (now - _dnveDataStore.LastMessageTimes.GetValueOrDefault(kv.Key, DateTime.MinValue)).TotalSeconds > CacheExpireSeconds && !_dataStore.TryGet(kv.Key, out _)).Select(kv => kv.Key).ToList();
-            foreach (var id in expiredCache) _nearbyNodesCache.Remove(id);
-
-            foreach (var id in _routing.MessageNodes) _recentlyVisible[id] = now;
-            var expiredVisible = _recentlyVisible
-                .Where(kv => !_routing.MessageNodes.Contains(kv.Key) && (now - kv.Value).TotalSeconds > VisibleGraceSeconds)
-                .Select(kv => kv.Key)
-                .ToList();
-            foreach (var id in expiredVisible) _recentlyVisible.Remove(id);
-
-            var allNodesDict = _dataStore.GetAllNodes().ToDictionary(n => n.Id);
-            foreach (var kv in _nearbyNodesCache)
+            foreach (var dir in directions)
             {
-                if (!allNodesDict.ContainsKey(kv.Key)) allNodesDict[kv.Key] = kv.Value;
-            }
-            var allNodes = allNodesDict.Values.ToList();
+                Node closest = null;
+                var minDist = float.MaxValue;
 
-            var connectedIds = _routing.ConnectedNodes.ToHashSet();
-            var mergedHist = _dnveDataStore.MergedHistogram;
-            var targetCount = OptConfig.Data.MaxConnectionCount;
-
-            var candidates = new List<Node>();
-            const float threshold = 0.05f;
-
-            foreach (var node in allNodes)
-            {
-                if (node.Id == _peerRepository.SelfId) continue;
-                if (_disconnectCooldowns.ContainsKey(node.Id)) continue;
-
-                var vec = node.Position.ToVector3() - selfPos;
-                var distSq = vec.sqrMagnitude;
-                if (distSq == 0) continue;
-                
-                if (distSq <= OptConfig.Data.AoiRange * OptConfig.Data.AoiRange)
+                foreach (var node in allNodes)
                 {
-                    _nearbyNodesCache[node.Id] = node;
-                }
-                
-                if (connectedIds.Contains(node.Id) || allNodes.Count <= targetCount + 1 || distSq <= OptConfig.Data.AoiRange * OptConfig.Data.AoiRange)
-                {
-                    candidates.Add(node);
-                    continue;
+                    var vec = node.Position.ToVector3() - selfPos;
+                    var dot = Vector3.Dot(vec.normalized, dir);
+                    if (dot < DirectionThreshold) continue; // 同じ方向じゃない場合スキップ（閾値は調整可）
+
+                    var dist = vec.magnitude;
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        closest = node;
+                    }
                 }
 
-                int dirIdx = GetDirectionIndex(vec.normalized);
-                float densitySum = 0f;
-                if (dirIdx >= 0)
+                if (closest != null && !selectedNodes.Contains(closest))
+                    selectedNodes.Add(closest);
+            }
+
+            var selectedNodeIds = selectedNodes.Select(n => n.Id).ToHashSet();
+
+            // 1. 切断処理（スコアベース）
+            // 常に余裕（バッファ1）を持たせるために MaxConnectionCount - 1 をターゲットにする
+            var targetConnectionCount = OptConfig.Data.MaxConnectionCount - 1;
+            if (_routing.ConnectedNodes.Count > targetConnectionCount)
+            {
+                var numToDisconnect = _routing.ConnectedNodes.Count - targetConnectionCount;
+                numToDisconnect += OptConfig.Data.ForceDisconnectCount;
+
+                var nodesWithScore = _routing.ConnectedNodes
+                    .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
+                    .OrderBy(x => x.Score)
+                    .ToList();
+
+                var disconnectedCount = 0;
+                for (var i = 0; i < nodesWithScore.Count && disconnectedCount < numToDisconnect; i++)
                 {
-                    for (int j = 0; j < SphericalHistogramUtils.DistBins; j++) densitySum += mergedHist[dirIdx, j];
+                    var nodeId = nodesWithScore[i].Id;
+                    if (nodeId == _peerRepository.SelfId) continue;
+                    if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
+                    
+                    _layer.Transport.Disconnect(nodeId);
+                    disconnectedCount++;
                 }
-
-                if (densitySum >= threshold) candidates.Add(node);
             }
 
-            var scoredCandidates = candidates.Select(n => new 
-            { 
-                Node = n, 
-                Score = CalculateCompositeScore(n, selfPos, mergedHist, connectedIds) 
-            }).OrderByDescending(x => x.Score).ToList();
-
-            var selectedIds = scoredCandidates.Take(targetCount).Select(x => x.Node.Id).ToHashSet();
-
-            int excess = Math.Max(0, _routing.ConnectedNodes.Count - targetCount);
-            int disconnectLimit = excess;
-            if (_routing.ConnectedNodes.Count >= targetCount)
+            // 2. 接続処理
+            foreach (var node in selectedNodes)
             {
-                disconnectLimit += OptConfig.Data.ForceDisconnectCount;
-            }
-            
-            int disconnectedCount = 0;
+                var nodeId = node.Id;
+                if (nodeId == _peerRepository.SelfId) continue;
+                if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
 
-            foreach (var id in _routing.ConnectedNodes.Where(id => !selectedIds.Contains(id)).ToList())
-            {
-                if (disconnectedCount >= disconnectLimit || id == _peerRepository.SelfId) continue;
-                if (!_layer.Transport.IsConnectingOrConnected(id)) continue;
-                if (_routing.MessageNodes.Contains(id)) continue;
-                if (_recentlyVisible.TryGetValue(id, out var lastVisible) && (now - lastVisible).TotalSeconds <= VisibleGraceSeconds) continue;
+                // 接続上限に達している場合は、最もスコアの低いノードを1つ切断して枠を空ける（強制入れ替え）
+                if (_routing.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount)
+                {
+                    var worstNode = _routing.ConnectedNodes
+                        .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
+                        .OrderBy(x => x.Score)
+                        .FirstOrDefault();
+
+                    if (worstNode != null)
+                    {
+                        _layer.Transport.Disconnect(worstNode.Id);
+                    }
+                }
                 
-                _layer.Transport.Disconnect(id);
-                _disconnectCooldowns[id] = now;
-                disconnectedCount++;
-            }
-
-            foreach (var id in selectedIds)
-            {
-                if (id == _peerRepository.SelfId || _layer.Transport.IsConnectingOrConnected(id)) continue;
-                _layer.Transport.Connect(id);
+                _layer.Transport.Connect(nodeId);
             }
         }
 
-        private float CalculateCompositeScore(Node node, Vector3 selfPos, float[,] mergedHist, HashSet<NodeId> connectedIds)
+        private float CalculateNodeScore(NodeId id, HashSet<NodeId> selectedNodeIds, Vector3 selfPos)
         {
-            var vec = node.Position.ToVector3() - selfPos;
-            var dist = vec.magnitude;
-            var score = 1000f / (1f + dist);
-            
-            int dirIdx = GetDirectionIndex(vec.normalized);
-            if (dirIdx >= 0)
+            var score = 0f;
+
+            // 1. ヒストグラム選択ノード（最優先）
+            if (selectedNodeIds.Contains(id)) score += ScoreSelectedNode;
+
+            // 2. AOI内ノード（距離に基づく）
+            if (_routing.MessageNodes.Contains(id))
             {
-                float density = 0f;
-                for (int j = 0; j < SphericalHistogramUtils.DistBins; j++) density += mergedHist[dirIdx, j];
-                score += density * 10f; 
+                if (_dataStore.TryGet(id, out var node))
+                {
+                    var dist = Vector3.Distance(selfPos, node.Position.ToVector3());
+                    score += Mathf.Max(0, OptConfig.Data.AoiRange - dist);
+                }
+                else
+                {
+                    // 位置不明だがAOI対象なら一応加点
+                    score += ScoreAoiNodeUnknownPos;
+                }
             }
 
-            if (connectedIds.Contains(node.Id) && _dnveDataStore.LastMessageTimes.TryGetValue(node.Id, out var lastTime))
+            // 3. 通信実績（LRU）
+            if (_dnveDataStore.LastMessageTimes.TryGetValue(id, out var lastTime))
             {
-                score -= (float)(DateTime.UtcNow - lastTime).TotalSeconds * 0.1f; 
+                var elapsed = (float)(DateTime.UtcNow - lastTime).TotalSeconds;
+                score -= elapsed; // 新しいほど減点が少ない
             }
+            else
+            {
+                score -= PenaltyNoMessageHistory; // 通信実績なしは大幅減点
+            }
+
             return score;
-        }
-
-        private int GetDirectionIndex(Vector3 dir)
-        {
-            int bestIdx = -1;
-            float maxDot = -1f;
-            for (int i = 0; i < SphericalHistogramUtils.Directions.Length; i++)
-            {
-                var dot = Vector3.Dot(SphericalHistogramUtils.Directions[i], dir);
-                if (dot > maxDot) { maxDot = dot; bestIdx = i; }
-            }
-            return bestIdx;
         }
 
         private void SendRequestNodeList(NodeId nodeId)
         {
-            var message = new DNVEMessage { Type = DNVEMessageType.RequestNodeList, Payload = string.Empty, Receiver = nodeId };
+            // 相手にNodeListを要求する
+            var message = new DNVEMessage
+            {
+                Type = DNVEMessageType.RequestNodeList,
+                Payload = string.Empty,
+                Receiver = nodeId,
+            };
             _sender.Send(message);
         }
 
         private void OnRequestNodeListReceived(DNVEMessage receiveMessage)
         {
-            var connectedAllNodes = _dataStore.GetAllNodes().Where(n => _routing.ConnectedNodes.Contains(n.Id)).ToList();
-            var message = new DNVEMessage { Type = DNVEMessageType.NodeList, Payload = JsonConvert.SerializeObject(connectedAllNodes), Receiver = receiveMessage.Sender };
+            // NodeList要求を受信したら、自分のNodeListを送信する
+            var allNodes = _dataStore.GetAllNodes().ToHashSet();
+            var connectedAllNodes = allNodes
+                .Where(n => _routing.ConnectedNodes.Contains(n.Id))
+                .ToList();
+            var jsonPayload = JsonConvert.SerializeObject(connectedAllNodes);
+            var message = new DNVEMessage
+            {
+                Type = DNVEMessageType.NodeList,
+                Payload = jsonPayload,
+                Receiver = receiveMessage.Sender,
+            };
             _sender.Send(message);
         }
 
@@ -225,26 +232,52 @@ namespace MistNet.DNVE3
 
         private List<(NodeId nodeId, float score)> FindImportantNode()
         {
+            var otherNodeHists = _dnveDataStore.NodeMaps;
             var selfHist = _dnveDataStore.SelfData.Hists;
-            var selfCenter = _dnveDataStore.SelfData.Position.ToVector3();
+            var selfCenter = _dnveDataStore.SelfData.Position;
+
             var importantNodes = new List<(NodeId nodeId, float score)>();
 
-            foreach (var (nodeId, nodeData) in _dnveDataStore.NodeMaps)
+            foreach (var (nodeId, nodeData) in otherNodeHists)
             {
-                var projected = SphericalHistogramUtils.ProjectSphericalHistogram(nodeData.Hists, nodeData.Position.ToVector3(), selfCenter);
+                var otherHist = nodeData.Hists;
+                var otherCenter = nodeData.Position;
+
+                // 自分の中心に射影
+                var projected = SphericalHistogramUtils.ProjectSphericalHistogram(
+                    otherHist, otherCenter.ToVector3(), selfCenter.ToVector3()
+                );
+
                 var score = 0f;
-                for (var j = 0; j < SphericalHistogramUtils.DistBins; j++)
+                var distBins = SphericalHistogramUtils.DistBins;
+
+                // 近距離ほど重くする
+                for (var j = 0; j < distBins; j++)
                 {
-                    var weight = 1f / (1f + j);
+                    var weight = 1f / (1f + j); // distBin=0が最も重い
+
                     for (var i = 0; i < SphericalHistogramUtils.Directions.Length; i++)
                     {
+                        // 他ノードの強度を評価
                         var diff = projected[i, j] - selfHist[i, j];
-                        if (diff > 0f) score += diff * weight;
+                        if (diff > 0f)
+                            score += diff * weight;
                     }
                 }
-                if (score > 0f) importantNodes.Add((nodeId, score));
+
+                if (score > 0f)
+                    importantNodes.Add((nodeId, score));
             }
+
+            // スコア順にソート
             importantNodes.Sort((a, b) => b.score.CompareTo(a.score));
+
+            foreach (var (nodeId, score) in importantNodes)
+                MistLogger.Debug($"[重要ノード] {nodeId} - 近距離強度スコア: {score:F3}");
+
+            if (importantNodes.Count > 0)
+                MistLogger.Debug($"最も近距離影響の強いノード: {importantNodes[0].nodeId}");
+
             return importantNodes;
         }
     }
