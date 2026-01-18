@@ -14,23 +14,21 @@ It uses a signaling server only for the initial connection establishment, and th
 
 https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
-
 # Setup
-Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install MemoryPack.
 
-Add MistNet via Git URL: 
+1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install **MemoryPack**.
+
+2. Install [UniTask](https://github.com/Cysharp/UniTask) via Git URL:
+```
+https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+
+```
+
+3. Install **MistNet** via Git URL:
 ```
 https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
+
 ```
-
-The installer script will automatically handle UniTask and MemoryPack.Unity for you.
-
-UPM Package
-This software uses MemoryPack and UniTask.
-
-You need to import them beforehand.
-
-
 
 # Usage
 Place the "MistNet" Prefab in the Scene.
