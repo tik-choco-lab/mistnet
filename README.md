@@ -1,23 +1,25 @@
-## MistNet
-- [English Documents](README_EN.md)
-- [中文文件](README_CN.md)
+# MistNet
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)
+[![Releases](https://img.shields.io/github/release/tik-choco-lab/mistnet.svg)](https://github.com/tik-choco-lab/mistnet/releases)
+[![Documents](https://img.shields.io/badge/Docs-blue)](https://deepwiki.com/tik-choco-lab/mistnet)
+[![Japanese Documents](https://img.shields.io/badge/日本語-blue)](README_JP.md)
+[![中文文件](https://img.shields.io/badge/中文-red)](README_CN.md)
+
+# Features
+A fully decentralized network library for Unity based on WebRTC.
+It uses a signaling server only for the initial connection establishment, and thereafter realizes multiplayer communication basically without a server. A TURN server can also be used if necessary.
+
+**Implementation example**
+
+https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
 
-## 特徴
-Unity向けのWebRTCベースのネットワークライブラリです。
-初回の接続確立時のみシグナリングサーバーを利用し、それ以降は基本的にサーバー不要でマルチプレイ通信を実現します。必要に応じてTURNサーバーも利用可能です。
-
-**実装例**
-
-https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
-
-
-
-## 導入方法
+# Installation
 UPM Package
-本ソフトウェアは、MemoryPackとUniTaskが使用されています。
+This software uses MemoryPack and UniTask.
 
-事前にImportする必要があります。
+You need to import them beforehand.
 - MemoryPack
 ```
 https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
@@ -31,42 +33,41 @@ https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
 
-## Signaling Server
-こちらを使用することができます。
+# Signaling Server
+You can use this:
 
 https://github.com/tik-choco-lab/mistnet-signaling
 
-## 初期設定
-Scene上に「MistNet」Prefabを置いてください。
+# Initial Setup
+Place the "MistNet" Prefab in the Scene.
 
-Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
+The Prefab is located in "Packages/MistNet/Runtime/Prefabs".
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
-画像のように接続先選択方法を設定してください。
-フルメッシュ型で接続する場合はDefaultを設定してください。
+Please configure the connection selection method as shown in the image.
+Set it to Default if you want to connect in a full mesh.
 
 <img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
 
-## 同期するGameObjectの設定方法
+# Setting up GameObjects to Synchronize
 
-### 設定
-- 「MistSyncObject」を Add Componentします。
-    - RPC呼び出しや、同期するObjectの識別に使用されます。
+## Configuration
+- Add "MistSyncObject" component.
+    - Used for RPC calls and identifying the object to sync.
 
-### 座標同期方法
-- 「MistTransform」を Add Componentします。
+## Position Synchronization Method
+- Add "MistTransform" component.
 
-### Animation同期方法
-- 「MistAnimatorState」を Add Componentします。
+## Animation Synchronization Method
+- Add "MistAnimatorState" component.
 
-### Playerの生成
-- 最初からSceneに同期するGameObjectを配置するのではなく、
-MistNetを経由してInstantiateする必要があります。
+## Player Instantiation
+- Instead of placing the GameObject to synchronize in the Scene from the beginning, you need to Instantiate it via MistNet.
 
-- Addressable Assets に対象となるGameObjectのPrefabを登録し、下記のように実行してください。
+- Register the target GameObject's Prefab in Addressable Assets and execute as follows:
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
 
 
 ```csharp
@@ -76,40 +77,39 @@ string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
 MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
 ```
 
-## RPC
-### 登録方法
-`[MistRpc]`をメソッドの前につけます。
+# RPC
+## Registration Method
+Add `[MistRpc]` before the method.
 ```csharp
 [MistRpc]
 void RPC_○○ () {}
 ```
 
-### 呼び出し方法
+## Invocation Method
 ```csharp
 [SerializeField] MistSyncObject syncObject;
 
-// 自身を含めた全員に送信する方法
+// Method to send to everyone including self
 syncObject.RPCAll(nameof(RPC_○○), args);
 
-// 接続しているPeer全員に送信する方法
+// Method to send to all connected Peers
 syncObject.RPCOther(nameof(RPC_○○), args);
 
-// 送信先のIDを指定して実行する方法
+// Method to execute by specifying the destination ID
 syncObject.RPC(id, nameof(RPC_○○), args);
-
 ```
 
-## 変数の同期
+# Variable Synchronization
 
-`[MistSync]`をつけることで、変数の同期が可能です。
+By adding `[MistSync]`, you can synchronize variables.
 
 ```csharp
 [MistSync]
 int hp { get; set; }
 ```
-同期のタイミングは、ユーザーが新しく参加した時と、値が変更時に自動的に行われます。
+Synchronization occurs automatically when a user joins for the first time and when the value changes.
 
-また、同期時に、任意のメソッドを実行することも可能です。
+Also, you can execute an arbitrary method during synchronization.
 ```csharp
 [MistSync(OnChanged = nameof(OnChanged))]
 int hp { get; set; }
