@@ -32,18 +32,13 @@ https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
 https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
 ```
+# Quickstart
 
-# Usage
-Place the "MistNet" Prefab in the Scene.
+<img width="389" height="272" alt="image" src="https://github.com/user-attachments/assets/8737962c-fe2c-4d7c-901c-356e1074b917" />
 
-The Prefab is located in "Packages/MistNet/Runtime/Prefabs".
+<img width="737" height="171" alt="image" src="https://github.com/user-attachments/assets/f749da96-e55f-45c0-a988-92e9a5a87c35" />
 
-![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
-
-Please configure the connection selection method as shown in the image.
-Set it to Default if you want to connect in a full mesh.
-
-<img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
+<img width="364" height="64" alt="image" src="https://github.com/user-attachments/assets/d5f867e5-bf50-49c6-80ba-6087e30e8362" />
 
 ## Signaling Server
 
@@ -60,6 +55,17 @@ and set the signaling server URL.
 If you want to use your own signaling server, please refer to the following repository.
 https://github.com/tik-choco-lab/mistnet-signaling
 
+# Usage
+Place the "MistNet" Prefab in the Scene.
+
+The Prefab is located in "Packages/MistNet/Runtime/Prefabs".
+
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
+
+Please configure the connection selection method as shown in the image.
+Set it to Default if you want to connect in a full mesh.
+
+<img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
 
 # Setting up GameObjects to Synchronize
 
