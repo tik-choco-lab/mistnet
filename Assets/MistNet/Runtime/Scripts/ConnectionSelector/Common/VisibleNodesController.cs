@@ -32,23 +32,19 @@ namespace MistNet
 
         private void UpdateVisibleNodes()
         {
-            var nodeIds = _routingBase.ConnectedNodes;
+            var nodes = _dataStore.GetAllNodes().ToList();
 
-            if (nodeIds.Count == 0) return;
-
-            var nodes = new List<Node>();
-            foreach (var nodeId in nodeIds)
-            {
-                if (!_dataStore.TryGet(nodeId, out var node)) continue;
-                nodes.Add(node);
-            }
+            if (nodes.Count == 0) return;
 
             // 表示すべきNode一覧
+            var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
+
             var visibleTargetNodes = nodes
-                .OrderBy(kvp =>
-                    Vector3.Distance(MistSyncManager.I.SelfSyncObject.transform.position, kvp.Position.ToVector3()))
+                .Select(node => new { node.Id, Distance = Vector3.Distance(selfPos, node.Position.ToVector3()) })
+                .Where(x => x.Distance <= OptConfig.Data.AoiRange)
+                .OrderBy(x => x.Distance)
                 .Take(OptConfig.Data.VisibleCount)
-                .Select(kvp => kvp.Id)
+                .Select(x => x.Id)
                 .ToHashSet();
 
             var addVisibleNodes = visibleTargetNodes.Except(_routingBase.MessageNodes);

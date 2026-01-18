@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
@@ -39,6 +40,13 @@ namespace MistNet.DNVE3
             _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
+
+            var node = new Node
+            {
+                Id = message.Sender,
+                Position = data.Position
+            };
+            _dataStore.AddOrUpdate(node);
         }
 
         private List<Node> GetNodes()
@@ -85,7 +93,7 @@ namespace MistNet.DNVE3
                 // send
                 var json = JsonConvert.SerializeObject(selfHistData);
 
-                foreach (var nodeId in _routingBase.ConnectedNodes)
+                foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
                 {
                     var message = new DNVEMessage
                     {
@@ -116,6 +124,8 @@ namespace MistNet.DNVE3
             {
                 _dnveDataStore.NodeMaps.Remove(nodeId);
                 _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
+                _dnveDataStore.LastMessageTimes.Remove(nodeId);
+                _dataStore.Remove(nodeId);
             }
         }
 
