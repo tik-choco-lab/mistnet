@@ -1,0 +1,58 @@
+using System.Collections.Generic;
+using NaughtyAttributes;
+using UnityEngine;
+
+namespace MistNet.Minimal
+{
+    public class TestController : MonoBehaviour
+    {
+        [SerializeField] private NodeTest nodeTestPrefab;
+        [SerializeField] private int nodeCount = 10;
+
+        private readonly List<NodeTest> _nodes = new();
+
+        private void Start()
+        {
+            MistConfig.ReadConfig();
+            OptConfig.ReadConfig();
+        }
+
+        [Button]
+        private void SpawnNodes()
+        {
+            DestroyAllNodes();
+            for (int i = 0; i < nodeCount; i++)
+            {
+                var position = new Vector3(
+                    Random.Range(-50f, 50f),
+                    Random.Range(-50f, 50f),
+                    Random.Range(-50f, 50f)
+                );
+
+                var obj = Instantiate(nodeTestPrefab, position, Quaternion.identity);
+                _nodes.Add(obj);
+            }
+        }
+
+        [Button]
+        private void Signaling()
+        {
+            foreach (var node in _nodes)
+            {
+                node.Signaling();
+            }
+        }
+
+        private void DestroyAllNodes()
+        {
+            foreach (var node in _nodes)
+            {
+                if (node != null)
+                {
+                    Destroy(node.gameObject);
+                }
+            }
+            _nodes.Clear();
+        }
+    }
+}

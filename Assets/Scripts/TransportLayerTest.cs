@@ -1,0 +1,133 @@
+using System;
+using MemoryPack;
+using Unity.WebRTC;
+
+namespace MistNet.Minimal
+{
+    public class TransportLayerTest : ITransportLayer
+    {
+        private readonly IPeerRepository _peerRepository;
+        private readonly MistSignalingWebRTC _mistSignalingWebRtc;
+
+        private Action<NodeId> _onConnectedAction;
+        private Action<NodeId> _onDisconnectedAction;
+        private Action<MistMessage, NodeId> _onMessageAction;
+
+        public TransportLayerTest(IPeerRepository peerRepository, WLRegisterReceive wlRegisterReceive, WLSend wlSend)
+        {
+            _peerRepository = peerRepository;
+            _mistSignalingWebRtc = new MistSignalingWebRTC(_peerRepository, wlRegisterReceive, wlSend);
+        }
+
+        public void Dispose()
+        {
+            _mistSignalingWebRtc?.Dispose();
+        }
+
+        public void Init()
+        {
+        }
+
+        public void Connect(NodeId id)
+        {
+            if (id == _peerRepository.SelfId) return;
+            _mistSignalingWebRtc.Connect(id);
+        }
+
+        public void Disconnect(NodeId id)
+        {
+            if (id == _peerRepository.SelfId) return;
+            OnDisconnected(id);
+        }
+
+        public void DisconnectAll()
+        {
+            var nodeDict = _peerRepository.PeerDict;
+            foreach (var nodeId in nodeDict.Keys)
+            {
+                if (!IsConnectingOrConnected(nodeId)) continue;
+                Disconnect(nodeId);
+            }
+        }
+
+        public void Send(NodeId targetId, MistMessage data, bool isForward = false)
+        {
+            if (!IsConnected(targetId)) return;
+
+            if (!isForward)
+            {
+                data.HopCount = OptConfig.Data.HopCount;
+            }
+
+            var bytes = MemoryPackSerializer.Serialize(data);
+            var peerData = _peerRepository.PeerDict[targetId];
+            peerData.PeerEntity.Send(bytes);
+        }
+
+        public void SendLocation(NodeId targetId, byte[] data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddConnectCallback(Delegate callback)
+        {
+            _onConnectedAction += (Action<NodeId>)callback;
+        }
+
+        public void AddDisconnectCallback(Delegate callback)
+        {
+            _onDisconnectedAction += (Action<NodeId>)callback;
+        }
+
+        public void RegisterReceive(Action<MistMessage, NodeId> callback)
+        {
+            _onMessageAction += callback;
+        }
+
+        public void RegisterLocationReceive(Action<byte[], NodeId> callback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnConnected(NodeId id)
+        {
+            MistLogger.Info($"[Connected] {_peerRepository.SelfId}: {id}");
+            _onConnectedAction?.Invoke(id);
+        }
+
+        public void OnDisconnected(NodeId id)
+        {
+            MistLogger.Info($"[Disconnected] {_peerRepository.SelfId}: {id}");
+            _peerRepository.RemovePeer(id);
+            _onDisconnectedAction?.Invoke(id);
+        }
+
+        public void OnMessage(byte[] data, NodeId senderId)
+        {
+            var message = MemoryPackSerializer.Deserialize<MistMessage>(data);
+            message.HopCount--;
+            MistLogger.Trace($"[RECV][{message.Type.ToString()}] {message.Id} -> {message.TargetId}");
+            _onMessageAction?.Invoke(message, senderId);
+        }
+
+        public void OnLocationMessage(byte[] data, NodeId senderId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsConnectingOrConnected(NodeId id)
+        {
+            if (!_peerRepository.PeerDict.TryGetValue(id, out var peerData)) return false;
+            if (peerData.PeerEntity == null) return false;
+            if (peerData.PeerEntity.RtcPeer == null) return false;
+
+            return peerData.PeerEntity.RtcPeer.ConnectionState is RTCPeerConnectionState.Connected
+                or RTCPeerConnectionState.Connecting;
+        }
+
+        public bool IsConnected(NodeId id)
+        {
+            return _peerRepository.PeerDict.TryGetValue(id, out var data) && data.IsConnected;
+        }
+    }
+}

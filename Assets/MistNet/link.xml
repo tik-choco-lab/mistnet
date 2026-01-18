@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="Newtonsoft.Json">
+    <type fullname="Newtonsoft.Json.JsonConverter" preserve="all"/>
+    <type fullname="Newtonsoft.Json.JsonSerializer" preserve="all"/>
+  </assembly>
+  <assembly fullname="MistNet">
+    <type fullname="MistNet.NodeId" preserve="all"/>
+    <type fullname="MistNet.NodeIdConverter" preserve="all"/>
+    <type fullname="MistNet.NodeIdTypeConverter" preserve="all"/>
+  </assembly>
+</linker> 

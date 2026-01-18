@@ -1,0 +1,7 @@
+{
+  "RoomId": "MistNet",
+  "GlobalNode": {
+    "Enable": true,
+    "Port": 8080
+  }
+}

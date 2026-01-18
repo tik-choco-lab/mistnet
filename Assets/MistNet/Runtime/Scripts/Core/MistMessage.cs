@@ -6,14 +6,15 @@ public partial class MistMessage
     public MistNetMessageType Type;
     public string TargetId;
     public string Id;
-    public byte[] Data;
+    public byte[] Payload;
+    public int HopCount;
 }
 
 namespace MistNet
 {
     public struct MessageInfo
     {
-        public string SourceId { get; set; }
-        public string SenderId { get; set; }
+        public NodeId SourceId { get; set; }
+        public NodeId SenderId { get; set; }
     }
 }

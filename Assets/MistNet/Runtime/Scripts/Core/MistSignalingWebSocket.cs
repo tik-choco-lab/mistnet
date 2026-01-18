@@ -1,79 +1,120 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
-using WebSocketSharp;
 
 namespace MistNet
 {
-    public class MistSignalingWebSocket : MonoBehaviour
+    public class MistSignalingWebSocket : IDisposable
     {
-        public static MistSignalingWebSocket I;
-        public WebSocket Ws => _ws;
-        
-        private Dictionary<string, Action<Dictionary<string, object>>> _functions;
-        private WebSocket _ws;
-        private MistSignaling _mistSignaling;
-        private Queue<string> _messageQueue = new();
+        private Dictionary<SignalingType, Action<SignalingData>> _functions;
+        private WebSocketHandler _ws;
+        private MistSignalingHandler _mistSignalingHandler;
+        private readonly IPeerRepository _peerRepository;
+        private int _currentAddressIndex;
 
-        private void Start()
+        public MistSignalingWebSocket(IPeerRepository peerRepository)
         {
-            I = this;
-            _messageQueue.Clear();
-            _mistSignaling = new MistSignaling();
-            _mistSignaling.Send += Send;
+            _peerRepository = peerRepository;
+        }
+
+        public async UniTask Init()
+        {
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebSocket, _peerRepository);
+            _mistSignalingHandler.Send += Send;
 
             // Functionの登録
             _functions = new()
             {
-                { "signaling_response", _mistSignaling.ReceiveSignalingResponse},
-                { "offer", _mistSignaling.ReceiveOffer },
-                { "answer", _mistSignaling.ReceiveAnswer },
-                { "candidate_add", _mistSignaling.ReceiveCandidate },
+                { SignalingType.Request , _mistSignalingHandler.RequestOffer },
+                { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
+                { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
+                { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
+                { SignalingType.Candidates, _mistSignalingHandler.ReceiveCandidates },
             };
             
             // 接続
+            await UniTask.Yield(); // SignalingServerが立ち上がるのを待つ
             ConnectToSignalingServer();
-
-            // Check
-            _mistSignaling.SendSignalingRequest();
+            SendRequest();
         }
 
-        private void OnDestroy()
+        public async UniTask ReconnectToSignalingServer()
         {
-            if (_ws != null)
+            await _ws.CloseAsync();
+            await _ws.ConnectAsync();
+            SendRequest();
+        }
+
+        private void SendRequest()
+        {
+            var sendData = new SignalingData
             {
-                _ws.Close();
-            }
-        }
+                Type = SignalingType.Request,
+                SenderId = _peerRepository.SelfId,
+                RoomId = MistConfig.Data.RoomId,
+            };
 
-        private void Update()
-        {
-            if (_messageQueue.Count == 0) return;
-            
-            var text = _messageQueue.Dequeue();
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(text);
-            var type = response["type"].ToString();
-            _functions[type](response);
+            Send(sendData, null);
         }
 
         private void ConnectToSignalingServer()
         {
-            _ws = new WebSocket(MistConfig.SignalingServerAddress);
-            _ws.OnOpen += (sender, e) => { MistDebug.Log("[WebSocket] Connected"); };
-            _ws.OnClose += (sender, e) => { MistDebug.Log("[WebSocket] Closed"); };
-            _ws.OnMessage += (sender, e) =>
+            var address = MistConfig.Data.Bootstraps[_currentAddressIndex];
+            _ws = new WebSocketHandler(address);
+
+            _ws.OnOpen += () => MistLogger.Debug("[Signaling][WebSocket] Opened");
+            _ws.OnClose += message =>
             {
-                _messageQueue.Enqueue(e.Data);
+                MistLogger.Info($"[Signaling][WebSocket] Closed {message}");
+                // 接続が閉じた場合、再接続を試みる（失敗した場合のみ）
+                TryNextAddress();
             };
-            _ws.OnError += (sender, e) => { MistDebug.LogError($"[WebSocket] Error {e.Message}"); };
+
+            _ws.OnMessage += OnMessage;
+
+            _ws.OnError += message =>
+            {
+                MistLogger.Error($"[Signaling][WebSocket] Error {message}");
+                // エラーが発生した場合も再接続を試みる
+                TryNextAddress();
+            };
+
             _ws.Connect();
         }
 
-        private void Send(Dictionary<string, object> sendData, string _)
+        private void TryNextAddress()
         {
+            _currentAddressIndex++;
+            if (_currentAddressIndex >= MistConfig.Data.Bootstraps.Length)
+            {
+                MistLogger.Error("[Signaling][WebSocket] All signaling server addresses failed.");
+                _currentAddressIndex = 0; // Reset for future attempts
+                return;
+            }
+
+            ConnectToSignalingServer();
+        }
+
+        private void OnMessage(string message)
+        {
+            var response = JsonConvert.DeserializeObject<SignalingData>(message);
+            MistLogger.Trace($"[Signaling][WebSocket] Received: {response.Type} {response.SenderId}");
+            var type = response.Type;
+            _functions[type](response);
+        }
+
+        private void Send(SignalingData sendData, NodeId _)
+        {
+            MistLogger.Trace($"[Signaling][WebSocket] Send: {sendData.Type} {sendData.ReceiverId}");
             var text = JsonConvert.SerializeObject(sendData);
             _ws.Send(text);
+        }
+
+        public void Dispose()
+        {
+            _ws?.Dispose();
+            _mistSignalingHandler?.Dispose();
         }
     }
 }

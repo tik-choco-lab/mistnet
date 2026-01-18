@@ -10,9 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5898994104393881841}
   - component: {fileID: 2003660962140733667}
-  - component: {fileID: 8809256604049318856}
-  - component: {fileID: 8278323095259074780}
-  - component: {fileID: 6538681537652314171}
   m_Layer: 0
   m_Name: MistNet
   m_TagString: Untagged
@@ -32,8 +29,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1795780643808962780}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2003660962140733667
@@ -48,109 +44,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 415ede65e4374054fbaa5f84483248bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &8809256604049318856
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccc9ebdbb8d89af4496b6d0806570371, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &8278323095259074780
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 792e8e857ff797c439e5e9ba408a5418, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6538681537652314171
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8137426695319156061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bf1fa48a17cc6d4e8ff16849772df92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &8750905894533009966
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1795780643808962780}
-  - component: {fileID: 3758207676287050216}
-  - component: {fileID: 139678319387251089}
-  - component: {fileID: 1738796095727568208}
-  m_Layer: 0
-  m_Name: MistOptimizer
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1795780643808962780
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8750905894533009966}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5898994104393881841}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3758207676287050216
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8750905894533009966}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 670a82fed14f6fe4da5efb4785502c3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &139678319387251089
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8750905894533009966}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66623bab74c15ba48825dfd7f4f5f864, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1738796095727568208
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8750905894533009966}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd5624c37877e664d96f7ac804efc20c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  <Selector>k__BackingField: {fileID: 0}

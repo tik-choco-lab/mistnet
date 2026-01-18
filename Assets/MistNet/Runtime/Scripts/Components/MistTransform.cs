@@ -3,40 +3,94 @@ using UnityEngine;
 
 namespace MistNet
 {
+    /// <summary>
+    /// 位置同期
+    /// - SmoothDamp補間: 滑らかな追従
+    /// - 推測航法 (Extrapolation): パケット間の動きを予測
+    /// - 距離ベースLOD: 近い人は高頻度、遠い人は低頻度で同期
+    /// </summary>
     [RequireComponent(typeof(MistSyncObject))]
     public class MistTransform : MonoBehaviour
     {
-        [Tooltip("Note: This setting is applicable to all synchronized objects, excluding a player object")]
-        [SerializeField] private float _syncIntervalTimeSecond = 0.1f;
+        [Header("同期設定")]
+        [Tooltip("基本の同期間隔（秒）。近距離ではこの値が使用されます")]
+        [SerializeField] private float baseSyncInterval = 0.1f; // 10Hz
+        
+        [Header("距離ベースLOD設定")]
+        [Tooltip("高頻度同期の最大距離（この距離以内は基本間隔で同期）")]
+        [SerializeField] private float nearDistance = 5f;
+        
+        [Tooltip("低頻度同期になる距離（この距離以遠は最大間隔で同期）")]
+        [SerializeField] private float farDistance = 30f;
+        
+        [Tooltip("遠距離での同期間隔（秒）")]
+        [SerializeField] private float farSyncInterval = 0.5f; // 2Hz
+        
+        [Header("補間設定")]
+        [Tooltip("位置補間の滑らかさ（秒）。0.1〜0.2程度が推奨")]
+        [SerializeField] private float smoothTime = 0.12f;
+        
+        [Tooltip("回転補間の速度")]
+        [SerializeField] private float rotationLerpSpeed = 12f;
+        
+        [Tooltip("推測航法の減衰率（0〜1）。1で完全に予測、0で予測なし")]
+        [SerializeField] private float extrapolationDecay = 0.8f;
         
         private MistSyncObject _syncObject;
         private float _time;
         private P_Location _sendData;
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
-        private Vector3 _receivedPosition = Vector3.zero;
-        private Quaternion _receivedRotation = Quaternion.identity;
-        private float _elapsedTime;
+        
+        // 受信データ補間用
+        private Vector3 _targetPosition;
+        private Quaternion _targetRotation;
+        private Vector3 _receivedVelocity;
+        private Vector3 _currentVelocity; // SmoothDamp用の参照変数
+        private Transform _cachedTransform;
+        private float _currentSyncInterval;
+        private float _timeSinceLastReceive;
+        
+        // パケット順序保護用
+        private ushort _sendSequence;
+        private ushort _lastReceivedSequence;
+        
+        // 距離計算用
+        private static Transform _selfPlayerTransform;
 
-        private void Start()
+        public void Init()
         {
             _syncObject = GetComponent<MistSyncObject>();
+            _cachedTransform = transform;
+
+            _sendData = new P_Location
+            {
+                ObjId = _syncObject.Id,
+                Time = baseSyncInterval
+            };
+            
+            // 初期状態の設定
+            _targetPosition = _cachedTransform.position;
+            _targetRotation = _cachedTransform.rotation;
+            _previousPosition = _cachedTransform.position;
+            _previousRotation = _cachedTransform.rotation;
+            _currentSyncInterval = baseSyncInterval;
+
+            if (_syncObject.IsOwner && _syncObject.IsPlayerObject)
+            {
+                _selfPlayerTransform = _cachedTransform;
+            }
 
             if (!_syncObject.IsOwner)
             {
-                _syncIntervalTimeSecond = 0; // まだ受信していないので、同期しない
-                return;
+                _currentSyncInterval = 0; // まだ受信していないので、同期しない
             }
-
-            _sendData = new()
-            {
-                ObjId = _syncObject.Id,
-                Time = _syncIntervalTimeSecond
-            };
         }
 
         private void Update()
         {
+            if (_sendData == null) return;
+
             if (_syncObject.IsOwner)
             {
                 UpdateAndSendLocation();
@@ -50,29 +104,65 @@ namespace MistNet
         private void UpdateAndSendLocation()
         {
             _time += Time.deltaTime;
-            if (_time < _syncIntervalTimeSecond) return;
+            
+            // 距離ベースのLOD: 自分のプレイヤーがいない場合は基本間隔を使用
+            var syncInterval = CalculateSyncInterval();
+            
+            if (_time < syncInterval) return;
+            
+            var deltaTime = _time;
             _time = 0;
 
+            var currentPosition = _cachedTransform.position;
+            var currentRotation = _cachedTransform.rotation;
+
             // 座標が変わっていない場合は、送信しない
-            if (_previousPosition == transform.position &&
-                _previousRotation == transform.rotation) return;
+            if (_previousPosition == currentPosition &&
+                _previousRotation == currentRotation) return;
 
-            // 座標が異なる場合、送信する
-            _previousPosition = transform.position;
-            _previousRotation = transform.rotation;
+            // 速度計算（移動距離 / 経過時間）
+            var velocity = (currentPosition - _previousPosition) / deltaTime;
 
-            _sendData.Position = transform.position;
-            _sendData.Rotation = transform.rotation.eulerAngles;
+            _previousPosition = currentPosition;
+            _previousRotation = currentRotation;
+
+            _sendData.Position = currentPosition;
+            _sendData.Rotation = currentRotation.eulerAngles;
+            _sendData.Velocity = velocity;
+            _sendData.Time = syncInterval;
+            _sendData.Sequence = _sendSequence++;  // 0〜65535でラップ
             
-            if (_syncObject.IsPlayerObject && MistSendingOptimizer.I != null)
+            var data = MemoryPackSerializer.Serialize(_sendData);
+            
+            MistManager.I.AOI.SendAllLocation(data);
+        }
+        
+        /// <summary>
+        /// 距離に基づいて同期間隔を計算する（LOD）
+        /// </summary>
+        private float CalculateSyncInterval()
+        {
+            // 自身のPlayerObjectの場合は基本間隔を使用
+            if (_syncObject.IsPlayerObject) return baseSyncInterval;
+            
+            // 自分のプレイヤーがまだいない場合は基本間隔
+            if (_selfPlayerTransform == null) return baseSyncInterval;
+            
+            var distance = Vector3.Distance(_cachedTransform.position, _selfPlayerTransform.position);
+            
+            if (distance <= nearDistance)
             {
-                MistSendingOptimizer.I.SendLocationData = _sendData;
-                return;
+                return baseSyncInterval;
             }
-            
-            _sendData.Time = _syncIntervalTimeSecond;
-            var bytes = MemoryPackSerializer.Serialize(_sendData);
-            MistManager.I.SendAll(MistNetMessageType.Location, bytes);
+
+            if (distance >= farDistance)
+            {
+                return farSyncInterval;
+            }
+
+            // 距離に応じて線形補間
+            var t = (distance - nearDistance) / (farDistance - nearDistance);
+            return Mathf.Lerp(baseSyncInterval, farSyncInterval, t);
         }
         
         public void ReceiveLocation(P_Location location)
@@ -80,25 +170,64 @@ namespace MistNet
             if (_syncObject == null) return;
             if (_syncObject.IsOwner) return;
 
-            _receivedPosition = location.Position;
-            _receivedRotation = Quaternion.Euler(location.Rotation);
-            _syncIntervalTimeSecond = location.Time;
-            // MistDebug.Log($"[{location.ObjId}] Time: {_syncIntervalTimeSecond}");
-            _elapsedTime = 0f;
+            // パケット順序保護: unreliableチャンネルでは古いパケットが後から届くことがある
+            // 古いパケットは無視してラバーバンド現象を防止
+            if (!IsNewerSequence(location.Sequence, _lastReceivedSequence))
+            {
+                return;
+            }
+            _lastReceivedSequence = location.Sequence;
+
+            // ターゲット位置・回転・速度を更新
+            _targetPosition = location.Position;
+            _targetRotation = Quaternion.Euler(location.Rotation);
+            _receivedVelocity = location.Velocity;
+            _currentSyncInterval = location.Time;
+            _timeSinceLastReceive = 0f;
+        }
+
+        /// <summary>
+        /// シーケンス番号の比較（ラップアラウンド対応）
+        /// 例: 65535 → 0 へのラップを正しく「新しい」と判定
+        /// </summary>
+        private static bool IsNewerSequence(ushort incoming, ushort last)
+        {
+            // 最初のパケット
+            if (last == 0 && incoming == 0) return true;
+            
+            // 符号付き差分で比較（ラップアラウンド対応）
+            // 差分が正なら新しい、負なら古い
+            var diff = (short)(incoming - last);
+            return diff > 0;
         }
 
         private void InterpolationLocation()
         {
-            if (_syncIntervalTimeSecond == 0) return;
+            if (_currentSyncInterval <= 0) return;
             
-            // var timeRatio = _elapsedTime / _syncIntervalTimeSecond;
-            var timeRatio = Mathf.Clamp01(_elapsedTime / _syncIntervalTimeSecond);
-            _elapsedTime += Time.deltaTime;
-            
-            transform.position = Vector3.Lerp(transform.position, _receivedPosition, timeRatio);
-            transform.rotation = Quaternion.Slerp(transform.rotation, _receivedRotation, timeRatio);
-            
-            if (_elapsedTime >= _syncIntervalTimeSecond) _elapsedTime = 0f;
+            _timeSinceLastReceive += Time.deltaTime;
+
+            // 推測航法 (Extrapolation):
+            // パケット間隔の間も、相手は移動し続けていると仮定してターゲット位置を進める
+            // 時間経過とともに減衰させ、次のパケットとのズレを軽減
+            var extrapolationFactor = Mathf.Clamp01(1f - (_timeSinceLastReceive / _currentSyncInterval));
+            extrapolationFactor *= extrapolationDecay;
+            _targetPosition += _receivedVelocity * Time.deltaTime * extrapolationFactor;
+
+            // 位置の補間: SmoothDampを使用して滑らかに追従
+            _cachedTransform.position = Vector3.SmoothDamp(
+                _cachedTransform.position, 
+                _targetPosition, 
+                ref _currentVelocity, 
+                smoothTime
+            );
+
+            // 回転の補間: Slerpで滑らかに回転
+            _cachedTransform.rotation = Quaternion.Slerp(
+                _cachedTransform.rotation, 
+                _targetRotation, 
+                Time.deltaTime * rotationLerpSpeed
+            );
         }
     }
 }

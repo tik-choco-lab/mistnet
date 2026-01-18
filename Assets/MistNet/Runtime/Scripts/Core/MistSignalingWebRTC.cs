@@ -3,70 +3,69 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 
 namespace MistNet
 {
-    public class MistSignalingWebRTC : MonoBehaviour
+    public class MistSignalingWebRTC : IDisposable
     {
-        private MistSignaling _mistSignaling;
-        private Dictionary<string, Action<Dictionary<string, object>>> _functions;
-        
-        private void Start()
+        private readonly MistSignalingHandler _mistSignalingHandler;
+        private readonly Dictionary<SignalingType, Action<SignalingData>> _functions;
+        private readonly WLSend _wlSend;
+
+        public MistSignalingWebRTC(IPeerRepository peerRepository, WLRegisterReceive wlRegisterReceive, WLSend wlSend)
         {
-            _mistSignaling = new MistSignaling();
-            _mistSignaling.Send += SendSignalingMessage;
+            _mistSignalingHandler = new MistSignalingHandler(PeerActiveProtocol.WebRTC, peerRepository);
+            _mistSignalingHandler.Send += SendSignalingMessage;
+            _wlSend = wlSend;
             // Functionの登録
-            _functions = new()
+            _functions = new Dictionary<SignalingType, Action<SignalingData>>
             {
-                { "signaling_response", _mistSignaling.ReceiveSignalingResponse},
-                { "offer", _mistSignaling.ReceiveOffer },
-                { "answer", _mistSignaling.ReceiveAnswer },
-                { "candidate_add", _mistSignaling.ReceiveCandidate },
+                { SignalingType.Offer, _mistSignalingHandler.ReceiveOffer },
+                { SignalingType.Answer, _mistSignalingHandler.ReceiveAnswer },
+                { SignalingType.Candidate, _mistSignalingHandler.ReceiveCandidate },
             };
             
-            MistManager.I.AddRPC(MistNetMessageType.Signaling, ReceiveSignalingMessage);
-            MistManager.I.ConnectAction += Connect;
+            // MistManager.I.World.RegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
+            wlRegisterReceive(MistNetMessageType.Signaling, ReceiveSignalingMessage);
         }
-        
+
         /// <summary>
         /// 送信
         /// NOTE: 切断した相手にすぐに接続を試みると、nullになることがある
         /// </summary>
         /// <param name="sendData"></param>
         /// <param name="targetId"></param>
-        private void SendSignalingMessage(Dictionary<string, object> sendData, string targetId)
+        private void SendSignalingMessage(SignalingData sendData, NodeId targetId)
         {
             var message = new P_Signaling
             {
                 Data = JsonConvert.SerializeObject(sendData)
             };
             var data = MemoryPackSerializer.Serialize(message);
-            MistManager.I.Send(MistNetMessageType.Signaling, data, targetId);
-            var type = sendData["type"].ToString();
-            MistDebug.Log($"[SEND][Signaling][{type}] -> {targetId}");
+            _wlSend(MistNetMessageType.Signaling, data, targetId);
         }
 
         /// <summary>
         /// 受信
         /// </summary>
-        private void ReceiveSignalingMessage(byte[] bytes, string sourceId)
+        private void ReceiveSignalingMessage(byte[] bytes, NodeId senderId)
         {
             var receiveData = MemoryPackSerializer.Deserialize<P_Signaling>(bytes);
-            var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(receiveData.Data);
-            var type = response["type"].ToString();
-            if (type == "offer")
-            {
-                MistDebug.Log($"[Info][RECV][Signaling][{type}] {sourceId} ->");
-            }
-            MistDebug.Log($"[Info][RECV][Signaling][{type}] {sourceId} ->");
+            var response = JsonConvert.DeserializeObject<SignalingData>(receiveData.Data);
+            var type = response.Type;
+            MistLogger.Trace($"[Signaling][WebRTC][{type}] {response.SenderId}");
             _functions[type](response);
         }
 
-        private void Connect(string id)
+        public void Connect(NodeId id)
         {
-            MistDebug.Log($"[MistSignalingWebRTC] Connect: {id}");
-            _mistSignaling.SendOffer(id).Forget();
+            MistLogger.Trace($"[Signaling][WebRTC] Connecting: {id}");
+            _mistSignalingHandler.SendOffer(id).Forget();
+        }
+
+        public void Dispose()
+        {
+            _mistSignalingHandler?.Dispose();
         }
     }
 }

@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryPack;
 using UnityEngine;
@@ -6,62 +9,158 @@ using UnityEngine.AddressableAssets;
 
 namespace MistNet
 {
-    public class MistSyncManager : MonoBehaviour
+    public class MistSyncManager : IDisposable
     {
+        private const float SyncIntervalSeconds = 0.5f; // 同期間隔
         public static MistSyncManager I { get; private set; }
-        public MistSyncObject SelfSyncObject { get; set; }                  // 自身のSyncObject
-        public readonly Dictionary<string, MistSyncObject> MySyncObjects = new();    // 自身が生成したObject一覧
-        public readonly Dictionary<string, string> OwnerIdAndObjIdDict = new();      // ownerId, objId
-        private readonly Dictionary<string, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
-        private readonly Dictionary<string, MistAnimator> _syncAnimators = new();    // objId, MistAnimator
+        public MistSyncObject SelfSyncObject { get; set; }
+        public bool DestroyMyObjectsOnDisconnect { get; set; } // 自身のSyncObject
 
-        private void Awake()
+        private readonly Dictionary<ObjectId, MistSyncObject> _syncObjects = new();    // objId, MistSyncObject
+
+        // ユーザーが退出した際のGameObjectの削除に使用している Instantiateで生成されたObjectに限る
+        public readonly Dictionary<NodeId, List<ObjectId>> ObjectIdsByOwnerId = new();  // ownerId, objId　
+        private MistSyncObject _myPlayerObject; // 自身のプレイヤーオブジェクト
+
+        private readonly MistObjectPool _objectPool = new();
+        private readonly CancellationTokenSource _cts;
+        private float _timeSync;
+        private readonly ILayer _layer;
+
+        public MistSyncManager(ILayer layer)
         {
             I = this;
+            _cts = new();
+            _layer = layer;
         }
 
-        private void Start()
+        public void Start()
         {
-            MistManager.I.AddRPC(MistNetMessageType.ObjectInstantiate,
+            _layer.AOI.AddRPC(MistNetMessageType.ObjectInstantiate,
                 (a, b) => ReceiveObjectInstantiateInfo(a, b).Forget());
-            MistManager.I.AddRPC(MistNetMessageType.Location, ReceiveLocation);
-            MistManager.I.AddRPC(MistNetMessageType.Animation, ReceiveAnimation);
-            MistManager.I.AddRPC(MistNetMessageType.PropertyRequest, (_, sourceId) => SendAllProperties(sourceId));
+            // 位置同期は専用の高速チャンネルで受信
+            _layer.AOI.RegisterLocationReceive(ReceiveLocation);
+            _layer.AOI.AddRPC(MistNetMessageType.PropertyRequest, ReceiveRequestProperty);
+            _layer.AOI.AddRPC(MistNetMessageType.ObjectInstantiateRequest, ReceiveObjectInstantiateInfoRequest);
         }
 
-        public void SendObjectInstantiateInfo(string id)
+        public void Dispose()
         {
-            var sendData = new P_ObjectInstantiate();
-            foreach (var obj in MySyncObjects.Values)
-            {
-                sendData.ObjId = obj.Id;
-                var objTransform = obj.transform;
-                sendData.Position = objTransform.position;
-                sendData.Rotation = objTransform.rotation.eulerAngles;
-                sendData.PrefabAddress = obj.PrefabAddress;
-                var data = MemoryPackSerializer.Serialize(sendData);
-                MistManager.I.Send(MistNetMessageType.ObjectInstantiate, data, id);
-            }
+            _objectPool?.Dispose();
+            _cts.Cancel();
         }
 
-        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, string sourceId)
+        private async UniTask SendObjectInstantiateInfo(NodeId id)
+        {
+            // _myPlayerObjectが確実に入るまで待機
+            await UniTask.WaitUntil(() => _myPlayerObject != null);
+
+            var objTransform = _myPlayerObject.transform;
+            var sendData = new P_ObjectInstantiate
+            {
+                ObjId = _myPlayerObject.Id,
+                Position = objTransform.position,
+                Rotation = objTransform.rotation.eulerAngles,
+                PrefabAddress = _myPlayerObject.PrefabAddress
+            };
+
+            var data = MemoryPackSerializer.Serialize(sendData);
+            _layer.World.Send(MistNetMessageType.ObjectInstantiate, data, id);
+            MistLogger.Debug($"[Sync] SendObjectInstantiateInfo: {id}");
+        }
+
+        private async UniTaskVoid ReceiveObjectInstantiateInfo(byte[] data, NodeId sourceId)
         {
             var instantiateData = MemoryPackSerializer.Deserialize<P_ObjectInstantiate>(data);
-            if (_syncObjects.ContainsKey(instantiateData.ObjId)) return;
+            if (_syncObjects.ContainsKey(new ObjectId(instantiateData.ObjId)))
+            {
+                MistLogger.Warning($"[Sync] Object with id {instantiateData.ObjId} already exists!");
+                return;
+            }
 
-            var obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
+            // -----------------
+            // NOTE: これを入れないと高確率で生成に失敗する　おそらくIDの取得が間に合わないためであると考えられる
+            await UniTask.Yield();
+            var objId = new ObjectId(instantiateData.ObjId);
+            if (!_objectPool.TryGetObject(objId, out var obj))
+            {
+                obj = await Addressables.InstantiateAsync(instantiateData.PrefabAddress);
+                if (_objectPool.TryGetObject(objId, out _))
+                {
+                    MistLogger.Warning($"[Sync] Object with id {instantiateData.ObjId} already exists!");
+                    return;
+                }
+
+                _objectPool.AddObject(objId, obj);
+            }
+
             obj.transform.position = instantiateData.Position;
             obj.transform.rotation = Quaternion.Euler(instantiateData.Rotation);
-            var syncObject = obj.GetComponent<MistSyncObject>();
-            syncObject.SetData(instantiateData.ObjId, false, instantiateData.PrefabAddress, sourceId);
 
-            RegisterSyncObject(syncObject);
+            // -----------------
+            var syncObject = obj.GetComponent<MistSyncObject>();
+            syncObject.Init(new ObjectId(instantiateData.ObjId), true, instantiateData.PrefabAddress, sourceId);
+
+            _layer.AOI.OnSpawned(sourceId);
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfo {sourceId}");
         }
 
-        private void ReceiveLocation(byte[] data, string sourceId)
+        /// <summary>
+        /// 相手はRequestを出して，自身は出さないことがある
+        /// </summary>
+        /// <param name="id"></param>
+        public void RequestObjectInstantiateInfo(NodeId id)
+        {
+            var sendData = new P_ObjectInstantiateRequest();
+            var bytes = MemoryPackSerializer.Serialize(sendData);
+            _layer.World.Send(MistNetMessageType.ObjectInstantiateRequest, bytes, id);
+            MistLogger.Debug($"[Sync] RequestObjectInstantiateInfo: {id}");
+        }
+
+        /// <summary>
+        /// TODO: ここが呼ばれないことがある
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="sourceId"></param>
+        private void ReceiveObjectInstantiateInfoRequest(byte[] data, NodeId sourceId)
+        {
+            MistLogger.Debug($"[Sync] ReceiveObjectInstantiateInfoRequest {sourceId}");
+            SendObjectInstantiateInfo(sourceId).Forget();
+        }
+
+        public void RemoveObject(NodeId targetId)
+        {
+            MistLogger.Debug($"[Sync] RemoveObject: {targetId}");
+            if (DestroyMyObjectsOnDisconnect) DestroyBySenderId(targetId);
+            else DestroyPlayerObject(targetId);
+        }
+
+        private void DestroyPlayerObject(NodeId targetId)
+        {
+            if (!ObjectIdsByOwnerId.ContainsKey(targetId))
+            {
+                MistLogger.Warning($"No objects found for ownerId: {targetId}");
+                return;
+            }
+
+            var playerObjectId = ObjectIdsByOwnerId[targetId].FirstOrDefault(
+                id => _syncObjects.ContainsKey(id) && _syncObjects[id].IsPlayerObject);
+
+            if (playerObjectId == null)
+            {
+                MistLogger.Warning($"No player object found for ownerId: {targetId}");
+                return;
+            }
+
+            var playerObject = _syncObjects[playerObjectId];
+            _objectPool.Destroy(playerObject.gameObject);
+            _syncObjects.Remove(playerObjectId);
+        }
+
+        private void ReceiveLocation(byte[] data, NodeId sourceId)
         {
             var location = MemoryPackSerializer.Deserialize<P_Location>(data);
-            var syncObject = GetSyncObject(location.ObjId);
+            var syncObject = GetSyncObject(new ObjectId(location.ObjId));
             if (syncObject == null) return;
             syncObject.MistTransform.ReceiveLocation(location);
         }
@@ -70,110 +169,113 @@ namespace MistNet
         {
             if (!_syncObjects.TryAdd(syncObject.Id, syncObject))
             {
-                MistDebug.LogError($"Sync object with id {syncObject.Id} already exists!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} already exists!");
                 return;
             }
 
-            if (syncObject.IsOwner)
+            switch (syncObject.IsOwner)
             {
-                // 最初のGameObjectは、接続先最適化に使用するため、PlayerObjectであることを設定
-                if(MySyncObjects.Count == 0) syncObject.IsPlayerObject = true;
-                
-                MySyncObjects.Add(syncObject.Id, syncObject);
-            }
-            else
-            {
-                // 自身以外のSyncObjectの登録
-                var sendData = new P_PropertyRequest();
-                var bytes = MemoryPackSerializer.Serialize(sendData);
-                MistManager.I.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
+                case true when syncObject.IsPlayerObject:
+                    _myPlayerObject = syncObject;
+                    break;
+                case false:
+                {
+                    // 自身以外のSyncObjectの登録
+                    var sendData = new P_PropertyRequest
+                    {
+                        ObjId = syncObject.Id,
+                    };
+                    var bytes = MemoryPackSerializer.Serialize(sendData);
+                    _layer.World.Send(MistNetMessageType.PropertyRequest, bytes, syncObject.OwnerId);
+                    break;
+                }
             }
 
-            OwnerIdAndObjIdDict.Add(syncObject.OwnerId, syncObject.Id);
-            RegisterSyncAnimator(syncObject);
-        }
-
-        private void SendAllProperties(string id)
-        {
-            foreach (var obj in MySyncObjects.Values)
+            // OwnerIdAndObjIdDictに登録 自動削除で使用する
+            if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
             {
-                obj.SendAllProperties(id);
+                ObjectIdsByOwnerId[syncObject.OwnerId] = new List<ObjectId>();
             }
+            ObjectIdsByOwnerId[syncObject.OwnerId].Add(syncObject.Id);
         }
 
         public void UnregisterSyncObject(MistSyncObject syncObject)
         {
             if (!_syncObjects.ContainsKey(syncObject.Id))
             {
-                MistDebug.LogWarning($"Sync object with id {syncObject.Id} does not exist!");
+                MistLogger.Warning($"Sync object with id {syncObject.Id} does not exist!");
                 return;
             }
 
             _syncObjects.Remove(syncObject.Id);
-            if (MySyncObjects.ContainsKey(syncObject.Id))
+            if (!ObjectIdsByOwnerId.ContainsKey(syncObject.OwnerId))
             {
-                MySyncObjects.Remove(syncObject.Id);
+                MistLogger.Warning($"No objects found for ownerId: {syncObject.OwnerId}");
+                return;
             }
-
-            OwnerIdAndObjIdDict.Remove(syncObject.OwnerId);
+            ObjectIdsByOwnerId[syncObject.OwnerId].Remove(syncObject.Id);
             
-            UnregisterSyncAnimator(syncObject);
+            _layer.AOI.OnDestroyed(syncObject.OwnerId);
         }
 
-        public MistSyncObject GetSyncObject(string id)
+        public MistSyncObject GetSyncObject(NodeId id)
+        {
+            var objectId = ObjectIdsByOwnerId
+                .FirstOrDefault(pair => pair.Key == id).Value?.FirstOrDefault();
+            if (objectId == null || !_syncObjects.ContainsKey(objectId))
+            {
+                return null;
+            }
+
+            return _syncObjects[objectId];
+        }
+
+        public MistSyncObject GetSyncObject(ObjectId id)
         {
             if (!_syncObjects.ContainsKey(id))
             {
-                MistDebug.LogWarning($"Sync object with id {id} does not exist!");
+                MistLogger.Warning($"Sync object with id {id} does not exist!");
                 return null;
             }
 
             return _syncObjects[id];
         }
 
-        public void DestroyBySenderId(string senderId)
+        private void DestroyBySenderId(NodeId senderId)
         {
-            if (!OwnerIdAndObjIdDict.ContainsKey(senderId))
+            if (!ObjectIdsByOwnerId.ContainsKey(senderId))
             {
-                MistDebug.LogWarning("Already destroyed");
+                MistLogger.Warning("Already destroyed");
                 return;
             }
 
-            var objId = OwnerIdAndObjIdDict[senderId];
-            Destroy(_syncObjects[objId].gameObject);
-            _syncObjects.Remove(objId);
-
-            OwnerIdAndObjIdDict.Remove(senderId);
-        }
-
-        private void RegisterSyncAnimator(MistSyncObject syncObject)
-        {
-            if (_syncAnimators.ContainsKey(syncObject.Id))
+            var objIds = ObjectIdsByOwnerId[senderId];
+            foreach (var id in objIds)
             {
-                MistDebug.LogError($"Sync animator with id {syncObject.Id} already exists!");
-                return;
+                _objectPool.Destroy(_syncObjects[id].gameObject);
+                _syncObjects.Remove(id);
             }
 
-            if (!syncObject.TryGetComponent(out MistAnimator syncAnimator)) return;
-            _syncAnimators.Add(syncObject.Id, syncAnimator);
+            ObjectIdsByOwnerId.Remove(senderId);
         }
 
-        private void UnregisterSyncAnimator(MistSyncObject syncObject)
+        private void ReceiveRequestProperty(byte[] data, NodeId sourceId)
         {
-            if (!_syncAnimators.ContainsKey(syncObject.Id))
+            var requestData = MemoryPackSerializer.Deserialize<P_PropertyRequest>(data);
+            if (!_syncObjects.TryGetValue(new ObjectId(requestData.ObjId), out var syncObject)) return;
+            syncObject.SendAllProperties(sourceId);
+        }
+
+        public void UpdateSyncObjects()
+        {
+            _timeSync += Time.deltaTime;
+            if (_timeSync < SyncIntervalSeconds) return;
+            _timeSync = 0f;
+            foreach (var syncObject in _syncObjects.Values)
             {
-                MistDebug.LogWarning($"Sync animator with id {syncObject.Id} does not exist!");
-                return;
+                if (!syncObject.IsOwner) continue;
+                syncObject.WatchPropertiesAsync();
             }
-
-            _syncAnimators.Remove(syncObject.Id);
-        }
-        
-        private void ReceiveAnimation(byte[] data, string sourceId)
-        {
-            var receiveData = MemoryPackSerializer.Deserialize<P_Animation>(data);
-            if (!_syncAnimators.TryGetValue(receiveData.ObjId, out var syncAnimator)) return;
-            syncAnimator.ReceiveAnimState(receiveData);
         }
     }
 }

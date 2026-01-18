@@ -1,33 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using MistNet.Evaluation;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace MistNet
 {
     public class MistDebugMove : MonoBehaviour
     {
-        private static int AreaSize = 1000;
-        [SerializeField] MistSyncObject syncObject;
-        [SerializeField] private float maxSpeed = 1f;
+        private const float LoopDelaySeconds = 1.0f;
+        [SerializeField] private MistSyncObject syncObject;
         [SerializeField] private bool yFixed;
         private Vector3 _moveVector = Vector3.zero;
-        
+        private int _areaSize;
+
         private void Start()
         {
-            var x = Random.Range(-maxSpeed, maxSpeed);
-            var y = yFixed ? 0 : Random.Range(-maxSpeed, maxSpeed);
-            var z = Random.Range(-maxSpeed, maxSpeed);
-            _moveVector = new Vector3(x, y, z);
-        }
-        
-        private void Update()
-        {
             if (!syncObject.IsOwner) return;
-            transform.position += _moveVector;
-            
-            if (transform.position.x > AreaSize || transform.position.x < -AreaSize) _moveVector.x = -_moveVector.x;
-            if (transform.position.y > AreaSize || transform.position.y < -AreaSize) _moveVector.y = -_moveVector.y;
-            if (transform.position.z > AreaSize || transform.position.z < -AreaSize) _moveVector.z = -_moveVector.z;
+
+            _areaSize = EvalConfig.Data.MaxAreaSize / 2;
+            var maxMoveSpeed = EvalConfig.Data.MaxMoveSpeed;
+            var x = Random.Range(-maxMoveSpeed, maxMoveSpeed);
+            var y = yFixed ? 0 : Random.Range(-maxMoveSpeed, maxMoveSpeed);
+            var z = Random.Range(-maxMoveSpeed, maxMoveSpeed);
+            _moveVector = new Vector3(x, y, z);
+            LoopMove(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private async UniTask LoopMove(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                transform.position += _moveVector;
+                if (transform.position.x > _areaSize || transform.position.x < -_areaSize) _moveVector.x = -_moveVector.x;
+                if (transform.position.y > _areaSize || transform.position.y < -_areaSize) _moveVector.y = -_moveVector.y;
+                if (transform.position.z > _areaSize || transform.position.z < -_areaSize) _moveVector.z = -_moveVector.z;
+                await UniTask.Delay(TimeSpan.FromSeconds(LoopDelaySeconds), cancellationToken: token);
+            }
         }
     }
 }

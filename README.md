@@ -1,104 +1,91 @@
 # MistNet
-- [English Documents](README_EN.md)
-- [中文文件](README_CN.md)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)
+[![Releases](https://img.shields.io/github/release/tik-choco-lab/mistnet.svg)](https://github.com/tik-choco-lab/mistnet/releases)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tik-choco-lab/mistnet)
+[![Japanese Documents](https://img.shields.io/badge/日本語-blue)](README_JP.md)
+[![中文文件](https://img.shields.io/badge/中文-red)](README_CN.md)
 
-完全分散型ネットワークライブラリです
+# Features
+A fully decentralized network library for Unity based on WebRTC.
+It uses a signaling server only for the initial connection establishment, and thereafter realizes multiplayer communication basically without a server. A TURN server can also be used if necessary.
 
-**実装例**
+**Implementation example**
 
-https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
+https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
+# Setup
 
+1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install **MemoryPack**.
 
-# 特徴
-- パーシャルメッシュ型P2Pで接続を行います
-- 中央となるサーバーが存在しません
-- 通信にはWebRTCを使用します
-- 仮想空間の座標に基づいて接続先が自動的に決定されます
-
-# 導入方法
-UPM Package
-本ソフトウェアは、MemoryPackとUniTaskが使用されています。
-
-事前にImportする必要があります。
-- MemoryPack
+2. Install [MemoryPack](https://github.com/Cysharp/MemoryPack) via Git URL:
 ```
-https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
+https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity
 ```
-- UniTask
+
+3. Install [UniTask](https://github.com/Cysharp/UniTask) via Git URL:
 ```
 https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
-- MistNet
+
+4. Install **MistNet** via Git URL:
 ```
-https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
 ```
 
-# Signaling Server
-2種類用意しています。どちらも処理内容は同じです。
-## Python
-- MistNet/main.py
+# Quickstart
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/f0c37c6a-aec2-47d7-8b09-99162c56e35a)
+<img width="389" height="272" alt="image" src="https://github.com/user-attachments/assets/8737962c-fe2c-4d7c-901c-356e1074b917" />
 
+<img width="737" height="171" alt="image" src="https://github.com/user-attachments/assets/f749da96-e55f-45c0-a988-92e9a5a87c35" />
 
-## C#
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/c5b11c4e-4604-455e-8c1d-81f77eee0d3d)
+<img width="364" height="64" alt="image" src="https://github.com/user-attachments/assets/d5f867e5-bf50-49c6-80ba-6087e30e8362" />
 
-# 初期設定
-Scene上に「MistNet」Prefabを置いてください。
+## Signaling Server
 
-Prefabは「Packages/MistNet/Runtime/Prefabs」の中にあります。
+When you run first, a config file will be generated.
+Open mistnet_config.json
+and set the signaling server URL.
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
-
-
-# 接続設定
-- SignalingServerAddress
-    - Signalingをどこで行うか
-- MinConnection (現在は未使用)
-- LimitConnection
-    - 制限する人数
-        - 接続人数がこの制限を超えることがありますが、
-        接続人数が制限に収まるように、優先度の低いPeerが自動的に切断されます。
-- MaxConnection
-    - 最大接続人数
 ```json
-{
-    "SignalingServerAddress": "ws://localhost:8080/ws",
-    "MinConnection": 2,
-    "LimitConnection": 20,
-    "MaxConnection": 80
-}
+"bootstraps": [
+    "wss://rtc.tik-choco.com/signaling"
+],
 ```
+    
+If you want to use your own signaling server, please refer to the following repository.
+https://github.com/tik-choco-lab/mistnet-signaling
 
-# 同期するGameObjectの設定方法
+# Usage
+Place the "MistNet" Prefab in the Scene.
 
-## 設定
-- 「MistSyncObject」を Add Componentします。
-    - RPC呼び出しや、同期するObjectの識別に使用されます。
+The Prefab is located in "Packages/MistNet/Runtime/Prefabs".
 
-## 座標同期方法
-- 「MistTransform」を Add Componentします。
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
-## Animation同期方法
-- 「MistAnimator」を Add Componentします。
-- 同期対象とするParameterを下記のように設定してください。
+Please configure the connection selection method as shown in the image.
+Set it to Default if you want to connect in a full mesh.
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/6a52670a-ff8e-4346-9329-32a90db26904)
+<img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
 
-## 同期GameObjectの設定例
+# Setting up GameObjects to Synchronize
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/ed16052a-2bae-4dea-bf0f-a7ce367f10b7)
+## Configuration
+- Add "MistSyncObject" component.
+    - Used for RPC calls and identifying the object to sync.
 
+## Position Synchronization Method
+- Add "MistTransform" component.
 
-## Instantiate
-- 最初からSceneに同期するGameObjectを配置するのではなく、
-MistNetを経由してInstantiateする必要があります。
+## Animation Synchronization Method
+- Add "MistAnimatorState" component.
 
-- Addressable Assets に対象となるGameObjectのPrefabを登録し、下記のように実行してください。
+## Player Instantiation
+- Instead of placing the GameObject to synchronize in the Scene from the beginning, you need to Instantiate it via MistNet.
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
+- Register the target GameObject's Prefab in Addressable Assets and execute as follows:
+
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
 
 
 ```csharp
@@ -109,41 +96,41 @@ MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).For
 ```
 
 # RPC
-## 登録方法
-`[MistRpc]`をメソッドの前につけます。
+## Registration Method
+Add `[MistRpc]` before the method.
 ```csharp
 [MistRpc]
 void RPC_○○ () {}
 ```
 
-## 呼び出し方法
+## Invocation Method
 ```csharp
 [SerializeField] MistSyncObject syncObject;
 
-// 自身を含めた全員に送信する方法
-syncObject.RPCAllWithSelf(nameof(RPC_○○), args);
-
-// 接続しているPeer全員に送信する方法
+// Method to send to everyone including self
 syncObject.RPCAll(nameof(RPC_○○), args);
 
-// 送信先のIDを指定して実行する方法
-syncObject.RPC(id, nameof(RPC_○○), args);
+// Method to send to all connected Peers
+syncObject.RPCOther(nameof(RPC_○○), args);
 
+// Method to execute by specifying the destination ID
+syncObject.RPC(id, nameof(RPC_○○), args);
 ```
 
-# 変数の同期
+# Variable Synchronization
 
-`[MistSync]`をつけることで、変数の同期が可能です。
+By adding `[MistSync]`, you can synchronize variables.
 
 ```csharp
 [MistSync]
 int hp { get; set; }
 ```
-同期のタイミングは、ユーザーが新しく参加した時と、値が変更時に自動的に行われます。
+Synchronization occurs automatically when a user joins for the first time and when the value changes.
 
-また、同期時に、任意のメソッドを実行することも可能です。
+Also, you can execute an arbitrary method during synchronization.
 ```csharp
 [MistSync(OnChanged = nameof(OnChanged))]
 int hp { get; set; }
+
 void OnChanged();    
 ```

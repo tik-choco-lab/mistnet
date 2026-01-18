@@ -49,6 +49,8 @@ messages:
       - name: PrefabAddress
         type: string
 
+  - name: ObjectInstantiateRequest
+
   - name: ObjectChange
     fields:
       - name: ObjId
@@ -89,7 +91,12 @@ messages:
         type: int
       - name: MaxConnectNum
         type: int
-        
+
+  - name: ConnectionSelector
+    fields:
+      - name: Data
+        type: string
+
   - name: Ping
     fields:
       - name: Time
@@ -100,7 +107,11 @@ messages:
       - name: Time
         type: long       
         
-  - name: PropertyRequest     
+  - name: PropertyRequest
+    fields:
+      - name: ObjId
+        type: string
+        
   - name: LeaderNotify    
         
   - name: Error
