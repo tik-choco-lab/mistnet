@@ -2,7 +2,7 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)
 [![Releases](https://img.shields.io/github/release/tik-choco-lab/mistnet.svg)](https://github.com/tik-choco-lab/mistnet/releases)
-[![Documents](https://img.shields.io/badge/Docs-blue)](https://deepwiki.com/tik-choco-lab/mistnet)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tik-choco-lab/mistnet)
 [![Japanese Documents](https://img.shields.io/badge/日本語-blue)](README_JP.md)
 [![中文文件](https://img.shields.io/badge/中文-red)](README_CN.md)
 
