@@ -27,12 +27,9 @@ This software uses MemoryPack and UniTask.
 
 You need to import them beforehand.
 
-# Signaling Server
-You can use this:
 
-https://github.com/tik-choco-lab/mistnet-signaling
 
-# Initial Setup
+# Usage
 Place the "MistNet" Prefab in the Scene.
 
 The Prefab is located in "Packages/MistNet/Runtime/Prefabs".
@@ -43,6 +40,22 @@ Please configure the connection selection method as shown in the image.
 Set it to Default if you want to connect in a full mesh.
 
 <img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
+
+## Signaling Server
+
+When you run first, a config file will be generated.
+Open mistnet_config.json
+and set the signaling server URL.
+
+```json
+"bootstraps": [
+    "wss://rtc.tik-choco.com/signaling"
+],
+```
+    
+If you want to use your own signaling server, please refer to the following repository.
+https://github.com/tik-choco-lab/mistnet-signaling
+
 
 # Setting up GameObjects to Synchronize
 
