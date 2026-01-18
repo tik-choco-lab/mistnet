@@ -16,9 +16,12 @@ https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6
 
 
 # Setup
-Install NuGetForUnity and search/install MemoryPack.
+Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install MemoryPack.
 
-Add MistNet via Git URL: https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet.
+Add MistNet via Git URL: 
+```
+https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
+```
 
 The installer script will automatically handle UniTask and MemoryPack.Unity for you.
 
