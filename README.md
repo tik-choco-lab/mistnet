@@ -18,12 +18,17 @@ https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6
 
 1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install **MemoryPack**.
 
-2. Install [UniTask](https://github.com/Cysharp/UniTask) via Git URL:
+2. Install [MemoryPack](https://github.com/Cysharp/MemoryPack) via Git URL:
+```
+https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity
+```
+
+3. Install [UniTask](https://github.com/Cysharp/UniTask) via Git URL:
 ```
 https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
 
-3. Install **MistNet** via Git URL:
+4. Install **MistNet** via Git URL:
 ```
 https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
 ```
