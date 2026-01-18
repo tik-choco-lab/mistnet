@@ -1,14 +1,17 @@
-# MistNet
-這是一個完全分散型的網絡庫。
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)
+[![Releases](https://img.shields.io/github/release/tik-choco-lab/mistnet.svg)](https://github.com/tik-choco-lab/mistnet/releases)
+[![Documents](https://img.shields.io/badge/Docs-blue)](https://deepwiki.com/tik-choco-lab/mistnet)
+
+
+# 特點
+這是一個針對Unity的基於WebRTC的網絡庫。
+僅在初次建立連接時使用信令服務器，之後基本上無需服務器即可實現多人遊戲通信。如有需要，也可以使用TURN服務器。
 
 **實作範例**
 
-https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
+https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
-# 特點
-- 使用部分網狀P2P進行連接。
-- 沒有中央服務器。
-- 通信使用WebRTC。
 
 # 導入方法
 UPM Package
@@ -25,73 +28,49 @@ https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
 - MistNet
 ```
-git@github.com:DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
 ```
 
 # Signaling Server
-提供了兩種類型，處理方式相同。
-## Python
-- MistNet/main.py
+可以使用這裡提供的服務器：
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/f0c37c6a-aec2-47d7-8b09-99162c56e35a)
-
-## C#
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/c5b11c4e-4604-455e-8c1d-81f77eee0d3d)
+https://github.com/tik-choco-lab/mistnet-signaling
 
 # 初始設置
 請將「MistNet」Prefab放置於Scene中。
 
 Prefab位於「Packages/MistNet/Runtime/Prefabs」中。
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/e706a9e6-d549-489b-b1cc-1d4a770f6c70)
 
-# 連接設置
-- SignalingServerAddress
-    - 進行Signaling的地方
-- MinConnection (目前未使用)
-- LimitConnection
-    - 限制的人數
-        - 連接人數可能會超過此限制，但系統會自動斷開優先級較低的Peer，以保持連接人數在限制範圍內。
-- MaxConnection
-    - 最大連接人數
-```json
-{
-    "SignalingServerAddress": "ws://localhost:8080/ws",
-    "MinConnection": 2,
-    "LimitConnection": 20,
-    "MaxConnection": 80
-}
-```
+請參考圖片設置連接選擇方法。
+如果是全網狀（Full Mesh）連接，請設置為 Default。
+
+<img width="450" height="282" alt="image" src="https://github.com/user-attachments/assets/10eec4c6-8320-496c-a881-e2f20f877355" />
 
 # 同步GameObject的設定方法
 
 ## 設定
 - 添加「MistSyncObject」組件。
     - 用於RPC呼叫和同步對象的識別。
-    
+
 ## 座標同步方法
 - 添加「MistTransform」組件。
 
 ## 動畫同步方法
-- 添加「MistAnimator」組件。
-- 請按下面的方式設置同步目標參數。
+- 添加「MistAnimatorState」組件。
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/6a52670a-ff8e-4346-9329-32a90db26904)
-
-## 同步GameObject的設定示例
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/ed16052a-2bae-4dea-bf0f-a7ce367f10b7)
-
-## Instantiate
-- 不是將同步的GameObject從一開始就放置在Scene中，而是需要通過MistNet來Instantiate。
+## Player的生成
+- 不要從一開始就在Scene中配置要同步的GameObject，而是必須經由MistNet進行Instantiate。
 
 - 將目標GameObject的Prefab註冊到Addressable Assets中，然後按照以下方式執行。
 
-![image](https://github.com/DecentralizedMetaverse/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
+![image](https://github.com/tik-choco-lab/mistnet/assets/38463346/8ee873c1-89ff-4774-b762-a9017df5a825)
 
 
 ```csharp
 [SerializeField] 
-private string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
+string prefabAddress = "Assets/Prefab/MistNet/MistPlayerTest.prefab";
 
 MistManager.I.InstantiateAsync(prefabAddress, position, Quaternion.identity).Forget();
 ```
@@ -122,7 +101,6 @@ syncObject.RPC(id, nameof(RPC_○○), args);
 
 通過添加 `[MistSync]`，可以實現變量同步。
 
- 
 ```csharp
 [MistSync]
 int hp { get; set; }
