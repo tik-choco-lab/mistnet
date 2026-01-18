@@ -1,10 +1,10 @@
 {
     "name": "com.tik-choco.mistnet",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "displayName": "MistNet",
     "author": { "name": "tik-choco", "url": "https://tik-choco.com" },
-    "description": "分散ネットワークライブラリ",
-    "unity": "2022.3", 
+    "description": "Unity P2P networking made simple. No dedicated servers, no backend costs, powered by WebRTC.",
+    "unity": "6000.0", 
     "dependencies": {        
         "com.unity.webrtc": "3.0.0",
         "com.unity.nuget.newtonsoft-json": "3.2.1",
