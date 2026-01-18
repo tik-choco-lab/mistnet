@@ -14,31 +14,49 @@ It uses a signaling server only for the initial connection establishment, and th
 
 https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
+# Setup
 
-# Installation
-UPM Package
-This software uses MemoryPack and UniTask.
+1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) and search/install **MemoryPack**.
 
-You need to import them beforehand.
-- MemoryPack
+2. Install [MemoryPack](https://github.com/Cysharp/MemoryPack) via Git URL:
 ```
-https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
+https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity
 ```
-- UniTask
+
+3. Install [UniTask](https://github.com/Cysharp/UniTask) via Git URL:
 ```
 https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
-- MistNet
+
+4. Install **MistNet** via Git URL:
 ```
-https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
 ```
 
-# Signaling Server
-You can use this:
+# Quickstart
 
+<img width="389" height="272" alt="image" src="https://github.com/user-attachments/assets/8737962c-fe2c-4d7c-901c-356e1074b917" />
+
+<img width="737" height="171" alt="image" src="https://github.com/user-attachments/assets/f749da96-e55f-45c0-a988-92e9a5a87c35" />
+
+<img width="364" height="64" alt="image" src="https://github.com/user-attachments/assets/d5f867e5-bf50-49c6-80ba-6087e30e8362" />
+
+## Signaling Server
+
+When you run first, a config file will be generated.
+Open mistnet_config.json
+and set the signaling server URL.
+
+```json
+"bootstraps": [
+    "wss://rtc.tik-choco.com/signaling"
+],
+```
+    
+If you want to use your own signaling server, please refer to the following repository.
 https://github.com/tik-choco-lab/mistnet-signaling
 
-# Initial Setup
+# Usage
 Place the "MistNet" Prefab in the Scene.
 
 The Prefab is located in "Packages/MistNet/Runtime/Prefabs".

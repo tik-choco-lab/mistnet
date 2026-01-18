@@ -14,29 +14,46 @@ Unity向けのWebRTCベースのネットワークライブラリです。
 https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
 
+## セットアップ
 
-## 導入方法
-UPM Package
-本ソフトウェアは、MemoryPackとUniTaskが使用されています。
+1. [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) をインストールし、**MemoryPack** を検索してインストールします。
 
-事前にImportする必要があります。
-- MemoryPack
+2. 以下のGit URLから [MemoryPack](https://github.com/Cysharp/MemoryPack) をインストールします：
 ```
-https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
+https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity
 ```
-- UniTask
+
+3. 以下のGit URLから [UniTask](https://github.com/Cysharp/UniTask) をインストールします：
 ```
 https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
 ```
-- MistNet
+
+4. 以下のGit URLから **MistNet** をインストールします：
 ```
-https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
+https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet
 ```
+
+## クイックスタート
+
+<img width="389" height="272" alt="image" src="https://github.com/user-attachments/assets/8737962c-fe2c-4d7c-901c-356e1074b917" />
+
+<img width="737" height="171" alt="image" src="https://github.com/user-attachments/assets/f749da96-e55f-45c0-a988-92e9a5a87c35" />
+
+<img width="364" height="64" alt="image" src="https://github.com/user-attachments/assets/d5f867e5-bf50-49c6-80ba-6087e30e8362" />
 
 ## Signaling Server
-こちらを使用することができます。
-
+初回起動時に、設定ファイルが生成されます。
+mistnet_config.json を開き、シグナリングサーバーのURLを設定してください。
+```json
+"bootstraps": [
+    "wss://rtc.tik-choco.com/signaling"
+],
+```
+    
+独自のシグナリングサーバーを使用したい場合は、以下のリポジトリを参照してください。
 https://github.com/tik-choco-lab/mistnet-signaling
+
+
 
 ## 初期設定
 Scene上に「MistNet」Prefabを置いてください。
