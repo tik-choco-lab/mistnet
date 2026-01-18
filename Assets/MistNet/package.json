@@ -1,13 +1,14 @@
 {
     "name": "com.tik-choco.mistnet",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "displayName": "MistNet",
     "author": { "name": "tik-choco", "url": "https://tik-choco.com" },
     "description": "分散ネットワークライブラリ",
     "unity": "2022.3", 
     "dependencies": {        
-        "com.unity.webrtc": "3.0.0-pre.7",
-        "com.unity.nuget.newtonsoft-json": "3.2.1"
+        "com.unity.webrtc": "3.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.addressables": "2.7.6"
     },
     "samples": [
         {

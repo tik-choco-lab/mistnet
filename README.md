@@ -15,23 +15,17 @@ It uses a signaling server only for the initial connection establishment, and th
 https://github.com/tik-choco-lab/mistnet/assets/38463346/cd4a1d95-3422-4b07-b9b6-21f8c63cd1f8
 
 
-# Installation
+# Setup
+Install NuGetForUnity and search/install MemoryPack.
+
+Add MistNet via Git URL: https://github.com/tik-choco-lab/mistnet.git?path=/Assets/MistNet.
+
+The installer script will automatically handle UniTask and MemoryPack.Unity for you.
+
 UPM Package
 This software uses MemoryPack and UniTask.
 
 You need to import them beforehand.
-- MemoryPack
-```
-https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/Plugins/MemoryPack
-```
-- UniTask
-```
-https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
-```
-- MistNet
-```
-https://github.com/DecentralizedMetaverse/mistnet.git?path=/Assets/MistNet
-```
 
 # Signaling Server
 You can use this:
