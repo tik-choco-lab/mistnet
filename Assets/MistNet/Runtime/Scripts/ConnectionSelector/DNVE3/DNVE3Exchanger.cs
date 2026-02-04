@@ -74,14 +74,12 @@ namespace MistNet.DNVE3
                     cancellationToken: token);
                 DeleteOldData();
                 var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
-                // copy渡し
                 _dnveDataStore.SelfData = new SpatialHistogramData
                 {
                     Hists = (float[,])selfHistData.Hists.Clone(),
                     Position = selfHistData.Position,
                 };
 
-                // merge
                 foreach (var (_, data) in _dnveDataStore.NodeMaps)
                 {
                     var otherPos = data.Position;
@@ -90,7 +88,6 @@ namespace MistNet.DNVE3
                 }
                 _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
-                // send
                 var json = JsonConvert.SerializeObject(selfHistData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())

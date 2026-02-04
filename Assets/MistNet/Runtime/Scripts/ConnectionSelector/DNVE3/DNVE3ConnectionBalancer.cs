@@ -87,7 +87,7 @@ namespace MistNet.DNVE3
                 {
                     var vec = node.Position.ToVector3() - selfPos;
                     var dot = Vector3.Dot(vec.normalized, dir);
-                    if (dot < DirectionThreshold) continue; // 同じ方向じゃない場合スキップ（閾値は調整可）
+                    if (dot < DirectionThreshold) continue;
 
                     var dist = vec.magnitude;
                     if (dist < minDist)
@@ -103,8 +103,6 @@ namespace MistNet.DNVE3
 
             var selectedNodeIds = selectedNodes.Select(n => n.Id).ToHashSet();
 
-            // 1. 切断処理（スコアベース）
-            // 常に余裕（バッファ1）を持たせるために MaxConnectionCount - 1 をターゲットにする
             var targetConnectionCount = OptConfig.Data.MaxConnectionCount - 1;
             if (_routing.ConnectedNodes.Count > targetConnectionCount)
             {
@@ -128,14 +126,12 @@ namespace MistNet.DNVE3
                 }
             }
 
-            // 2. 接続処理
             foreach (var node in selectedNodes)
             {
                 var nodeId = node.Id;
                 if (nodeId == _peerRepository.SelfId) continue;
                 if (_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
 
-                // 接続上限に達している場合は、最もスコアの低いノードを1つ切断して枠を空ける（強制入れ替え）
                 if (_routing.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount)
                 {
                     var worstNode = _routing.ConnectedNodes
@@ -203,7 +199,6 @@ namespace MistNet.DNVE3
 
         private void OnRequestNodeListReceived(DNVEMessage receiveMessage)
         {
-            // NodeList要求を受信したら、自分のNodeListを送信する
             var allNodes = _dataStore.GetAllNodes().ToHashSet();
             var connectedAllNodes = allNodes
                 .Where(n => _routing.ConnectedNodes.Contains(n.Id))
@@ -243,7 +238,6 @@ namespace MistNet.DNVE3
                 var otherHist = nodeData.Hists;
                 var otherCenter = nodeData.Position;
 
-                // 自分の中心に射影
                 var projected = SphericalHistogramUtils.ProjectSphericalHistogram(
                     otherHist, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SphericalHistogramBinCount
                 );

@@ -13,10 +13,10 @@ public class SphericalHistogramTests
     [SetUp]
     public void SetUp()
     {
-        // ランダムノード
-        nodes = new Vector3[500];
+        var nodeCount = 500;
+        nodes = new Vector3[nodeCount];
         var rng = new System.Random(42);
-        for (int i = 0; i < nodes.Length; i++)
+        for (var i = 0; i < nodes.Length; i++)
         {
             nodes[i] = new Vector3(
                 (float)(rng.NextDouble() * 10000),
@@ -58,10 +58,10 @@ public class SphericalHistogramTests
         var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
         var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerOld);
 
-        int dirCount = hist.GetLength(0);
-        int binCount = hist.GetLength(1);
-        for (int i = 0; i < dirCount; i++)
-            for (int j = 0; j < binCount; j++)
+        var dirCount = hist.GetLength(0);
+        var binCount = hist.GetLength(1);
+        for (var i = 0; i < dirCount; i++)
+            for (var j = 0; j < binCount; j++)
                 Assert.AreEqual(hist[i, j], histProj[i, j]);
     }
 
@@ -72,13 +72,13 @@ public class SphericalHistogramTests
         int binCount = SphericalHistogramUtils.DefaultDistBins;
 
         // 正解分布
-        float[] distTrue = new float[dirCount];
+        var distTrue = new float[dirCount];
         foreach (var node in nodes)
         {
-            Vector3 vec = node - centerNew;
-            Vector3 unitVec = vec.magnitude > 0 ? vec.normalized : Vector3.zero;
+            var vec = node - centerNew;
+            var unitVec = vec.magnitude > 0 ? vec.normalized : Vector3.zero;
 
-            for (int i = 0; i < dirCount; i++)
+            for (var i = 0; i < dirCount; i++)
                 distTrue[i] += Mathf.Max(Vector3.Dot(unitVec, SphericalHistogramUtils.Directions[i]), 0f);
         }
 
@@ -87,21 +87,21 @@ public class SphericalHistogramTests
         float[,] histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
-        float[] distApprox = new float[dirCount];
-        for (int i = 0; i < dirCount; i++)
-            for (int j = 0; j < binCount; j++)
+        var distApprox = new float[dirCount];
+        for (var i = 0; i < dirCount; i++)
+            for (var j = 0; j < binCount; j++)
                 distApprox[i] += histProj[i, j];
 
         // 誤差計算
-        float sumSq = 0f;
-        float maxErr = 0f;
-        for (int i = 0; i < dirCount; i++)
+        var sumSq = 0f;
+        var maxErr = 0f;
+        for (var i = 0; i < dirCount; i++)
         {
-            float err = Mathf.Abs(distTrue[i] - distApprox[i]);
+            var err = Mathf.Abs(distTrue[i] - distApprox[i]);
             sumSq += err * err;
             if (err > maxErr) maxErr = err;
         }
-        float rmse = Mathf.Sqrt(sumSq / dirCount);
+        var rmse = Mathf.Sqrt(sumSq / dirCount);
 
         Debug.Log($"ノード数: {nodes.Length}");
         Debug.Log($"ヒストグラムサイズ: {hist.Length}");
