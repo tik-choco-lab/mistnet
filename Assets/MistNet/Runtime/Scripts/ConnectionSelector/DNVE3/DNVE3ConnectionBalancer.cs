@@ -245,11 +245,11 @@ namespace MistNet.DNVE3
 
                 // 自分の中心に射影
                 var projected = SphericalHistogramUtils.ProjectSphericalHistogram(
-                    otherHist, otherCenter.ToVector3(), selfCenter.ToVector3()
+                    otherHist, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SphericalHistogramBinCount
                 );
 
                 var score = 0f;
-                var distBins = SphericalHistogramUtils.DistBins;
+                var distBins = OptConfig.Data.SphericalHistogramBinCount;
 
                 // 近距離ほど重くする
                 for (var j = 0; j < distBins; j++)

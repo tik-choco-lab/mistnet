@@ -15,6 +15,7 @@ namespace MistNet.DNVE3
         protected override void Start()
         {
             OptConfig.ReadConfig();
+            Utils.SphericalHistogramUtils.Initialize(OptConfig.Data.SphericalHistogramLevel);
             base.Start();
 
             var dataStore = new NodeListStore();

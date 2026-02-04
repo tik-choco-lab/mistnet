@@ -86,7 +86,7 @@ namespace MistNet.DNVE3
                 {
                     var otherPos = data.Position;
                     var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3());
+                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3(), OptConfig.Data.SphericalHistogramBinCount);
                 }
                 _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
@@ -138,7 +138,7 @@ namespace MistNet.DNVE3
                 posArray[i] = nodes[i].Position.ToVector3();
             }
 
-            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray);
+            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray, OptConfig.Data.SphericalHistogramBinCount);
 
             return new SpatialHistogramData
             {

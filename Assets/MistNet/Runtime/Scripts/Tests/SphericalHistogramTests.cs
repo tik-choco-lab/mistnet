@@ -35,8 +35,9 @@ public class SphericalHistogramTests
         var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
         var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
-        Assert.AreEqual(26, hist.GetLength(0));
-        Assert.AreEqual(SphericalHistogramUtils.DistBins, hist.GetLength(1));
+        int dirCount = SphericalHistogramUtils.Directions.Length;
+        Assert.AreEqual(dirCount, hist.GetLength(0));
+        Assert.AreEqual(SphericalHistogramUtils.DefaultDistBins, hist.GetLength(1));
         Assert.AreEqual(hist.GetLength(0), histProj.GetLength(0));
         Assert.AreEqual(hist.GetLength(1), histProj.GetLength(1));
     }
@@ -57,22 +58,27 @@ public class SphericalHistogramTests
         var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
         var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerOld);
 
-        for (int i = 0; i < 26; i++)
-            for (int j = 0; j < SphericalHistogramUtils.DistBins; j++)
+        int dirCount = hist.GetLength(0);
+        int binCount = hist.GetLength(1);
+        for (int i = 0; i < dirCount; i++)
+            for (int j = 0; j < binCount; j++)
                 Assert.AreEqual(hist[i, j], histProj[i, j]);
     }
 
     [Test]
     public void TestProjectionAccuracy()
     {
+        int dirCount = SphericalHistogramUtils.Directions.Length;
+        int binCount = SphericalHistogramUtils.DefaultDistBins;
+
         // 正解分布
-        float[] distTrue = new float[26];
+        float[] distTrue = new float[dirCount];
         foreach (var node in nodes)
         {
             Vector3 vec = node - centerNew;
             Vector3 unitVec = vec.magnitude > 0 ? vec.normalized : Vector3.zero;
 
-            for (int i = 0; i < SphericalHistogramUtils.Directions.Length; i++)
+            for (int i = 0; i < dirCount; i++)
                 distTrue[i] += Mathf.Max(Vector3.Dot(unitVec, SphericalHistogramUtils.Directions[i]), 0f);
         }
 
@@ -81,21 +87,21 @@ public class SphericalHistogramTests
         float[,] histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
-        float[] distApprox = new float[26];
-        for (int i = 0; i < 26; i++)
-            for (int j = 0; j < SphericalHistogramUtils.DistBins; j++)
+        float[] distApprox = new float[dirCount];
+        for (int i = 0; i < dirCount; i++)
+            for (int j = 0; j < binCount; j++)
                 distApprox[i] += histProj[i, j];
 
         // 誤差計算
         float sumSq = 0f;
         float maxErr = 0f;
-        for (int i = 0; i < 26; i++)
+        for (int i = 0; i < dirCount; i++)
         {
             float err = Mathf.Abs(distTrue[i] - distApprox[i]);
             sumSq += err * err;
             if (err > maxErr) maxErr = err;
         }
-        float rmse = Mathf.Sqrt(sumSq / 26);
+        float rmse = Mathf.Sqrt(sumSq / dirCount);
 
         Debug.Log($"ノード数: {nodes.Length}");
         Debug.Log($"ヒストグラムサイズ: {hist.Length}");
