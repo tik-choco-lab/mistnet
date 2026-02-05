@@ -7,14 +7,15 @@ namespace MistNet.DNVE3
     [MemoryPackable]
     public partial class SpatialHistogramData
     {
-        [JsonProperty("hists")] public float[,] Hists;
-        [JsonProperty("position")] public Position Position;
+        [MemoryPackOrder(0)] [JsonProperty("hists")] public float[,] Hists;
+        [MemoryPackOrder(1)] [JsonProperty("position")] public Position Position;
     }
 
     [MemoryPackable]
     public partial class SpatialHistogramDataByte
     {
-        public Vector3 Position { get; set; }
-        public byte[] ByteHists { get; set; }
+        [MemoryPackOrder(0)] public Vector3 Position { get; set; }
+        [MemoryPackOrder(1)] public float MaxValue { get; set; }
+        [MemoryPackOrder(2)] public byte[] ByteHists { get; set; }
     }
 }

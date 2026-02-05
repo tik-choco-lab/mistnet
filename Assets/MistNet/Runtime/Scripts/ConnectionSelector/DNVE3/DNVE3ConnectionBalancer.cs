@@ -6,6 +6,8 @@ using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
+using MemoryPack;
+using MistNet;
 
 namespace MistNet.DNVE3
 {
@@ -191,7 +193,7 @@ namespace MistNet.DNVE3
             var message = new DNVEMessage
             {
                 Type = DNVEMessageType.RequestNodeList,
-                Payload = string.Empty,
+                Payload = Array.Empty<byte>(),
                 Receiver = nodeId,
             };
             _sender.Send(message);
@@ -203,11 +205,11 @@ namespace MistNet.DNVE3
             var connectedAllNodes = allNodes
                 .Where(n => _routing.ConnectedNodes.Contains(n.Id))
                 .ToList();
-            var jsonPayload = JsonConvert.SerializeObject(connectedAllNodes);
+            var payload = MemoryPackSerializer.Serialize(connectedAllNodes);
             var message = new DNVEMessage
             {
                 Type = DNVEMessageType.NodeList,
-                Payload = jsonPayload,
+                Payload = payload,
                 Receiver = receiveMessage.Sender,
             };
             _sender.Send(message);
@@ -215,7 +217,7 @@ namespace MistNet.DNVE3
 
         private void OnNodeListReceived(DNVEMessage receiveMessage)
         {
-            var nodes = JsonConvert.DeserializeObject<List<Node>>(receiveMessage.Payload);
+            var nodes = MemoryPackSerializer.Deserialize<List<Node>>(receiveMessage.Payload);
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             foreach (var node in nodes)
             {

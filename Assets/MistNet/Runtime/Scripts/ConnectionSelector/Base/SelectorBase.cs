@@ -41,10 +41,21 @@ namespace MistNet
             }
 
             var message = MemoryPackSerializer.Deserialize<P_ConnectionSelector>(data);
-            OnMessage(message.Data, id);
+            if (message.RawData != null)
+            {
+                OnMessage(message.RawData, id);
+            }
+            else
+            {
+                OnMessage(message.Data, id);
+            }
         }
 
         protected virtual void OnMessage(string data, NodeId id)
+        {
+        }
+
+        protected virtual void OnMessage(byte[] data, NodeId id)
         {
         }
 
@@ -74,11 +85,31 @@ namespace MistNet
             MistStats.I.TotalEvalMessageCount++;
         }
 
+        protected void SendRaw(byte[] data, NodeId targetId)
+        {
+            var bytes = CreateRawData(data);
+            Layer.World.Send(MistNetMessageType.ConnectionSelector, bytes, targetId);
+
+            if (MistStats.I == null) return;
+            MistStats.I.TotalEvalSendBytes += bytes.Length;
+            MistStats.I.TotalEvalMessageCount++;
+        }
+
         private static byte[] CreateData(string data)
         {
             var message = new P_ConnectionSelector
             {
                 Data = data
+            };
+
+            return MemoryPackSerializer.Serialize(message);
+        }
+
+        private static byte[] CreateRawData(byte[] data)
+        {
+            var message = new P_ConnectionSelector
+            {
+                RawData = data
             };
 
             return MemoryPackSerializer.Serialize(message);

@@ -63,7 +63,7 @@ namespace MistNet.Test
             // --- 1. CURRENT APPROACH ---
             // SpatialData(float[,]) -> JSON -> DNVEMessage.Payload(string) -> JSON -> P_ConnectionSelector.Data(string) -> MistMessage.Payload(byte[])
             var payloadJson = JsonConvert.SerializeObject(spatialData);
-            var dnveMsg = new DNVEMessage { Sender = new NodeId(selfId), Receiver = new NodeId(targetId), Type = DNVEMessageType.Heartbeat, Payload = payloadJson };
+            var dnveMsg = new DNVEMessage { Sender = new NodeId(selfId), Receiver = new NodeId(targetId), Type = DNVEMessageType.Heartbeat, Payload = Encoding.UTF8.GetBytes(payloadJson) };
             var dnveMsgJson = JsonConvert.SerializeObject(dnveMsg);
             var pSelector = new P_ConnectionSelector { Data = dnveMsgJson };
             var currentMistMsg = new MistMessage { Type = MistNetMessageType.ConnectionSelector, Id = selfId, TargetId = targetId, HopCount = 3, Payload = MemoryPackSerializer.Serialize(pSelector) };
@@ -182,7 +182,7 @@ namespace MistNet.Test
                 Sender = new NodeId("self-id"),
                 Receiver = new NodeId("target-id"),
                 Type = DNVEMessageType.NodeList,
-                Payload = payloadJson
+                Payload = Encoding.UTF8.GetBytes(payloadJson)
             };
 
             var fullJson = JsonConvert.SerializeObject(message);

@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using MistNet.DNVE3;
 using UnityEngine;
+using MistNet;
 
 namespace MistNet.Utils
 {
@@ -203,6 +206,50 @@ namespace MistNet.Utils
             }
 
             return merged;
+        }
+
+        public static SpatialHistogramDataByte ToCompact(SpatialHistogramData original)
+        {
+            var hists = original.Hists;
+            var directionsCount = hists.GetLength(0);
+            var binCount = hists.GetLength(1);
+            var result = new byte[directionsCount * binCount];
+
+            var histSpan = MemoryMarshal.CreateSpan(ref hists[0, 0], hists.Length);
+            float maxVal = 0.00001f;
+            foreach (var val in histSpan) if (val > maxVal) maxVal = val;
+
+            float invMax = 255.0f / maxVal;
+            for (int i = 0; i < histSpan.Length; i++)
+            {
+                result[i] = (byte)(histSpan[i] * invMax);
+            }
+
+            return new SpatialHistogramDataByte
+            {
+                Position = original.Position.ToVector3(),
+                MaxValue = maxVal,
+                ByteHists = result
+            };
+        }
+
+        public static SpatialHistogramData FromCompact(SpatialHistogramDataByte compact, int binCount)
+        {
+            var directionsCount = Directions.Length;
+            var hists = new float[directionsCount, binCount];
+            var histSpan = MemoryMarshal.CreateSpan(ref hists[0, 0], hists.Length);
+
+            float maxVal = compact.MaxValue;
+            for (int i = 0; i < histSpan.Length; i++)
+            {
+                histSpan[i] = (compact.ByteHists[i] / 255.0f) * maxVal;
+            }
+
+            return new SpatialHistogramData
+            {
+                Hists = hists,
+                Position = new Position(compact.Position)
+            };
         }
     }
 }

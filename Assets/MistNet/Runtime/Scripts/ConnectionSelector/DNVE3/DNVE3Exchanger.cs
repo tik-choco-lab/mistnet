@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MemoryPack;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
+using MistNet;
 
 namespace MistNet.DNVE3
 {
@@ -36,7 +38,17 @@ namespace MistNet.DNVE3
 
         private void OnHeartbeatReceived(DNVEMessage message)
         {
-            var data = JsonConvert.DeserializeObject<SpatialHistogramData>(message.Payload);
+            SpatialHistogramData data;
+            try 
+            {
+                var byteData = MemoryPackSerializer.Deserialize<SpatialHistogramDataByte>(message.Payload);
+                data = SphericalHistogramUtils.FromCompact(byteData, OptConfig.Data.SphericalHistogramBinCount);
+            }
+            catch
+            {
+                data = MemoryPackSerializer.Deserialize<SpatialHistogramData>(message.Payload);
+            }
+
             _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
@@ -88,14 +100,15 @@ namespace MistNet.DNVE3
                 }
                 _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
-                var json = JsonConvert.SerializeObject(selfHistData);
+                var compactData = SphericalHistogramUtils.ToCompact(selfHistData);
+                var payload = MemoryPackSerializer.Serialize(compactData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
                 {
                     var message = new DNVEMessage
                     {
                         Type = DNVEMessageType.Heartbeat,
-                        Payload = json,
+                        Payload = payload,
                         Receiver = nodeId,
                     };
                     _sender.Send(message);
