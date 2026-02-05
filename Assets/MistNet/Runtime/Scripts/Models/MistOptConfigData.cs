@@ -27,5 +27,7 @@ namespace MistNet
         // DNVE3 ---------------
         [JsonProperty("heartbeatIntervalSeconds")] public float HeartbeatIntervalSeconds = 1f;
         [JsonProperty("exchangeCount")] public int ExchangeCount = 3; // 重要順ノード交換対象ノード数
+        [JsonProperty("sphericalHistogramBinCount")] public int SphericalHistogramBinCount = 4;
+        [JsonProperty("sphericalHistogramLevel")] public int SphericalHistogramLevel = 3; // 1: 6dirs, 2: 14dirs, 3: 26dirs, 4+: Fibonacci sphere
     }
 }

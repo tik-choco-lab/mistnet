@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MemoryPack;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MistNet.Utils;
 using Newtonsoft.Json;
 using UnityEngine;
+using MistNet;
 
 namespace MistNet.DNVE3
 {
@@ -36,7 +38,17 @@ namespace MistNet.DNVE3
 
         private void OnHeartbeatReceived(DNVEMessage message)
         {
-            var data = JsonConvert.DeserializeObject<SpatialHistogramData>(message.Payload);
+            SpatialHistogramData data;
+            try 
+            {
+                var byteData = MemoryPackSerializer.Deserialize<SpatialHistogramDataByte>(message.Payload);
+                data = SphericalHistogramUtils.FromCompact(byteData, OptConfig.Data.SphericalHistogramBinCount);
+            }
+            catch
+            {
+                data = MemoryPackSerializer.Deserialize<SpatialHistogramData>(message.Payload);
+            }
+
             _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
@@ -74,31 +86,29 @@ namespace MistNet.DNVE3
                     cancellationToken: token);
                 DeleteOldData();
                 var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
-                // copy渡し
                 _dnveDataStore.SelfData = new SpatialHistogramData
                 {
                     Hists = (float[,])selfHistData.Hists.Clone(),
                     Position = selfHistData.Position,
                 };
 
-                // merge
                 foreach (var (_, data) in _dnveDataStore.NodeMaps)
                 {
                     var otherPos = data.Position;
                     var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3());
+                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3(), OptConfig.Data.SphericalHistogramBinCount);
                 }
                 _dnveDataStore.MergedHistogram = selfHistData.Hists;
 
-                // send
-                var json = JsonConvert.SerializeObject(selfHistData);
+                var compactData = SphericalHistogramUtils.ToCompact(selfHistData);
+                var payload = MemoryPackSerializer.Serialize(compactData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
                 {
                     var message = new DNVEMessage
                     {
                         Type = DNVEMessageType.Heartbeat,
-                        Payload = json,
+                        Payload = payload,
                         Receiver = nodeId,
                     };
                     _sender.Send(message);
@@ -138,7 +148,7 @@ namespace MistNet.DNVE3
                 posArray[i] = nodes[i].Position.ToVector3();
             }
 
-            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray);
+            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray, OptConfig.Data.SphericalHistogramBinCount);
 
             return new SpatialHistogramData
             {

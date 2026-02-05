@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using MemoryPack;
 
 namespace MistNet.DNVE2
 {
@@ -28,9 +28,9 @@ namespace MistNet.DNVE2
             _visibleController.Dispose();
         }
 
-        protected override void OnMessage(string data, NodeId id)
+        protected override void OnMessage(byte[] data, NodeId id)
         {
-            var message = JsonConvert.DeserializeObject<DNVEMessage>(data);
+            var message = MemoryPackSerializer.Deserialize<DNVEMessage>(data);
             MistLogger.Debug($"[DNVE2Selector] OnMessage: sender {message.Sender} from {id}");
 
             if (!Receivers.TryGetValue(message.Type, out var handler))
@@ -53,9 +53,8 @@ namespace MistNet.DNVE2
         public void Send(DNVEMessage message)
         {
             message.Sender = PeerRepository.SelfId;
-            var json = JsonConvert.SerializeObject(message);
-            MistLogger.Debug($"[DNVE2Selector] Send: {json} to {message.Receiver}");
-            Send(json, message.Receiver);
+            var data = MemoryPackSerializer.Serialize(message);
+            SendRaw(data, message.Receiver);
         }
 
         public void RegisterReceive(DNVEMessageType type, DNVEMessageReceivedHandler receiver)

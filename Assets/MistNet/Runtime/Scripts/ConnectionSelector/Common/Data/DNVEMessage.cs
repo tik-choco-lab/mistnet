@@ -1,15 +1,17 @@
+using MemoryPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
 namespace MistNet
 {
-    public class DNVEMessage
+    [MemoryPackable]
+    public partial class DNVEMessage
     {
-        [JsonProperty("sender")] public NodeId Sender;
-        [JsonProperty("receiver")] public NodeId Receiver;
-        [JsonProperty("type")] public DNVEMessageType Type;
-        [JsonProperty("payload")] public string Payload;
+        [MemoryPackOrder(0)] [JsonProperty("sender")] public NodeId Sender;
+        [MemoryPackOrder(1)] [JsonProperty("receiver")] public NodeId Receiver;
+        [MemoryPackOrder(2)] [JsonProperty("type")] public DNVEMessageType Type;
+        [MemoryPackOrder(3)] [JsonProperty("payload")] public byte[] Payload;
     }
 
     [JsonConverter(typeof(StringEnumConverter), typeof(CamelCaseNamingStrategy))]

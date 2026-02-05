@@ -1,13 +1,15 @@
 using System;
 using System.ComponentModel;
 using System.Security.Cryptography;
+using MemoryPack;
 using Newtonsoft.Json;
 using UnityEngine;
 
 namespace MistNet
 {
     [Serializable]
-    public struct Position
+    [MemoryPackable]
+    public partial struct Position
     {
         public float x;
         public float y;
@@ -33,12 +35,14 @@ namespace MistNet
         }
     }
 
-    public class Node
+    [MemoryPackable]
+    public partial class Node
     {
-        [JsonProperty("id")] public NodeId Id;
-        [JsonProperty("position")] public Position Position;
-        [JsonProperty("state")] public EvalNodeState State;
+        [MemoryPackOrder(0)] [JsonProperty("id")] public NodeId Id;
+        [MemoryPackOrder(1)] [JsonProperty("position")] public Position Position;
+        [MemoryPackOrder(2)] [JsonProperty("state")] public EvalNodeState State;
 
+        [MemoryPackConstructor]
         public Node() { }
 
         public Node(NodeId nodeId, Position position)
@@ -73,7 +77,8 @@ namespace MistNet
 
     [JsonConverter(typeof(NodeIdConverter))]
     [TypeConverter(typeof(NodeIdTypeConverter))]
-    public record NodeId(string Id)
+    [MemoryPackable]
+    public partial record NodeId(string Id)
     {
         public string Id { get; } = Id;
         public override string ToString() => Id;

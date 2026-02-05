@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using MemoryPack;
+using MistNet;
 
 namespace MistNet.DNVE3
 {
@@ -15,6 +17,7 @@ namespace MistNet.DNVE3
         protected override void Start()
         {
             OptConfig.ReadConfig();
+            Utils.SphericalHistogramUtils.Initialize(OptConfig.Data.SphericalHistogramLevel);
             base.Start();
 
             var dataStore = new NodeListStore();
@@ -31,9 +34,9 @@ namespace MistNet.DNVE3
             _visibleController.Dispose();
         }
 
-        protected override void OnMessage(string data, NodeId id)
+        protected override void OnMessage(byte[] data, NodeId id)
         {
-            var message = JsonConvert.DeserializeObject<DNVEMessage>(data);
+            var message = MemoryPackSerializer.Deserialize<DNVEMessage>(data);
             _dnveDataStore.LastMessageTimes[id] = System.DateTime.UtcNow;
             
             if (!_receivers.TryGetValue(message.Type, out var handler))
@@ -59,9 +62,8 @@ namespace MistNet.DNVE3
             {
                 _dnveDataStore.LastMessageTimes[message.Receiver] = System.DateTime.UtcNow;
             }
-            var json = JsonConvert.SerializeObject(message);
-            MistLogger.Debug($"[DNVE3Selector] Send: {json} to {message.Receiver}");
-            Send(json, message.Receiver);
+            var data = MemoryPackSerializer.Serialize(message);
+            SendRaw(data, message.Receiver);
         }
 
         public void RegisterReceive(DNVEMessageType type, DNVEMessageReceivedHandler receiver)

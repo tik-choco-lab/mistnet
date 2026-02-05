@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
+using MemoryPack;
 
 namespace MistNet.DNVE2
 {
@@ -30,8 +31,8 @@ namespace MistNet.DNVE2
 
         private void OnNodeListReceived(DNVEMessage message)
         {
-            MistLogger.Info($"[DNVE2ConnectionBalancer] OnNodeListReceived: {message.Payload} from {message.Sender}");
-            var nodes = JsonConvert.DeserializeObject<List<Node>>(message.Payload);
+            MistLogger.Info($"[DNVE2ConnectionBalancer] OnNodeListReceived from {message.Sender}");
+            var nodes = MemoryPackSerializer.Deserialize<List<Node>>(message.Payload);
             foreach (var node in nodes)
             {
                 _routingBase.AddRouting(node.Id, message.Sender);
@@ -45,7 +46,7 @@ namespace MistNet.DNVE2
             UpdateSelfNode();
 
             _store.TryGet(_selfId, out var selfNode);
-            var payload = JsonConvert.SerializeObject(new List<Node> { selfNode });
+            var payload = MemoryPackSerializer.Serialize(new List<Node> { selfNode });
 
             _message ??= new DNVEMessage
             {
@@ -73,7 +74,7 @@ namespace MistNet.DNVE2
                         continue;
 
                     var nodeList = DNVE2Util.GetNodeList(allNodes, node, OptConfig.Data.NodeListExchangeMaxCount);
-                    var payload = JsonConvert.SerializeObject(nodeList);
+                    var payload = MemoryPackSerializer.Serialize(nodeList);
 
                     _message ??= new DNVEMessage
                     {
