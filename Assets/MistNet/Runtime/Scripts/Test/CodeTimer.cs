@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 namespace MistNet.Test
 {
@@ -17,12 +18,17 @@ namespace MistNet.Test
             _startTicks = Stopwatch.GetTimestamp();
         }
 
+        public void Stop()
+        {
+            Dispose();
+        }
+
         public void Dispose()
         {
             var endTicks = Stopwatch.GetTimestamp();
             var elapsedMs = (endTicks - _startTicks) * 1000.0 / Stopwatch.Frequency;
 
-            Console.WriteLine($"[{_key}] {elapsedMs}ms");
+            Debug.Log($"[{_key}] {elapsedMs}ms");
         }
     }
 }
