@@ -113,7 +113,7 @@ namespace MistNet.Utils
             return CreateSphericalHistogram(center, nodes, Directions, distBins);
         }
 
-        public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, Vector3[] directions,
+        private static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, Vector3[] directions,
             int distBins = DefaultDistBins)
         {
             var dirCount = directions.Length;
@@ -152,7 +152,7 @@ namespace MistNet.Utils
             return ProjectSphericalHistogram(hist, oldCenter, newCenter, Directions, distBins);
         }
 
-        public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
+        private static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             Vector3[] directions, int distBins = DefaultDistBins)
         {
             var offset = newCenter - oldCenter;
@@ -184,7 +184,7 @@ namespace MistNet.Utils
             return MergeHistograms(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
         }
 
-        public static float[,] MergeHistograms(
+        private static float[,] MergeHistograms(
             float[,] selfHist, Vector3 selfCenter,
             float[,] otherHist, Vector3 otherCenter,
             Vector3[] directions,
