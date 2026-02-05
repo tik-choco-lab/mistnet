@@ -1,10 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using Newtonsoft.Json;
 using MistNet.DNVE3;
 using MistNet.Utils;
 using System.Text;
 using MemoryPack;
+using Vector3 = UnityEngine.Vector3;
 
 namespace MistNet.Test
 {
@@ -36,11 +39,20 @@ namespace MistNet.Test
             using var timer = new CodeTimer("MemoryTest");
 
             var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, dummyNodes, BinCount);
+            var histsBytes = new byte[directions.Length * BinCount];
             var spatialData = new SpatialHistogramData
             {
                 Hists = hists,
                 Position = new Position(selfPos)
             };
+
+            SerializeHistogramOptimal(hists, histsBytes);
+            var spatialDataByte = new SpatialHistogramDataByte
+            {
+                Position = spatialData.Position.ToVector3(),
+                ByteHists = histsBytes
+            };
+            var byteDataMemoryPack = MemoryPackSerializer.Serialize(spatialDataByte);
 
             var payloadJson = JsonConvert.SerializeObject(spatialData);
             var payloadBytes = Encoding.UTF8.GetByteCount(payloadJson);
@@ -72,6 +84,7 @@ namespace MistNet.Test
             timer.Stop();
 
             Debug.Log($"[MemoryTest] Payload JSON Length: {payloadJson.Length} chars, {payloadBytes} bytes");
+            Debug.Log($"[MemoryTest] Payload MemoryPack (ByteHist) Length: {byteDataMemoryPack.Length} bytes");
             Debug.Log($"[MemoryTest] Full Message JSON Length: {fullJson.Length} chars, {fullBytes} bytes");
             Debug.Log($"[MemoryTest] Full Message MemoryPack Length: {memoryPackBytes.Length} bytes");
             Debug.Log($"[MemoryTest] MistMessage MemoryPack Length: {mistMessageBytes.Length} bytes");
@@ -113,14 +126,36 @@ namespace MistNet.Test
             Debug.Log($"[MemoryTest] NodeList ({nodeCount} nodes) JSON Length: {fullJson.Length} chars, {fullBytes} bytes");
         }
 
-        private DNVEMessage CreateMessage()
+        private static void SerializeHistogramOptimal(float[,] hist, byte[] result)
         {
-            var msg = new DNVEMessage
+            var histSpan = MemoryMarshal.CreateSpan(ref hist[0, 0], hist.Length);
+            var resSpan = result.AsSpan();
+
+            var totalElements = histSpan.Length;
+            if (totalElements == 0) return;
+
+            // 最大値探索
+            var maxVal = 0.00001f;
+            foreach (float val in histSpan)
             {
-                Type = DNVEMessageType.Heartbeat,
-                Payload = ""
-            };
-            return msg;
+                if (val > maxVal) maxVal = val;
+            }
+
+            var invMax = 255.0f / maxVal;
+
+            // 正規化
+            for (var i = 0; i < totalElements; i++)
+            {
+                var norm = histSpan[i] * invMax;
+                resSpan[i] = (byte)norm;
+            }
         }
+    }
+
+    [MemoryPackable]
+    public partial class SpatialHistogramDataByte
+    {
+        public Vector3 Position { get; set; }
+        public byte[] ByteHists { get; set; }
     }
 }
