@@ -219,6 +219,7 @@ namespace MistNet.DNVE3
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
+                _dnveDataStore.AddOrUpdateNodeUpdateTime(node.Id);
             }
         }
 

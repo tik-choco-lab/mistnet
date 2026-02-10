@@ -9,6 +9,7 @@ namespace MistNet.DNVE3
         public float[,] MergedDensityMap;
 
         public readonly Dictionary<NodeId, NeighborDensityInfo> Neighbors = new();
+        public readonly Dictionary<NodeId, DateTime> LastUpdateTimes = new();
         public class NeighborDensityInfo
         {
             public SpatialDensityData Data;     // 密度データ
@@ -23,22 +24,31 @@ namespace MistNet.DNVE3
                 Neighbors[id] = info;
             }
 
+            var now = DateTime.UtcNow;
             info.Data = data;
-            info.LastMessageTime = DateTime.UtcNow;
+            info.LastMessageTime = now;
+            LastUpdateTimes[id] = now;
+        }
+
+        public void AddOrUpdateNodeUpdateTime(NodeId id)
+        {
+            LastUpdateTimes[id] = DateTime.UtcNow;
         }
 
         public void RemoveNeighbor(NodeId id)
         {
             Neighbors.Remove(id);
+            LastUpdateTimes.Remove(id);
         }
 
         public void UpdateLastMessageTime(NodeId id)
         {
+            var now = DateTime.UtcNow;
+            LastUpdateTimes[id] = now;
             if (Neighbors.TryGetValue(id, out var info))
             {
-                info.LastMessageTime = DateTime.UtcNow;
+                info.LastMessageTime = now;
             }
         }
     }
 }
-

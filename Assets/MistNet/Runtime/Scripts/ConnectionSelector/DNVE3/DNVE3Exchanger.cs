@@ -159,10 +159,10 @@ namespace MistNet.DNVE3
             var now = DateTime.UtcNow;
             _toRemove.Clear();
 
-            foreach (var kvp in _dnveDataStore.Neighbors)
+            foreach (var kvp in _dnveDataStore.LastUpdateTimes)
             {
                 var nodeId = kvp.Key;
-                var lastUpdateTime = kvp.Value.LastMessageTime;
+                var lastUpdateTime = kvp.Value;
                 if ((now - lastUpdateTime).TotalSeconds > OptConfig.Data.ExpireSeconds)
                 {
                     _toRemove.Add(nodeId);
