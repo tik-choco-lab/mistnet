@@ -8,9 +8,9 @@ namespace MistNet
     {
         private const float ExpireSeconds = 2f;
         public IReadOnlyDictionary<NodeId, Node> Nodes => _nodes;
-        protected readonly Dictionary<NodeId, Node> _nodes = new(); // ノードのリスト 接続しているかどうかに関わらず持つ
-        public readonly HashSet<NodeId> ConnectedNodes = new(); // 今接続中のノードのリスト
-        public readonly HashSet<NodeId> MessageNodes = new(); // メッセージのやり取りを行うノードのリスト
+        protected readonly Dictionary<NodeId, Node> _nodes = new();
+        public readonly HashSet<NodeId> ConnectedNodes = new();
+        public readonly HashSet<NodeId> MessageNodes = new();
         private Dictionary<NodeId, DateTime> _expireAt = new();
 
         protected readonly Dictionary<NodeId, NodeId> _routingTable = new();
@@ -55,10 +55,6 @@ namespace MistNet
             if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
-            if (_expireAt.TryGetValue(sourceId, out var expireTime))
-            {
-                if (DateTime.UtcNow < expireTime) return; // まだ有効期限内なら更新しない
-            }
             MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
 
             _routingTable[sourceId] = fromId;
@@ -82,7 +78,6 @@ namespace MistNet
 
             MistLogger.Warning($"[RoutingTable] Not found {targetId}");
 
-            // 適当に返す
             if (_nodes.TryGetValue(targetId, out var node) && node != null)
             {
                 return node.Id;
@@ -101,7 +96,7 @@ namespace MistNet
 
         private void AddNode(NodeId id)
         {
-            if (id == PeerRepository.SelfId) return; // 自分自身のノードは追加しない
+            if (id == PeerRepository.SelfId) return;
             if (_nodes.ContainsKey(id)) return;
             var node = new Node
             {
@@ -112,7 +107,7 @@ namespace MistNet
 
         public void UpdateNode(NodeId id, Node node)
         {
-            if (id == PeerRepository.SelfId) return; // 自分自身のノードは更新しない
+            if (id == PeerRepository.SelfId) return;
             MistLogger.Info($"[ConnectionSelector] AddNode: {id}");
 
             if (ConnectedNodes.Contains(node.Id))
@@ -140,11 +135,6 @@ namespace MistNet
             _nodes.Clear();
         }
 
-        /// <summary>
-        /// TODO: 現状、DhtRoutingの方はBucketで取得しているがBasicRoutingはTableを持たないため、取得ができない状態である
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         public virtual Node GetNode(NodeId id)
         {
             return null;

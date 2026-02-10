@@ -21,6 +21,19 @@ namespace MistNet.DNVE3
         private const int ReservedConnectionCount = 1;
         private const float BaseWeight = 1f;
 
+        private struct NodeScore
+        {
+            public NodeId Id;
+            public float Score;
+        }
+
+        private readonly List<Node> _allNodesBuffer = new();
+        private readonly List<Node> _selectedNodes = new();
+        private readonly HashSet<NodeId> _selectedNodeIds = new();
+        private readonly List<NodeScore> _nodeScoresBuffer = new();
+        private readonly List<(NodeId nodeId, float score)> _importantNodesBuffer = new();
+        private float[,] _projectedBuffer;
+
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
         private readonly IMessageSender _sender;
@@ -76,24 +89,29 @@ namespace MistNet.DNVE3
 
         private void SelectConnection()
         {
-            var allNodes = _dataStore.GetAllNodes().ToList();
+            _allNodesBuffer.Clear();
+            foreach (var node in _dataStore.GetAllNodes())
+            {
+                _allNodesBuffer.Add(node);
+            }
+            
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-
             var directions = SpatialDensityUtils.Directions;
-            var selectedNodes = new List<Node>();
+            
+            _selectedNodes.Clear();
 
             foreach (var dir in directions)
             {
                 Node closest = null;
                 var minDist = float.MaxValue;
 
-                foreach (var node in allNodes)
+                foreach (var node in _allNodesBuffer)
                 {
                     var vec = node.Position.ToVector3() - selfPos;
                     var dot = Vector3.Dot(vec.normalized, dir);
                     if (dot < DirectionThreshold) continue;
 
-                    var dist = vec.magnitude;
+                    var dist = vec.sqrMagnitude;
                     if (dist < minDist)
                     {
                         minDist = dist;
@@ -101,11 +119,48 @@ namespace MistNet.DNVE3
                     }
                 }
 
-                if (closest != null && !selectedNodes.Contains(closest))
-                    selectedNodes.Add(closest);
+                if (closest != null)
+                {
+                    var alreadyExists = false;
+                    foreach (var sn in _selectedNodes)
+                    {
+                        if (sn.Id == closest.Id)
+                        {
+                            alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyExists)
+                        _selectedNodes.Add(closest);
+                }
             }
 
-            var selectedNodeIds = selectedNodes.Select(n => n.Id).ToHashSet();
+            foreach (var node in _allNodesBuffer)
+            {
+                var dist = Vector3.Distance(selfPos, node.Position.ToVector3());
+                if (dist <= OptConfig.Data.AoiRange)
+                {
+                    var alreadyExists = false;
+                    foreach (var sn in _selectedNodes)
+                    {
+                        if (sn.Id == node.Id)
+                        {
+                            alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyExists)
+                    {
+                        _selectedNodes.Add(node);
+                    }
+                }
+            }
+
+            _selectedNodeIds.Clear();
+            foreach (var sn in _selectedNodes)
+            {
+                _selectedNodeIds.Add(sn.Id);
+            }
 
             var targetConnectionCount = OptConfig.Data.MaxConnectionCount - ReservedConnectionCount;
             if (_routing.ConnectedNodes.Count > targetConnectionCount)
@@ -113,15 +168,17 @@ namespace MistNet.DNVE3
                 var numToDisconnect = _routing.ConnectedNodes.Count - targetConnectionCount;
                 numToDisconnect += OptConfig.Data.ForceDisconnectCount;
 
-                var nodesWithScore = _routing.ConnectedNodes
-                    .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
-                    .OrderBy(x => x.Score)
-                    .ToList();
+                _nodeScoresBuffer.Clear();
+                foreach (var id in _routing.ConnectedNodes)
+                {
+                    _nodeScoresBuffer.Add(new NodeScore { Id = id, Score = CalculateNodeScore(id, _selectedNodeIds, selfPos) });
+                }
+                _nodeScoresBuffer.Sort((a, b) => a.Score.CompareTo(b.Score));
 
                 var disconnectedCount = 0;
-                for (var i = 0; i < nodesWithScore.Count && disconnectedCount < numToDisconnect; i++)
+                for (var i = 0; i < _nodeScoresBuffer.Count && disconnectedCount < numToDisconnect; i++)
                 {
-                    var nodeId = nodesWithScore[i].Id;
+                    var nodeId = _nodeScoresBuffer[i].Id;
                     if (nodeId == _peerRepository.SelfId) continue;
                     if (!_layer.Transport.IsConnectingOrConnected(nodeId)) continue;
                     
@@ -130,7 +187,7 @@ namespace MistNet.DNVE3
                 }
             }
 
-            foreach (var node in selectedNodes)
+            foreach (var node in _selectedNodes)
             {
                 var nodeId = node.Id;
                 if (nodeId == _peerRepository.SelfId) continue;
@@ -138,14 +195,16 @@ namespace MistNet.DNVE3
 
                 if (_routing.ConnectedNodes.Count >= OptConfig.Data.MaxConnectionCount)
                 {
-                    var worstNode = _routing.ConnectedNodes
-                        .Select(id => new { Id = id, Score = CalculateNodeScore(id, selectedNodeIds, selfPos) })
-                        .OrderBy(x => x.Score)
-                        .FirstOrDefault();
-
-                    if (worstNode != null)
+                    _nodeScoresBuffer.Clear();
+                    foreach (var id in _routing.ConnectedNodes)
                     {
-                        _layer.Transport.Disconnect(worstNode.Id);
+                        _nodeScoresBuffer.Add(new NodeScore { Id = id, Score = CalculateNodeScore(id, _selectedNodeIds, selfPos) });
+                    }
+                    _nodeScoresBuffer.Sort((a, b) => a.Score.CompareTo(b.Score));
+
+                    if (_nodeScoresBuffer.Count > 0)
+                    {
+                        _layer.Transport.Disconnect(_nodeScoresBuffer[0].Id);
                     }
                 }
                 
@@ -228,46 +287,52 @@ namespace MistNet.DNVE3
             var otherNodes = _dnveDataStore.Neighbors;
             var selfDensityMap = _dnveDataStore.SelfDensity.DensityMap;
             var selfCenter = _dnveDataStore.SelfDensity.Position;
+            var layerCount = OptConfig.Data.SpatialDistanceLayers;
+            var dirCount = SpatialDensityUtils.Directions.Length;
 
-            var importantNodes = new List<(NodeId nodeId, float score)>();
+            if (_projectedBuffer == null || _projectedBuffer.GetLength(0) != dirCount || _projectedBuffer.GetLength(1) != layerCount)
+            {
+                _projectedBuffer = new float[dirCount, layerCount];
+            }
+
+            _importantNodesBuffer.Clear();
 
             foreach (var (nodeId, nodeData) in otherNodes)
             {
                 var otherDensityMap = nodeData.Data.DensityMap;
                 var otherCenter = nodeData.Data.Position;
 
-                var projected = SpatialDensityUtils.ProjectSpatialDensity(
-                    otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SpatialDistanceLayers
+                SpatialDensityUtils.ProjectSpatialDensity(
+                    otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), _projectedBuffer, layerCount
                 );
 
                 var score = 0f;
-                var layerCount = OptConfig.Data.SpatialDistanceLayers;
 
                 for (var j = 0; j < layerCount; j++)
                 {
                     var weight = BaseWeight / (BaseWeight + j);
 
-                    for (var i = 0; i < SpatialDensityUtils.Directions.Length; i++)
+                    for (var i = 0; i < dirCount; i++)
                     {
-                        var diff = projected[i, j] - selfDensityMap[i, j];
+                        var diff = _projectedBuffer[i, j] - selfDensityMap[i, j];
                         if (diff > 0f)
                             score += diff * weight;
                     }
                 }
 
                 if (score > 0f)
-                    importantNodes.Add((nodeId, score));
+                    _importantNodesBuffer.Add((nodeId, score));
             }
 
-            importantNodes.Sort((a, b) => b.score.CompareTo(a.score));
+            _importantNodesBuffer.Sort((a, b) => b.score.CompareTo(a.score));
 
-            foreach (var (nodeId, score) in importantNodes)
+            foreach (var (nodeId, score) in _importantNodesBuffer)
                  MistLogger.Debug($"[Important Node] {nodeId} - Score: {score:F3}");
 
-            if (importantNodes.Count > 0)
-                MistLogger.Debug($"The node with the strongest short-range influence: {importantNodes[0].nodeId}");
+            if (_importantNodesBuffer.Count > 0)
+                MistLogger.Debug($"The node with the strongest short-range influence: {_importantNodesBuffer[0].nodeId}");
 
-            return importantNodes;
+            return _importantNodesBuffer;
         }
     }
 }

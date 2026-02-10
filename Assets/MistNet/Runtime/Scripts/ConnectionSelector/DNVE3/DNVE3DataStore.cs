@@ -12,8 +12,8 @@ namespace MistNet.DNVE3
         public readonly Dictionary<NodeId, DateTime> LastUpdateTimes = new();
         public class NeighborDensityInfo
         {
-            public SpatialDensityData Data;     // 密度データ
-            public DateTime LastMessageTime;    // 最終受信時刻
+            public SpatialDensityData Data;
+            public DateTime LastMessageTime;
         }
 
         public void AddOrUpdateNeighbor(NodeId id, SpatialDensityData data)

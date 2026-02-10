@@ -189,7 +189,8 @@ namespace MistNet.DNVE3
                 _posBuffer[i] = nodes[i].Position.ToVector3();
             }
 
-            SpatialDensityUtils.CreateSpatialDensity(selfPos, _posBuffer, nodes.Count, _selfDensityBuffer, OptConfig.Data.SpatialDistanceLayers);
+            var maxRange = OptConfig.Data.AoiRange * 2.0f;
+            SpatialDensityUtils.CreateSpatialDensity(selfPos, _posBuffer, nodes.Count, _selfDensityBuffer, maxRange, OptConfig.Data.SpatialDistanceLayers);
             _selfDensityData.Position = new Position(selfPos);
         }
     }

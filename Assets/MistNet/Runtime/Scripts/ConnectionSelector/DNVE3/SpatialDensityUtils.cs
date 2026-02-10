@@ -11,6 +11,7 @@ namespace MistNet.Utils
         private const float FloatComparisonThreshold = 0.00001f;
         private const float ByteScalingFactor = 255.0f;
         private const float ProjectionExpansionFactor = 0.5f;
+        public const float DefaultMaxRange = 100f; // Added fixed range constant
 
         private static Vector3[] _directions;
         public static Vector3[] Directions
@@ -54,41 +55,35 @@ namespace MistNet.Utils
             return directions;
         }
 
-        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, int layerCount = DefaultLayerCount)
+        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float maxRange, int layerCount = DefaultLayerCount)
         {
             var densityMap = new float[Directions.Length, layerCount];
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange, layerCount);
             return densityMap;
         }
 
-        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, int layerCount = DefaultLayerCount)
+        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, float maxRange, int layerCount = DefaultLayerCount)
         {
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange, layerCount);
         }
 
         private static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, Vector3[] directions,
-            int layerCount = DefaultLayerCount)
+            float maxRange, int layerCount = DefaultLayerCount)
         {
             var dirCount = directions.Length;
             System.Array.Clear(densityMap, 0, densityMap.Length);
-            var maxDist = 0f;
 
-            for (int i = 0; i < nodeCount; i++)
-            {
-                var node = nodes[i];
-                var dist = Vector3.Distance(center, node);
-                if (dist > maxDist) maxDist = dist;
-            }
-
-            if (maxDist == 0f) maxDist = 1f;
+            if (maxRange <= 0f) maxRange = 1f;
 
             for (int j = 0; j < nodeCount; j++)
             {
                 var node = nodes[j];
                 var vec = node - center;
                 var dist = vec.magnitude;
+                if (dist > maxRange) continue;
+                
                 var unitVec = vec.normalized;
-                var layerIndex = Mathf.Min(Mathf.FloorToInt(dist / maxDist * layerCount), layerCount - 1);
+                var layerIndex = Mathf.Min(Mathf.FloorToInt(dist / maxRange * layerCount), layerCount - 1);
 
                 for (var i = 0; i < dirCount; i++)
                 {

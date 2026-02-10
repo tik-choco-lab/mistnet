@@ -13,6 +13,17 @@ namespace MistNet
         private readonly RoutingBase _routingBase;
         private readonly CancellationTokenSource _cts = new();
 
+        private struct NodeDistance
+        {
+            public NodeId Id;
+            public float Distance;
+        }
+
+        private readonly List<Node> _allNodesBuffer = new();
+        private readonly List<NodeDistance> _nodeDistancesBuffer = new();
+        private readonly HashSet<NodeId> _visibleTargetNodes = new();
+        private readonly List<NodeId> _tempNodeIds = new();
+
         public VisibleNodesController(INodeListStore dataStore, RoutingBase routingBase)
         {
             _dataStore = dataStore;
@@ -32,26 +43,56 @@ namespace MistNet
 
         private void UpdateVisibleNodes()
         {
-            var nodes = _dataStore.GetAllNodes().ToList();
+            _allNodesBuffer.Clear();
+            foreach (var node in _dataStore.GetAllNodes())
+            {
+                _allNodesBuffer.Add(node);
+            }
 
-            if (nodes.Count == 0) return;
+            if (_allNodesBuffer.Count == 0) return;
 
-            // 表示すべきNode一覧
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
 
-            var visibleTargetNodes = nodes
-                .Select(node => new { node.Id, Distance = Vector3.Distance(selfPos, node.Position.ToVector3()) })
-                .Where(x => x.Distance <= OptConfig.Data.AoiRange)
-                .OrderBy(x => x.Distance)
-                .Take(OptConfig.Data.VisibleCount)
-                .Select(x => x.Id)
-                .ToHashSet();
+            _nodeDistancesBuffer.Clear();
+            var aoiRange = OptConfig.Data.AoiRange;
 
-            var addVisibleNodes = visibleTargetNodes.Except(_routingBase.MessageNodes);
-            var removeVisibleNodes = _routingBase.MessageNodes.Except(visibleTargetNodes);
+            foreach (var node in _allNodesBuffer)
+            {
+                var dist = Vector3.Distance(selfPos, node.Position.ToVector3());
+                if (dist <= aoiRange)
+                {
+                    _nodeDistancesBuffer.Add(new NodeDistance { Id = node.Id, Distance = dist });
+                }
+            }
 
-            RequestObject(addVisibleNodes);
-            RemoveObject(removeVisibleNodes);
+            _nodeDistancesBuffer.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+
+            _visibleTargetNodes.Clear();
+            var count = Math.Min(_nodeDistancesBuffer.Count, OptConfig.Data.VisibleCount);
+            for (int i = 0; i < count; i++)
+            {
+                _visibleTargetNodes.Add(_nodeDistancesBuffer[i].Id);
+            }
+
+            _tempNodeIds.Clear();
+            foreach (var id in _visibleTargetNodes)
+            {
+                if (!_routingBase.MessageNodes.Contains(id))
+                {
+                    _tempNodeIds.Add(id);
+                }
+            }
+            RequestObject(_tempNodeIds);
+
+            _tempNodeIds.Clear();
+            foreach (var id in _routingBase.MessageNodes)
+            {
+                if (!_visibleTargetNodes.Contains(id))
+                {
+                    _tempNodeIds.Add(id);
+                }
+            }
+            RemoveObject(_tempNodeIds);
         }
 
         private void RequestObject(IEnumerable<NodeId> nodeIds)
@@ -66,8 +107,7 @@ namespace MistNet
 
         private void RemoveObject(IEnumerable<NodeId> nodeIds)
         {
-            var nodeIdsList = nodeIds.ToList();
-            foreach (var nodeId in nodeIdsList)
+            foreach (var nodeId in nodeIds)
             {
                 MistSyncManager.I.RemoveObject(nodeId);
                 _routingBase.RemoveMessageNode(nodeId);
