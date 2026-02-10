@@ -129,7 +129,7 @@ namespace MistNet.DNVE3
                 {
                     var otherPos = info.Data.Position;
                     var otherDensityMap = info.Data.DensityMap;
-                    SpatialDensityUtils.MergeSpatialDensity(_mergedDensityBuffer, _selfDensityData.Position.ToVector3(), otherDensityMap, otherPos.ToVector3(), _mergedDensityBuffer, OptConfig.Data.SpatialDistanceLayers);
+                    SpatialDensityUtils.MergeSpatialDensity(_mergedDensityBuffer, _selfDensityData.Position.ToVector3(), otherDensityMap, otherPos.ToVector3(), _mergedDensityBuffer);
                 }
                 _dnveDataStore.MergedDensityMap = _mergedDensityBuffer;
 
@@ -189,7 +189,8 @@ namespace MistNet.DNVE3
                 _posBuffer[i] = nodes[i].Position.ToVector3();
             }
 
-            SpatialDensityUtils.CreateSpatialDensity(selfPos, _posBuffer, nodes.Count, _selfDensityBuffer, OptConfig.Data.SpatialDistanceLayers);
+            var maxRange = OptConfig.Data.AoiRange * 2.0f;
+            SpatialDensityUtils.CreateSpatialDensity(selfPos, _posBuffer, nodes.Count, _selfDensityBuffer, maxRange);
             _selfDensityData.Position = new Position(selfPos);
         }
     }

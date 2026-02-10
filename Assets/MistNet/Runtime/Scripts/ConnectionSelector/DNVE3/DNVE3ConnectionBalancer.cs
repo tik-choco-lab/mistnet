@@ -235,12 +235,12 @@ namespace MistNet.DNVE3
                 var otherDensityMap = nodeData.Data.DensityMap;
                 var otherCenter = nodeData.Data.Position;
 
-                var projected = SpatialDensityUtils.ProjectSpatialDensity(
-                    otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SpatialDistanceLayers
+                SpatialDensityUtils.ProjectSpatialDensity(
+                    otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), _projectedBuffer
                 );
 
                 var score = 0f;
-                var layerCount = OptConfig.Data.SpatialDistanceLayers;
+                var layerCount = selfDensityMap.GetLength(1);
 
                 for (var j = 0; j < layerCount; j++)
                 {
@@ -248,7 +248,7 @@ namespace MistNet.DNVE3
 
                     for (var i = 0; i < SpatialDensityUtils.Directions.Length; i++)
                     {
-                        var diff = projected[i, j] - selfDensityMap[i, j];
+                        var diff = _projectedBuffer[i, j] - selfDensityMap[i, j];
                         if (diff > 0f)
                             score += diff * weight;
                     }
