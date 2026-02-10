@@ -19,6 +19,17 @@ namespace MistNet.DNVE3
         private readonly CancellationTokenSource _cts = new();
         private readonly DNVE3DataStore _dnveDataStore;
 
+        private readonly List<NodeId> _toRemove = new();
+        private readonly List<Node> _tempNodeList = new();
+        
+        private float[,] _selfDensityBuffer;
+        private float[,] _mergedDensityBuffer;
+        private byte[] _compactPayloadBuffer;
+        private Vector3[] _posBuffer;
+        private DNVEMessage _heartbeatMessage;
+        private SpatialDensityData _selfDensityData;
+        private NodeId[] _connectedNodesBuffer = Array.Empty<NodeId>();
+
         public void Dispose()
         {
 
@@ -32,8 +43,33 @@ namespace MistNet.DNVE3
             _dataStore = dataStore;
             _dnveDataStore = dnve3DataStore;
             _routingBase = routingBase;
+            
+            InitializeBuffers();
+            
             _sender.RegisterReceive(DNVEMessageType.Heartbeat, OnHeartbeatReceived);
             SendLoop(_cts.Token).Forget();
+        }
+
+        private void InitializeBuffers()
+        {
+            var dirCount = SpatialDensityUtils.Directions.Length;
+            var layerCount = OptConfig.Data.SpatialDistanceLayers;
+            
+            _selfDensityBuffer = new float[dirCount, layerCount];
+            _mergedDensityBuffer = new float[dirCount, layerCount];
+            _compactPayloadBuffer = new byte[dirCount * layerCount];
+            _posBuffer = new Vector3[OptConfig.Data.MaxConnectionCount];
+            
+            _selfDensityData = new SpatialDensityData
+            {
+                DensityMap = _selfDensityBuffer,
+                Position = new Position(Vector3.zero)
+            };
+
+            _heartbeatMessage = new DNVEMessage
+            {
+                Type = DNVEMessageType.Heartbeat
+            };
         }
 
         private void OnHeartbeatReceived(DNVEMessage message)
@@ -49,33 +85,28 @@ namespace MistNet.DNVE3
                 data = MemoryPackSerializer.Deserialize<SpatialDensityData>(message.Payload);
             }
 
-            // _dnveDataStore.NodeMaps[message.Sender] = data;
-            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
-            // _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
-            _dnveDataStore.AddOrUpdateNeighbor(message.Sender, data, expireTime);
+            _dnveDataStore.AddOrUpdateNeighbor(message.Sender, data);
 
-            var node = new Node
+            if (!_dataStore.TryGet(message.Sender, out var node))
             {
-                Id = message.Sender,
-                Position = data.Position
-            };
+                node = new Node { Id = message.Sender };
+            }
+            node.Position = data.Position;
             _dataStore.AddOrUpdate(node);
         }
 
-        private List<Node> GetNodes()
+        private void GetNodes(List<Node> nodes)
         {
-            var nodes = new List<Node>();
+            nodes.Clear();
             var nodeIds = _routingBase.ConnectedNodes;
 
-            if (nodeIds.Count == 0) return nodes;
+            if (nodeIds.Count == 0) return;
 
             foreach (var nodeId in nodeIds)
             {
                 if (!_dataStore.TryGet(nodeId, out var node)) continue;
                 nodes.Add(node);
             }
-
-            return nodes;
         }
 
         private async UniTask SendLoop(CancellationToken token)
@@ -86,33 +117,38 @@ namespace MistNet.DNVE3
                 await UniTask.Delay(TimeSpan.FromSeconds(OptConfig.Data.HeartbeatIntervalSeconds),
                     cancellationToken: token);
                 DeleteOldData();
-                var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
-                _dnveDataStore.SelfDensity = new SpatialDensityData
-                {
-                    DensityMap = (float[,])selfHistData.DensityMap.Clone(),
-                    Position = selfHistData.Position,
-                };
 
-                foreach (var (_, data) in _dnveDataStore.Neighbors)
+                GetNodes(_tempNodeList);
+                UpdateSpatialHistogramData(_tempNodeList);
+                
+                _dnveDataStore.SelfDensity = _selfDensityData; 
+
+                Array.Copy(_selfDensityBuffer, _mergedDensityBuffer, _selfDensityBuffer.Length);
+
+                foreach (var (_, info) in _dnveDataStore.Neighbors)
                 {
-                    var otherPos = data.Data.Position;
-                    var hist = data.Data.DensityMap;
-                    selfHistData.DensityMap = SpatialDensityUtils.MergeSpatialDensity(selfHistData.DensityMap, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3(), OptConfig.Data.SpatialDistanceLayers);
+                    var otherPos = info.Data.Position;
+                    var otherDensityMap = info.Data.DensityMap;
+                    SpatialDensityUtils.MergeSpatialDensity(_mergedDensityBuffer, _selfDensityData.Position.ToVector3(), otherDensityMap, otherPos.ToVector3(), _mergedDensityBuffer, OptConfig.Data.SpatialDistanceLayers);
                 }
-                _dnveDataStore.MergedDensityMap = selfHistData.DensityMap;
+                _dnveDataStore.MergedDensityMap = _mergedDensityBuffer;
 
-                var compactData = SpatialDensityUtils.ToCompact(selfHistData);
+                var compactData = SpatialDensityUtils.ToCompact(_selfDensityData, _compactPayloadBuffer);
                 var payload = MemoryPackSerializer.Serialize(compactData);
+                _heartbeatMessage.Payload = payload;
 
-                foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
+                var connectedCount = _routingBase.ConnectedNodes.Count;
+                if (_connectedNodesBuffer.Length < connectedCount)
                 {
-                    var message = new DNVEMessage
-                    {
-                        Type = DNVEMessageType.Heartbeat,
-                        Payload = payload,
-                        Receiver = nodeId,
-                    };
-                    _sender.Send(message);
+                    _connectedNodesBuffer = new NodeId[connectedCount];
+                }
+                _routingBase.ConnectedNodes.CopyTo(_connectedNodesBuffer);
+
+                for (int i = 0; i < connectedCount; i++)
+                {
+                    var nodeId = _connectedNodesBuffer[i];
+                    _heartbeatMessage.Receiver = nodeId;
+                    _sender.Send(_heartbeatMessage);
                     await UniTask.Yield();
                 }
             }
@@ -121,42 +157,40 @@ namespace MistNet.DNVE3
         private void DeleteOldData()
         {
             var now = DateTime.UtcNow;
-            var toRemove = new List<NodeId>();
+            _toRemove.Clear();
+
             foreach (var kvp in _dnveDataStore.Neighbors)
             {
                 var nodeId = kvp.Key;
                 var lastUpdateTime = kvp.Value.LastMessageTime;
                 if ((now - lastUpdateTime).TotalSeconds > OptConfig.Data.ExpireSeconds)
                 {
-                    toRemove.Add(nodeId);
+                    _toRemove.Add(nodeId);
                 }
             }
-            foreach (var nodeId in toRemove)
+            foreach (var nodeId in _toRemove)
             {
-                // _dnveDataStore.NodeMaps.Remove(nodeId);
-                // _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
-                // _dnveDataStore.LastMessageTimes.Remove(nodeId);
                 _dnveDataStore.RemoveNeighbor(nodeId);
                 _dataStore.Remove(nodeId);
             }
         }
 
-        private SpatialDensityData GetSpatialHistogramData(Node[] nodes)
+        private void UpdateSpatialHistogramData(List<Node> nodes)
         {
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
-            var posArray = new Vector3[nodes.Length];
-            for (int i = 0; i < nodes.Length; i++)
+            
+            if (_posBuffer.Length < nodes.Count)
             {
-                posArray[i] = nodes[i].Position.ToVector3();
+                _posBuffer = new Vector3[nodes.Count];
+            }
+            
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                _posBuffer[i] = nodes[i].Position.ToVector3();
             }
 
-            var hists = SpatialDensityUtils.CreateSpatialDensity(selfPos, posArray, OptConfig.Data.SpatialDistanceLayers);
-
-            return new SpatialDensityData
-            {
-                DensityMap = hists,
-                Position = new Position(selfPos),
-            };
+            SpatialDensityUtils.CreateSpatialDensity(selfPos, _posBuffer, nodes.Count, _selfDensityBuffer, OptConfig.Data.SpatialDistanceLayers);
+            _selfDensityData.Position = new Position(selfPos);
         }
     }
 }

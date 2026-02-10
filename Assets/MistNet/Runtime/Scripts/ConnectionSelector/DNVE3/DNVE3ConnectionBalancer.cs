@@ -13,11 +13,13 @@ namespace MistNet.DNVE3
 {
     public class DNVE3ConnectionBalancer : IDisposable
     {
-        private const float JitterRatio = 0.2f;              // インターバルに対するジッターの割合
-        private const float DirectionThreshold = 0.7f;      // 同一方向判定の閾値（約45度）
-        private const float ScoreSelectedNode = 10000f;      // ヒストグラム選択ノードの加点
-        private const float ScoreAoiNodeUnknownPos = 100f;   // 位置不明のAOIノードへの加点
-        private const float PenaltyNoMessageHistory = 1000f; // 通信実績がないノードへの減点
+        private const float JitterRatio = 0.2f;
+        private const float DirectionThreshold = 0.7f;
+        private const float ScoreSelectedNode = 10000f;
+        private const float ScoreAoiNodeUnknownPos = 100f;
+        private const float PenaltyNoMessageHistory = 1000f;
+        private const int ReservedConnectionCount = 1;
+        private const float BaseWeight = 1f;
 
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
@@ -105,7 +107,7 @@ namespace MistNet.DNVE3
 
             var selectedNodeIds = selectedNodes.Select(n => n.Id).ToHashSet();
 
-            var targetConnectionCount = OptConfig.Data.MaxConnectionCount - 1;
+            var targetConnectionCount = OptConfig.Data.MaxConnectionCount - ReservedConnectionCount;
             if (_routing.ConnectedNodes.Count > targetConnectionCount)
             {
                 var numToDisconnect = _routing.ConnectedNodes.Count - targetConnectionCount;
@@ -155,10 +157,8 @@ namespace MistNet.DNVE3
         {
             var score = 0f;
 
-            // 1. 空間密度選択ノード（最優先）
             if (selectedNodeIds.Contains(id)) score += ScoreSelectedNode;
 
-            // 2. AOI内ノード（距離に基づく）
             if (_routing.MessageNodes.Contains(id))
             {
                 if (_dataStore.TryGet(id, out var node))
@@ -168,20 +168,18 @@ namespace MistNet.DNVE3
                 }
                 else
                 {
-                    // 位置不明だがAOI対象なら一応加点
                     score += ScoreAoiNodeUnknownPos;
                 }
             }
 
-            // 3. 通信実績（LRU）
             if (_dnveDataStore.Neighbors.TryGetValue(id, out var info))
             {
                 var elapsed = (float)(DateTime.UtcNow - info.LastMessageTime).TotalSeconds;
-                score -= elapsed; // 新しいほど減点が少ない
+                score -= elapsed;
             }
             else
             {
-                score -= PenaltyNoMessageHistory; // 通信実績なしは大幅減点
+                score -= PenaltyNoMessageHistory;
             }
 
             return score;
@@ -189,7 +187,6 @@ namespace MistNet.DNVE3
 
         private void SendRequestNodeList(NodeId nodeId)
         {
-            // 相手にNodeListを要求する
             var message = new DNVEMessage
             {
                 Type = DNVEMessageType.RequestNodeList,
@@ -218,19 +215,17 @@ namespace MistNet.DNVE3
         private void OnNodeListReceived(DNVEMessage receiveMessage)
         {
             var nodes = MemoryPackSerializer.Deserialize<List<Node>>(receiveMessage.Payload);
-            var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
             foreach (var node in nodes)
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
-                _dnveDataStore.UpdateExpireTime(node.Id, expireTime);
             }
         }
 
         private List<(NodeId nodeId, float score)> FindImportantNode()
         {
             var otherNodes = _dnveDataStore.Neighbors;
-            var selfHist = _dnveDataStore.SelfDensity.DensityMap;
+            var selfDensityMap = _dnveDataStore.SelfDensity.DensityMap;
             var selfCenter = _dnveDataStore.SelfDensity.Position;
 
             var importantNodes = new List<(NodeId nodeId, float score)>();
@@ -245,17 +240,15 @@ namespace MistNet.DNVE3
                 );
 
                 var score = 0f;
-                var distBins = OptConfig.Data.SpatialDistanceLayers;
+                var layerCount = OptConfig.Data.SpatialDistanceLayers;
 
-                // 近距離ほど重くする
-                for (var j = 0; j < distBins; j++)
+                for (var j = 0; j < layerCount; j++)
                 {
-                    var weight = 1f / (1f + j); // distBin=0が最も重い
+                    var weight = BaseWeight / (BaseWeight + j);
 
                     for (var i = 0; i < SpatialDensityUtils.Directions.Length; i++)
                     {
-                        // 他ノードの強度を評価
-                        var diff = projected[i, j] - selfHist[i, j];
+                        var diff = projected[i, j] - selfDensityMap[i, j];
                         if (diff > 0f)
                             score += diff * weight;
                     }
@@ -265,14 +258,13 @@ namespace MistNet.DNVE3
                     importantNodes.Add((nodeId, score));
             }
 
-            // スコア順にソート
             importantNodes.Sort((a, b) => b.score.CompareTo(a.score));
 
             foreach (var (nodeId, score) in importantNodes)
-                MistLogger.Debug($"[重要ノード] {nodeId} - 近距離強度スコア: {score:F3}");
+                 MistLogger.Debug($"[Important Node] {nodeId} - Score: {score:F3}");
 
             if (importantNodes.Count > 0)
-                MistLogger.Debug($"最も近距離影響の強いノード: {importantNodes[0].nodeId}");
+                MistLogger.Debug($"The node with the strongest short-range influence: {importantNodes[0].nodeId}");
 
             return importantNodes;
         }

@@ -6,8 +6,11 @@ namespace MistNet.Utils
 {
     public static class SpatialDensityUtils
     {
-        public const int DefaultDistBins = 4;
-        private const int DefaultDirectionCount = 26; // 初期値（旧Level 3相当）
+        public const int DefaultLayerCount = 4;
+        private const int DefaultDirectionCount = 26;
+        private const float FloatComparisonThreshold = 0.00001f;
+        private const float ByteScalingFactor = 255.0f;
+        private const float ProjectionExpansionFactor = 0.5f;
 
         private static Vector3[] _directions;
         public static Vector3[] Directions
@@ -20,20 +23,12 @@ namespace MistNet.Utils
             }
         }
 
-        /// <summary>
-        /// 指定された方向数（count）に基づいてフィボナッチ格子を生成し、初期化する
-        /// </summary>
-        /// <param name="count">生成する方向ベクトルの数</param>
         public static void Initialize(int count)
         {
             if (count <= 0) count = DefaultDirectionCount;
             _directions = GenerateUniformDirections(count);
         }
 
-        /// <summary>
-        /// フィボナッチ格子（Fibonacci Sphere）アルゴリズムを用いて
-        /// 球面上に均一な方向ベクトルを生成する
-        /// </summary>
         private static Vector3[] GenerateUniformDirections(int count)
         {
             var directions = new Vector3[count];
@@ -43,7 +38,7 @@ namespace MistNet.Utils
                 return directions;
             }
 
-            var phi = Mathf.PI * (3f - Mathf.Sqrt(5f)); // 黄金角
+            var phi = Mathf.PI * (3f - Mathf.Sqrt(5f));
 
             for (var i = 0; i < count; i++)
             {
@@ -59,143 +54,180 @@ namespace MistNet.Utils
             return directions;
         }
 
-        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int distBins = DefaultDistBins)
+        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, int layerCount = DefaultLayerCount)
         {
-            return CreateSpatialDensity(center, nodes, Directions, distBins);
+            var densityMap = new float[Directions.Length, layerCount];
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+            return densityMap;
         }
 
-        private static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, Vector3[] directions,
-            int distBins = DefaultDistBins)
+        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, int layerCount = DefaultLayerCount)
+        {
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+        }
+
+        private static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, Vector3[] directions,
+            int layerCount = DefaultLayerCount)
         {
             var dirCount = directions.Length;
-            var hist = new float[dirCount, distBins];
+            System.Array.Clear(densityMap, 0, densityMap.Length);
             var maxDist = 0f;
 
-            foreach (var node in nodes)
+            for (int i = 0; i < nodeCount; i++)
             {
+                var node = nodes[i];
                 var dist = Vector3.Distance(center, node);
                 if (dist > maxDist) maxDist = dist;
             }
 
             if (maxDist == 0f) maxDist = 1f;
 
-            foreach (var node in nodes)
+            for (int j = 0; j < nodeCount; j++)
             {
+                var node = nodes[j];
                 var vec = node - center;
                 var dist = vec.magnitude;
                 var unitVec = vec.normalized;
-                var distIdx = Mathf.Min(Mathf.FloorToInt(dist / maxDist * distBins), distBins - 1);
+                var layerIndex = Mathf.Min(Mathf.FloorToInt(dist / maxDist * layerCount), layerCount - 1);
 
                 for (var i = 0; i < dirCount; i++)
                 {
                     var score = Vector3.Dot(directions[i], unitVec);
                     if (score > 0f)
-                        hist[i, distIdx] += score;
+                        densityMap[i, layerIndex] += score;
                 }
             }
-
-            return hist;
         }
 
-        public static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
-            int distBins = DefaultDistBins)
+        public static float[,] ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter,
+            int layerCount = DefaultLayerCount)
         {
-            return ProjectSpatialDensity(hist, oldCenter, newCenter, Directions, distBins);
+            var projected = new float[densityMap.GetLength(0), densityMap.GetLength(1)];
+            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions, layerCount);
+            return projected;
         }
 
-        private static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
-            Vector3[] directions, int distBins = DefaultDistBins)
+        public static void ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter, float[,] projected,
+            int layerCount = DefaultLayerCount)
+        {
+            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions, layerCount);
+        }
+
+        private static void ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter, float[,] projected,
+            Vector3[] directions, int layerCount = DefaultLayerCount)
         {
             var offset = newCenter - oldCenter;
             var offsetNorm = offset.magnitude;
-            if (offsetNorm == 0f) return (float[,])hist.Clone();
+            if (offsetNorm == 0f)
+            {
+                System.Array.Copy(densityMap, projected, densityMap.Length);
+                return;
+            }
 
             var offsetUnit = offset.normalized;
             var dirCount = directions.Length;
-            var projected = (float[,])hist.Clone();
 
             for (var i = 0; i < dirCount; i++)
             {
                 var cosSim = Mathf.Clamp(Vector3.Dot(directions[i], offsetUnit), -1f, 1f);
-                for (var j = 0; j < distBins; j++)
+                for (var j = 0; j < layerCount; j++)
                 {
-                    projected[i, j] *= 1f + 0.5f * cosSim;
+                    projected[i, j] = densityMap[i, j] * (1f + ProjectionExpansionFactor * cosSim);
                     if (projected[i, j] < 0f) projected[i, j] = 0f;
                 }
             }
-
-            return projected;
         }
 
         public static float[,] MergeSpatialDensity(
-            float[,] selfHist, Vector3 selfCenter,
-            float[,] otherHist, Vector3 otherCenter,
-            int distBins = DefaultDistBins)
+            float[,] selfDensityMap, Vector3 selfCenter,
+            float[,] otherDensityMap, Vector3 otherCenter,
+            int layerCount = DefaultLayerCount)
         {
-            return MergeSpatialDensity(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
+            var merged = new float[selfDensityMap.GetLength(0), selfDensityMap.GetLength(1)];
+            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions, layerCount);
+            return merged;
         }
 
-        private static float[,] MergeSpatialDensity(
-            float[,] selfHist, Vector3 selfCenter,
-            float[,] otherHist, Vector3 otherCenter,
-            Vector3[] directions,
-            int distBins = DefaultDistBins)
+        public static void MergeSpatialDensity(
+            float[,] selfDensityMap, Vector3 selfCenter,
+            float[,] otherDensityMap, Vector3 otherCenter,
+            float[,] merged,
+            int layerCount = DefaultLayerCount)
         {
-            var otherProjected = ProjectSpatialDensity(otherHist, otherCenter, selfCenter, directions, distBins);
-            var dirs = directions.Length;
-            var merged = new float[dirs, distBins];
+            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions, layerCount);
+        }
+        
+        private static float[,] _otherProjectedBuffer;
 
+        private static void MergeSpatialDensity(
+            float[,] selfDensityMap, Vector3 selfCenter,
+            float[,] otherDensityMap, Vector3 otherCenter,
+            float[,] merged,
+            Vector3[] directions,
+            int layerCount = DefaultLayerCount)
+        {
+            int dirs = directions.Length;
+            if (_otherProjectedBuffer == null || _otherProjectedBuffer.GetLength(0) != dirs || _otherProjectedBuffer.GetLength(1) != layerCount)
+            {
+                _otherProjectedBuffer = new float[dirs, layerCount];
+            }
+            
+            ProjectSpatialDensity(otherDensityMap, otherCenter, selfCenter, _otherProjectedBuffer, directions, layerCount);
+            
             for (var i = 0; i < dirs; i++)
             {
-                for (var j = 0; j < distBins; j++)
+                for (var j = 0; j < layerCount; j++)
                 {
-                    merged[i, j] = selfHist[i, j] + otherProjected[i, j];
+                    merged[i, j] = selfDensityMap[i, j] + _otherProjectedBuffer[i, j];
                 }
             }
-
-            return merged;
         }
 
         public static SpatialDensityDataByte ToCompact(SpatialDensityData original)
         {
-            var hists = original.DensityMap;
-            var directionsCount = hists.GetLength(0);
-            var binCount = hists.GetLength(1);
-            var result = new byte[directionsCount * binCount];
+            var densityMaps = original.DensityMap;
+            var directionsCount = densityMaps.GetLength(0);
+            var layerCount = densityMaps.GetLength(1);
+            var result = new byte[directionsCount * layerCount];
+            return ToCompact(original, result);
+        }
 
-            var histSpan = MemoryMarshal.CreateSpan(ref hists[0, 0], hists.Length);
-            float maxVal = 0.00001f;
-            foreach (var val in histSpan) if (val > maxVal) maxVal = val;
+        public static SpatialDensityDataByte ToCompact(SpatialDensityData original, byte[] resultBuffer)
+        {
+            var densityMaps = original.DensityMap;
+            var densitySpan = MemoryMarshal.CreateSpan(ref densityMaps[0, 0], densityMaps.Length);
+            float maxVal = FloatComparisonThreshold;
+            foreach (var val in densitySpan) if (val > maxVal) maxVal = val;
 
-            float invMax = 255.0f / maxVal;
-            for (int i = 0; i < histSpan.Length; i++)
+            float invMax = ByteScalingFactor / maxVal;
+            for (int i = 0; i < densitySpan.Length; i++)
             {
-                result[i] = (byte)(histSpan[i] * invMax);
+                resultBuffer[i] = (byte)(densitySpan[i] * invMax);
             }
 
             return new SpatialDensityDataByte
             {
                 Position = original.Position.ToVector3(),
                 MaxValue = maxVal,
-                ByteDensities = result
+                ByteDensities = resultBuffer
             };
         }
 
-        public static SpatialDensityData FromCompact(SpatialDensityDataByte compact, int binCount)
+        public static SpatialDensityData FromCompact(SpatialDensityDataByte compact, int layerCount)
         {
             var directionsCount = Directions.Length;
-            var hists = new float[directionsCount, binCount];
-            var histSpan = MemoryMarshal.CreateSpan(ref hists[0, 0], hists.Length);
+            var densityMaps = new float[directionsCount, layerCount];
+            var densitySpan = MemoryMarshal.CreateSpan(ref densityMaps[0, 0], densityMaps.Length);
 
             float maxVal = compact.MaxValue;
-            for (int i = 0; i < histSpan.Length; i++)
+            for (int i = 0; i < densitySpan.Length; i++)
             {
-                histSpan[i] = (compact.ByteDensities[i] / 255.0f) * maxVal;
+                densitySpan[i] = (compact.ByteDensities[i] / ByteScalingFactor) * maxVal;
             }
 
             return new SpatialDensityData
             {
-                DensityMap = hists,
+                DensityMap = densityMaps,
                 Position = new Position(compact.Position)
             };
         }
