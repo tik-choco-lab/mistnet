@@ -135,21 +135,21 @@ namespace MistNet.DNVE3
                 }
             }
 
-            _nodeDistancesBuffer.Clear();
+            _nodeScoresBuffer.Clear();
             foreach (var node in _allNodesBuffer)
             {
                 var dist = Vector3.Distance(selfPos, node.Position.ToVector3());
                 if (dist <= OptConfig.Data.AoiRange)
                 {
-                    _nodeDistancesBuffer.Add(new NodeScore { Id = node.Id, Score = dist });
+                    _nodeScoresBuffer.Add(new NodeScore { Id = node.Id, Score = dist });
                 }
             }
-            _nodeDistancesBuffer.Sort((a, b) => a.Score.CompareTo(b.Score));
+            _nodeScoresBuffer.Sort((a, b) => a.Score.CompareTo(b.Score));
 
             var visualCount = OptConfig.Data.VisibleCount;
-            for (int i = 0; i < _nodeDistancesBuffer.Count && i < visualCount; i++)
+            for (int i = 0; i < _nodeScoresBuffer.Count && i < visualCount; i++)
             {
-                var id = _nodeDistancesBuffer[i].Id;
+                var id = _nodeScoresBuffer[i].Id;
                 var alreadyExists = false;
                 foreach (var sn in _selectedNodes)
                 {
