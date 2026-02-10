@@ -21,6 +21,19 @@ namespace MistNet.DNVE3
         private const int ReservedConnectionCount = 1;
         private const float BaseWeight = 1f;
 
+        private struct NodeScore
+        {
+            public NodeId Id;
+            public float Score;
+        }
+
+        private readonly List<Node> _allNodesBuffer = new();
+        private readonly List<Node> _selectedNodes = new();
+        private readonly HashSet<NodeId> _selectedNodeIds = new();
+        private readonly List<NodeScore> _nodeScoresBuffer = new();
+        private readonly List<(NodeId nodeId, float score)> _importantNodesBuffer = new();
+        private float[,] _projectedBuffer;
+
         private readonly DNVE3DataStore _dnveDataStore;
         private readonly CancellationTokenSource _cts = new();
         private readonly IMessageSender _sender;
@@ -228,6 +241,14 @@ namespace MistNet.DNVE3
             var selfDensityMap = _dnveDataStore.SelfDensity.DensityMap;
             var selfCenter = _dnveDataStore.SelfDensity.Position;
 
+            var dirCount = SpatialDensityUtils.Directions.Length;
+            var layerCount = selfDensityMap.GetLength(1);
+
+            if (_projectedBuffer == null || _projectedBuffer.GetLength(0) != dirCount || _projectedBuffer.GetLength(1) != layerCount)
+            {
+                _projectedBuffer = new float[dirCount, layerCount];
+            }
+
             var importantNodes = new List<(NodeId nodeId, float score)>();
 
             foreach (var (nodeId, nodeData) in otherNodes)
@@ -240,7 +261,6 @@ namespace MistNet.DNVE3
                 );
 
                 var score = 0f;
-                var layerCount = selfDensityMap.GetLength(1);
 
                 for (var j = 0; j < layerCount; j++)
                 {
