@@ -32,7 +32,7 @@ public class SphericalHistogramTests
     [Test]
     public void TestHistogramProjectionShape()
     {
-        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length, 100f);
         var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
         int dirCount = SpatialDensityUtils.Directions.Length;
@@ -45,7 +45,7 @@ public class SphericalHistogramTests
     [Test]
     public void TestProjectionNonNegative()
     {
-        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length, 100f);
         var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
         foreach (var val in densityMapProj)
@@ -55,7 +55,7 @@ public class SphericalHistogramTests
     [Test]
     public void TestNoOffsetProjectionIdentity()
     {
-        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length, 100f);
         var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerOld);
 
         var dirCount = densityMap.GetLength(0);
