@@ -55,8 +55,8 @@ namespace MistNet.DNVE3
                 await UniTask.Delay(TimeSpan.FromSeconds(interval + jitter),
                     cancellationToken: token);
 
-                if (_dnveDataStore.SelfData == null) continue;
-                if (_dnveDataStore.MergedHistogram == null) continue;
+                if (_dnveDataStore.SelfDensity == null) continue;
+                if (_dnveDataStore.MergedDensityMap == null) continue;
                 var importantNodes= FindImportantNode();
 
                 var count = Math.Min(OptConfig.Data.ExchangeCount, importantNodes.Count);
@@ -77,7 +77,7 @@ namespace MistNet.DNVE3
             var allNodes = _dataStore.GetAllNodes().ToList();
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
 
-            var directions = SphericalHistogramUtils.Directions;
+            var directions = SpatialDensityUtils.Directions;
             var selectedNodes = new List<Node>();
 
             foreach (var dir in directions)
@@ -174,9 +174,9 @@ namespace MistNet.DNVE3
             }
 
             // 3. 通信実績（LRU）
-            if (_dnveDataStore.LastMessageTimes.TryGetValue(id, out var lastTime))
+            if (_dnveDataStore.Neighbors.TryGetValue(id, out var info))
             {
-                var elapsed = (float)(DateTime.UtcNow - lastTime).TotalSeconds;
+                var elapsed = (float)(DateTime.UtcNow - info.LastMessageTime).TotalSeconds;
                 score -= elapsed; // 新しいほど減点が少ない
             }
             else
@@ -223,36 +223,36 @@ namespace MistNet.DNVE3
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
-                _dnveDataStore.ExpireNodeTimes[node.Id] = expireTime;
+                _dnveDataStore.Neighbors[node.Id].ExpireTime = expireTime;
             }
         }
 
         private List<(NodeId nodeId, float score)> FindImportantNode()
         {
-            var otherNodeHists = _dnveDataStore.NodeMaps;
-            var selfHist = _dnveDataStore.SelfData.Hists;
-            var selfCenter = _dnveDataStore.SelfData.Position;
+            var otherNodes = _dnveDataStore.Neighbors;
+            var selfHist = _dnveDataStore.SelfDensity.DensityMap;
+            var selfCenter = _dnveDataStore.SelfDensity.Position;
 
             var importantNodes = new List<(NodeId nodeId, float score)>();
 
-            foreach (var (nodeId, nodeData) in otherNodeHists)
+            foreach (var (nodeId, nodeData) in otherNodes)
             {
-                var otherHist = nodeData.Hists;
-                var otherCenter = nodeData.Position;
+                var otherDensityMap = nodeData.Data.DensityMap;
+                var otherCenter = nodeData.Data.Position;
 
-                var projected = SphericalHistogramUtils.ProjectSphericalHistogram(
-                    otherHist, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SphericalHistogramBinCount
+                var projected = SpatialDensityUtils.ProjectSphericalHistogram(
+                    otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SpatialDistanceLayers
                 );
 
                 var score = 0f;
-                var distBins = OptConfig.Data.SphericalHistogramBinCount;
+                var distBins = OptConfig.Data.SpatialDistanceLayers;
 
                 // 近距離ほど重くする
                 for (var j = 0; j < distBins; j++)
                 {
                     var weight = 1f / (1f + j); // distBin=0が最も重い
 
-                    for (var i = 0; i < SphericalHistogramUtils.Directions.Length; i++)
+                    for (var i = 0; i < SpatialDensityUtils.Directions.Length; i++)
                     {
                         // 他ノードの強度を評価
                         var diff = projected[i, j] - selfHist[i, j];

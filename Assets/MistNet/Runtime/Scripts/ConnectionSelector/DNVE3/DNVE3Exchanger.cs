@@ -38,20 +38,21 @@ namespace MistNet.DNVE3
 
         private void OnHeartbeatReceived(DNVEMessage message)
         {
-            SpatialHistogramData data;
+            SpatialDensityData data;
             try 
             {
-                var byteData = MemoryPackSerializer.Deserialize<SpatialHistogramDataByte>(message.Payload);
-                data = SphericalHistogramUtils.FromCompact(byteData, OptConfig.Data.SphericalHistogramBinCount);
+                var byteData = MemoryPackSerializer.Deserialize<SpatialDensityDataByte>(message.Payload);
+                data = SpatialDensityUtils.FromCompact(byteData, OptConfig.Data.SpatialDistanceLayers);
             }
             catch
             {
-                data = MemoryPackSerializer.Deserialize<SpatialHistogramData>(message.Payload);
+                data = MemoryPackSerializer.Deserialize<SpatialDensityData>(message.Payload);
             }
 
-            _dnveDataStore.NodeMaps[message.Sender] = data;
+            // _dnveDataStore.NodeMaps[message.Sender] = data;
             var expireTime = DateTime.UtcNow.AddSeconds(OptConfig.Data.ExpireSeconds);
-            _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
+            // _dnveDataStore.ExpireNodeTimes[message.Sender] = expireTime;
+            _dnveDataStore.AddOrUpdateNeighbor(message.Sender, data, expireTime);
 
             var node = new Node
             {
@@ -86,21 +87,21 @@ namespace MistNet.DNVE3
                     cancellationToken: token);
                 DeleteOldData();
                 var selfHistData = GetSpatialHistogramData(GetNodes().ToArray());
-                _dnveDataStore.SelfData = new SpatialHistogramData
+                _dnveDataStore.SelfDensity = new SpatialDensityData
                 {
-                    Hists = (float[,])selfHistData.Hists.Clone(),
+                    DensityMap = (float[,])selfHistData.DensityMap.Clone(),
                     Position = selfHistData.Position,
                 };
 
-                foreach (var (_, data) in _dnveDataStore.NodeMaps)
+                foreach (var (_, data) in _dnveDataStore.Neighbors)
                 {
-                    var otherPos = data.Position;
-                    var hist = data.Hists;
-                    selfHistData.Hists = SphericalHistogramUtils.MergeHistograms(selfHistData.Hists, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3(), OptConfig.Data.SphericalHistogramBinCount);
+                    var otherPos = data.Data.Position;
+                    var hist = data.Data.DensityMap;
+                    selfHistData.DensityMap = SpatialDensityUtils.MergeHistograms(selfHistData.DensityMap, selfHistData.Position.ToVector3(), hist, otherPos.ToVector3(), OptConfig.Data.SpatialDistanceLayers);
                 }
-                _dnveDataStore.MergedHistogram = selfHistData.Hists;
+                _dnveDataStore.MergedDensityMap = selfHistData.DensityMap;
 
-                var compactData = SphericalHistogramUtils.ToCompact(selfHistData);
+                var compactData = SpatialDensityUtils.ToCompact(selfHistData);
                 var payload = MemoryPackSerializer.Serialize(compactData);
 
                 foreach (var nodeId in _routingBase.ConnectedNodes.ToArray())
@@ -121,10 +122,10 @@ namespace MistNet.DNVE3
         {
             var now = DateTime.UtcNow;
             var toRemove = new List<NodeId>();
-            foreach (var kvp in _dnveDataStore.ExpireNodeTimes)
+            foreach (var kvp in _dnveDataStore.Neighbors)
             {
                 var nodeId = kvp.Key;
-                var lastUpdateTime = kvp.Value;
+                var lastUpdateTime = kvp.Value.LastMessageTime;
                 if ((now - lastUpdateTime).TotalSeconds > OptConfig.Data.ExpireSeconds)
                 {
                     toRemove.Add(nodeId);
@@ -132,14 +133,15 @@ namespace MistNet.DNVE3
             }
             foreach (var nodeId in toRemove)
             {
-                _dnveDataStore.NodeMaps.Remove(nodeId);
-                _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
-                _dnveDataStore.LastMessageTimes.Remove(nodeId);
+                // _dnveDataStore.NodeMaps.Remove(nodeId);
+                // _dnveDataStore.ExpireNodeTimes.Remove(nodeId);
+                // _dnveDataStore.LastMessageTimes.Remove(nodeId);
+                _dnveDataStore.RemoveNeighbor(nodeId);
                 _dataStore.Remove(nodeId);
             }
         }
 
-        private SpatialHistogramData GetSpatialHistogramData(Node[] nodes)
+        private SpatialDensityData GetSpatialHistogramData(Node[] nodes)
         {
             var selfPos = MistSyncManager.I.SelfSyncObject.transform.position;
             var posArray = new Vector3[nodes.Length];
@@ -148,11 +150,11 @@ namespace MistNet.DNVE3
                 posArray[i] = nodes[i].Position.ToVector3();
             }
 
-            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, posArray, OptConfig.Data.SphericalHistogramBinCount);
+            var hists = SpatialDensityUtils.CreateSphericalHistogram(selfPos, posArray, OptConfig.Data.SpatialDistanceLayers);
 
-            return new SpatialHistogramData
+            return new SpatialDensityData
             {
-                Hists = hists,
+                DensityMap = hists,
                 Position = new Position(selfPos),
             };
         }

@@ -21,24 +21,24 @@ namespace MistNet.Runtime.Scripts.Tests
         [Test]
         public void TestSelfDataInitialization()
         {
-            var selfData = new SpatialHistogramData
+            var selfData = new SpatialDensityData
             {
                 Position = new Position(new Vector3(0, 0, 32)),
-                Hists = new float[, ]
+                DensityMap = new float[, ]
                 {
                     {1, 2, 3},
                     {4, 5, 6},
                     {7, 8, 9}
                 }
             };
-            _dnve3DataStore.SelfData = selfData;
-            selfData.Hists = new float[, ]
+            _dnve3DataStore.SelfDensity = selfData;
+            selfData.DensityMap = new float[, ]
             {
                 {9, 8, 7},
                 {6, 5, 4},
                 {3, 2, 1}
             };
-            Debug.Log(_dnve3DataStore.SelfData.Hists[0, 0]); // Should log 9 if reference is maintained
+            Debug.Log(_dnve3DataStore.SelfDensity.DensityMap[0, 0]); // Should log 9 if reference is maintained
         }
     }
 }
