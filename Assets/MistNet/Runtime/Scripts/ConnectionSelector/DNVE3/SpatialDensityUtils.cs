@@ -54,41 +54,36 @@ namespace MistNet.Utils
             return directions;
         }
 
-        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, int layerCount = DefaultLayerCount)
+        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float maxRange)
         {
+            var layerCount = DefaultLayerCount;
             var densityMap = new float[Directions.Length, layerCount];
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange);
             return densityMap;
         }
 
-        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, int layerCount = DefaultLayerCount)
+        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, float maxRange)
         {
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, layerCount);
+            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange);
         }
 
         private static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, Vector3[] directions,
-            int layerCount = DefaultLayerCount)
+            float maxRange)
         {
             var dirCount = directions.Length;
+            var layerCount = densityMap.GetLength(1);
             System.Array.Clear(densityMap, 0, densityMap.Length);
-            var maxDist = 0f;
 
-            for (int i = 0; i < nodeCount; i++)
-            {
-                var node = nodes[i];
-                var dist = Vector3.Distance(center, node);
-                if (dist > maxDist) maxDist = dist;
-            }
+            if (maxRange <= FloatComparisonThreshold) maxRange = 1f;
 
-            if (maxDist == 0f) maxDist = 1f;
-
-            for (int j = 0; j < nodeCount; j++)
+            var safeNodeCount = Mathf.Min(nodeCount, nodes.Length);
+            for (int j = 0; j < safeNodeCount; j++)
             {
                 var node = nodes[j];
                 var vec = node - center;
                 var dist = vec.magnitude;
                 var unitVec = vec.normalized;
-                var layerIndex = Mathf.Min(Mathf.FloorToInt(dist / maxDist * layerCount), layerCount - 1);
+                var layerIndex = Mathf.Min(Mathf.FloorToInt(dist / maxRange * layerCount), layerCount - 1);
 
                 for (var i = 0; i < dirCount; i++)
                 {
@@ -99,26 +94,23 @@ namespace MistNet.Utils
             }
         }
 
-        public static float[,] ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter,
-            int layerCount = DefaultLayerCount)
+        public static float[,] ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter)
         {
             var projected = new float[densityMap.GetLength(0), densityMap.GetLength(1)];
-            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions, layerCount);
+            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions);
             return projected;
         }
 
-        public static void ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter, float[,] projected,
-            int layerCount = DefaultLayerCount)
+        public static void ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter, float[,] projected)
         {
-            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions, layerCount);
+            ProjectSpatialDensity(densityMap, oldCenter, newCenter, projected, Directions);
         }
 
         private static void ProjectSpatialDensity(float[,] densityMap, Vector3 oldCenter, Vector3 newCenter, float[,] projected,
-            Vector3[] directions, int layerCount = DefaultLayerCount)
+            Vector3[] directions)
         {
             var offset = newCenter - oldCenter;
-            var offsetNorm = offset.magnitude;
-            if (offsetNorm == 0f)
+            if (offset.sqrMagnitude <= FloatComparisonThreshold * FloatComparisonThreshold)
             {
                 System.Array.Copy(densityMap, projected, densityMap.Length);
                 return;
@@ -126,6 +118,7 @@ namespace MistNet.Utils
 
             var offsetUnit = offset.normalized;
             var dirCount = directions.Length;
+            var layerCount = densityMap.GetLength(1);
 
             for (var i = 0; i < dirCount; i++)
             {
@@ -140,21 +133,19 @@ namespace MistNet.Utils
 
         public static float[,] MergeSpatialDensity(
             float[,] selfDensityMap, Vector3 selfCenter,
-            float[,] otherDensityMap, Vector3 otherCenter,
-            int layerCount = DefaultLayerCount)
+            float[,] otherDensityMap, Vector3 otherCenter)
         {
             var merged = new float[selfDensityMap.GetLength(0), selfDensityMap.GetLength(1)];
-            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions, layerCount);
+            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions);
             return merged;
         }
 
         public static void MergeSpatialDensity(
             float[,] selfDensityMap, Vector3 selfCenter,
             float[,] otherDensityMap, Vector3 otherCenter,
-            float[,] merged,
-            int layerCount = DefaultLayerCount)
+            float[,] merged)
         {
-            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions, layerCount);
+            MergeSpatialDensity(selfDensityMap, selfCenter, otherDensityMap, otherCenter, merged, Directions);
         }
         
         private static float[,] _otherProjectedBuffer;
@@ -163,16 +154,16 @@ namespace MistNet.Utils
             float[,] selfDensityMap, Vector3 selfCenter,
             float[,] otherDensityMap, Vector3 otherCenter,
             float[,] merged,
-            Vector3[] directions,
-            int layerCount = DefaultLayerCount)
+            Vector3[] directions)
         {
             int dirs = directions.Length;
+            var layerCount = selfDensityMap.GetLength(1);
             if (_otherProjectedBuffer == null || _otherProjectedBuffer.GetLength(0) != dirs || _otherProjectedBuffer.GetLength(1) != layerCount)
             {
                 _otherProjectedBuffer = new float[dirs, layerCount];
             }
             
-            ProjectSpatialDensity(otherDensityMap, otherCenter, selfCenter, _otherProjectedBuffer, directions, layerCount);
+            ProjectSpatialDensity(otherDensityMap, otherCenter, selfCenter, _otherProjectedBuffer, directions);
             
             for (var i = 0; i < dirs; i++)
             {
