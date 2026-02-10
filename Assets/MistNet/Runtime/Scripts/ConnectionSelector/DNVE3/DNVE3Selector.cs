@@ -58,10 +58,6 @@ namespace MistNet.DNVE3
         public void Send(DNVEMessage message)
         {
             message.Sender = PeerRepository.SelfId;
-            if (message.Receiver != null)
-            {
-                _dnveDataStore.UpdateLastMessageTime(message.Receiver);
-            }
             var data = MemoryPackSerializer.Serialize(message);
             SendRaw(data, message.Receiver);
         }
