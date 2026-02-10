@@ -11,6 +11,11 @@ namespace MistNet.Utils
         private const float FloatComparisonThreshold = 0.00001f;
         private const float ByteScalingFactor = 255.0f;
         private const float ProjectionExpansionFactor = 0.5f;
+        private const float DynamicMaxRangeFlag = -1f;
+        private const float DefaultMaxRange = 1f;
+        private const float MinValue = 0f;
+        private const float MaxCosineValue = 1f;
+        private const float MinCosineValue = -1f;
 
         private static Vector3[] _directions;
         public static Vector3[] Directions
@@ -25,14 +30,14 @@ namespace MistNet.Utils
 
         public static void Initialize(int count)
         {
-            if (count <= 0) count = DefaultDirectionCount;
+            if (count <= MinValue) count = DefaultDirectionCount;
             _directions = GenerateUniformDirections(count);
         }
 
         private static Vector3[] GenerateUniformDirections(int count)
         {
             var directions = new Vector3[count];
-            if (count == 1)
+            if (count == (int)MaxCosineValue)
             {
                 directions[0] = Vector3.forward;
                 return directions;
@@ -42,8 +47,8 @@ namespace MistNet.Utils
 
             for (var i = 0; i < count; i++)
             {
-                var y = 1 - (i / (float)(count - 1)) * 2;
-                var radius = Mathf.Sqrt(1 - y * y);
+                var y = MaxCosineValue - (i / (float)(count - 1)) * 2;
+                var radius = Mathf.Sqrt(MaxCosineValue - y * y);
                 var theta = phi * i;
 
                 var x = Mathf.Cos(theta) * radius;
@@ -58,25 +63,40 @@ namespace MistNet.Utils
         {
             var layerCount = DefaultLayerCount;
             var densityMap = new float[Directions.Length, layerCount];
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange);
+            CreateSpatialDensityInternal(center, nodes, nodeCount, densityMap, Directions, maxRange);
             return densityMap;
+        }
+
+        public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap)
+        {
+            CreateSpatialDensityInternal(center, nodes, nodeCount, densityMap, Directions, DynamicMaxRangeFlag);
         }
 
         public static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, float maxRange)
         {
-            CreateSpatialDensity(center, nodes, nodeCount, densityMap, Directions, maxRange);
+            CreateSpatialDensityInternal(center, nodes, nodeCount, densityMap, Directions, maxRange);
         }
 
-        private static void CreateSpatialDensity(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, Vector3[] directions,
+        private static void CreateSpatialDensityInternal(Vector3 center, Vector3[] nodes, int nodeCount, float[,] densityMap, Vector3[] directions,
             float maxRange)
         {
             var dirCount = directions.Length;
             var layerCount = densityMap.GetLength(1);
             System.Array.Clear(densityMap, 0, densityMap.Length);
 
-            if (maxRange <= FloatComparisonThreshold) maxRange = 1f;
-
             var safeNodeCount = Mathf.Min(nodeCount, nodes.Length);
+
+            if (maxRange <= FloatComparisonThreshold)
+            {
+                maxRange = MinValue;
+                for (int j = 0; j < safeNodeCount; j++)
+                {
+                    var dist = Vector3.Distance(center, nodes[j]);
+                    if (dist > maxRange) maxRange = dist;
+                }
+                if (maxRange <= FloatComparisonThreshold) maxRange = DefaultMaxRange;
+            }
+
             for (int j = 0; j < safeNodeCount; j++)
             {
                 var node = nodes[j];
@@ -88,7 +108,7 @@ namespace MistNet.Utils
                 for (var i = 0; i < dirCount; i++)
                 {
                     var score = Vector3.Dot(directions[i], unitVec);
-                    if (score > 0f)
+                    if (score > MinValue)
                         densityMap[i, layerIndex] += score;
                 }
             }
@@ -122,11 +142,11 @@ namespace MistNet.Utils
 
             for (var i = 0; i < dirCount; i++)
             {
-                var cosSim = Mathf.Clamp(Vector3.Dot(directions[i], offsetUnit), -1f, 1f);
+                var cosSim = Mathf.Clamp(Vector3.Dot(directions[i], offsetUnit), MinCosineValue, MaxCosineValue);
                 for (var j = 0; j < layerCount; j++)
                 {
-                    projected[i, j] = densityMap[i, j] * (1f + ProjectionExpansionFactor * cosSim);
-                    if (projected[i, j] < 0f) projected[i, j] = 0f;
+                    projected[i, j] = densityMap[i, j] * (MaxCosineValue + ProjectionExpansionFactor * cosSim);
+                    if (projected[i, j] < MinValue) projected[i, j] = MinValue;
                 }
             }
         }

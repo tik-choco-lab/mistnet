@@ -232,6 +232,7 @@ namespace MistNet.DNVE3
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
+                _dnveDataStore.UpdateLastMessageTime(node.Id);
             }
         }
 
@@ -249,7 +250,7 @@ namespace MistNet.DNVE3
                 _projectedBuffer = new float[dirCount, layerCount];
             }
 
-            var importantNodes = new List<(NodeId nodeId, float score)>();
+            _importantNodesBuffer.Clear();
 
             foreach (var (nodeId, nodeData) in otherNodes)
             {
@@ -275,18 +276,18 @@ namespace MistNet.DNVE3
                 }
 
                 if (score > 0f)
-                    importantNodes.Add((nodeId, score));
+                    _importantNodesBuffer.Add((nodeId, score));
             }
 
-            importantNodes.Sort((a, b) => b.score.CompareTo(a.score));
+            _importantNodesBuffer.Sort((a, b) => b.score.CompareTo(a.score));
 
-            foreach (var (nodeId, score) in importantNodes)
+            foreach (var (nodeId, score) in _importantNodesBuffer)
                  MistLogger.Debug($"[Important Node] {nodeId} - Score: {score:F3}");
 
-            if (importantNodes.Count > 0)
-                MistLogger.Debug($"The node with the strongest short-range influence: {importantNodes[0].nodeId}");
+            if (_importantNodesBuffer.Count > 0)
+                MistLogger.Debug($"The node with the strongest short-range influence: {_importantNodesBuffer[0].nodeId}");
 
-            return importantNodes;
+            return _importantNodesBuffer;
         }
     }
 }
