@@ -32,44 +32,44 @@ public class SphericalHistogramTests
     [Test]
     public void TestHistogramProjectionShape()
     {
-        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
-        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerNew);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
         int dirCount = SpatialDensityUtils.Directions.Length;
-        Assert.AreEqual(dirCount, hist.GetLength(0));
-        Assert.AreEqual(SpatialDensityUtils.DefaultDistBins, hist.GetLength(1));
-        Assert.AreEqual(hist.GetLength(0), histProj.GetLength(0));
-        Assert.AreEqual(hist.GetLength(1), histProj.GetLength(1));
+        Assert.AreEqual(dirCount, densityMap.GetLength(0));
+        Assert.AreEqual(SpatialDensityUtils.DefaultLayerCount, densityMap.GetLength(1));
+        Assert.AreEqual(densityMap.GetLength(0), densityMapProj.GetLength(0));
+        Assert.AreEqual(densityMap.GetLength(1), densityMapProj.GetLength(1));
     }
 
     [Test]
     public void TestProjectionNonNegative()
     {
-        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
-        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerNew);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
-        foreach (var val in histProj)
+        foreach (var val in densityMapProj)
             Assert.GreaterOrEqual(val, 0f);
     }
 
     [Test]
     public void TestNoOffsetProjectionIdentity()
     {
-        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
-        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerOld);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerOld);
 
-        var dirCount = hist.GetLength(0);
-        var binCount = hist.GetLength(1);
+        var dirCount = densityMap.GetLength(0);
+        var layerCount = densityMap.GetLength(1);
         for (var i = 0; i < dirCount; i++)
-            for (var j = 0; j < binCount; j++)
-                Assert.AreEqual(hist[i, j], histProj[i, j]);
+            for (var j = 0; j < layerCount; j++)
+                Assert.AreEqual(densityMap[i, j], densityMapProj[i, j]);
     }
 
     [Test]
     public void TestProjectionAccuracy()
     {
         int dirCount = SpatialDensityUtils.Directions.Length;
-        int binCount = SpatialDensityUtils.DefaultDistBins;
+        int layerCount = SpatialDensityUtils.DefaultLayerCount;
 
         // 正解分布
         var distTrue = new float[dirCount];
@@ -83,14 +83,14 @@ public class SphericalHistogramTests
         }
 
         // 固定サイズ空間密度
-        var spatialDensity = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
-        var projectSpatialDensity = SpatialDensityUtils.ProjectSpatialDensity(spatialDensity, centerOld, centerNew);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
         var distApprox = new float[dirCount];
         for (var i = 0; i < dirCount; i++)
-            for (var j = 0; j < binCount; j++)
-                distApprox[i] += projectSpatialDensity[i, j];
+            for (var j = 0; j < layerCount; j++)
+                distApprox[i] += densityMapProj[i, j];
 
         // 誤差計算
         var sumSq = 0f;
@@ -104,7 +104,7 @@ public class SphericalHistogramTests
         var rmse = Mathf.Sqrt(sumSq / dirCount);
 
         Debug.Log($"ノード数: {nodes.Length}");
-        Debug.Log($"空間密度データサイズ: {spatialDensity.Length}");
+        Debug.Log($"空間密度データサイズ: {densityMap.Length}");
         Debug.Log($"正解分布: {string.Join(",", distTrue)}");
         Debug.Log($"近似分布: {string.Join(",", distApprox)}");
         Debug.Log($"RMSE: {rmse}");
