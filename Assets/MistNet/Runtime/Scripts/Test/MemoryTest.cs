@@ -20,8 +20,8 @@ namespace MistNet.Test
         [ContextMenu("Test")]
         public void Test()
         {
-            SphericalHistogramUtils.Initialize(HistogramLevel);
-            var directions = SphericalHistogramUtils.Directions;
+            SpatialDensityUtils.Initialize(HistogramLevel);
+            var directions = SpatialDensityUtils.Directions;
             var selfId = Guid.NewGuid().ToString();
             var targetId = Guid.NewGuid().ToString();
             var selfPos = Vector3.zero;
@@ -57,8 +57,8 @@ namespace MistNet.Test
             var dummyNodes = nodeList.ToArray();
 
             // A. Prepare Original Data
-            var hists = SphericalHistogramUtils.CreateSphericalHistogram(selfPos, dummyNodes, BinCount);
-            var spatialData = new SpatialHistogramData { Hists = hists, Position = new Position(selfPos) };
+            var hists = SpatialDensityUtils.CreateSpatialDensity(selfPos, dummyNodes, BinCount);
+            var spatialData = new SpatialDensityData { DensityMap = hists, Position = new Position(selfPos) };
 
             // --- 1. CURRENT APPROACH ---
             // SpatialData(float[,]) -> JSON -> DNVEMessage.Payload(string) -> JSON -> P_ConnectionSelector.Data(string) -> MistMessage.Payload(byte[])

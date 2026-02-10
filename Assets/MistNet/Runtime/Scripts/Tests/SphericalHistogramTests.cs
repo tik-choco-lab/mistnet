@@ -32,12 +32,12 @@ public class SphericalHistogramTests
     [Test]
     public void TestHistogramProjectionShape()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
+        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
+        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerNew);
 
-        int dirCount = SphericalHistogramUtils.Directions.Length;
+        int dirCount = SpatialDensityUtils.Directions.Length;
         Assert.AreEqual(dirCount, hist.GetLength(0));
-        Assert.AreEqual(SphericalHistogramUtils.DefaultDistBins, hist.GetLength(1));
+        Assert.AreEqual(SpatialDensityUtils.DefaultDistBins, hist.GetLength(1));
         Assert.AreEqual(hist.GetLength(0), histProj.GetLength(0));
         Assert.AreEqual(hist.GetLength(1), histProj.GetLength(1));
     }
@@ -45,8 +45,8 @@ public class SphericalHistogramTests
     [Test]
     public void TestProjectionNonNegative()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
+        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
+        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerNew);
 
         foreach (var val in histProj)
             Assert.GreaterOrEqual(val, 0f);
@@ -55,8 +55,8 @@ public class SphericalHistogramTests
     [Test]
     public void TestNoOffsetProjectionIdentity()
     {
-        var hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
-        var histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerOld);
+        var hist = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
+        var histProj = SpatialDensityUtils.ProjectSpatialDensity(hist, centerOld, centerOld);
 
         var dirCount = hist.GetLength(0);
         var binCount = hist.GetLength(1);
@@ -68,8 +68,8 @@ public class SphericalHistogramTests
     [Test]
     public void TestProjectionAccuracy()
     {
-        int dirCount = SphericalHistogramUtils.Directions.Length;
-        int binCount = SphericalHistogramUtils.DefaultDistBins;
+        int dirCount = SpatialDensityUtils.Directions.Length;
+        int binCount = SpatialDensityUtils.DefaultDistBins;
 
         // 正解分布
         var distTrue = new float[dirCount];
@@ -79,18 +79,18 @@ public class SphericalHistogramTests
             var unitVec = vec.magnitude > 0 ? vec.normalized : Vector3.zero;
 
             for (var i = 0; i < dirCount; i++)
-                distTrue[i] += Mathf.Max(Vector3.Dot(unitVec, SphericalHistogramUtils.Directions[i]), 0f);
+                distTrue[i] += Mathf.Max(Vector3.Dot(unitVec, SpatialDensityUtils.Directions[i]), 0f);
         }
 
-        // 固定サイズヒストグラム
-        float[,] hist = SphericalHistogramUtils.CreateSphericalHistogram(centerOld, nodes);
-        float[,] histProj = SphericalHistogramUtils.ProjectSphericalHistogram(hist, centerOld, centerNew);
+        // 固定サイズ空間密度
+        var spatialDensity = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes);
+        var projectSpatialDensity = SpatialDensityUtils.ProjectSpatialDensity(spatialDensity, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
         var distApprox = new float[dirCount];
         for (var i = 0; i < dirCount; i++)
             for (var j = 0; j < binCount; j++)
-                distApprox[i] += histProj[i, j];
+                distApprox[i] += projectSpatialDensity[i, j];
 
         // 誤差計算
         var sumSq = 0f;
@@ -104,7 +104,7 @@ public class SphericalHistogramTests
         var rmse = Mathf.Sqrt(sumSq / dirCount);
 
         Debug.Log($"ノード数: {nodes.Length}");
-        Debug.Log($"ヒストグラムサイズ: {hist.Length}");
+        Debug.Log($"空間密度データサイズ: {spatialDensity.Length}");
         Debug.Log($"正解分布: {string.Join(",", distTrue)}");
         Debug.Log($"近似分布: {string.Join(",", distApprox)}");
         Debug.Log($"RMSE: {rmse}");

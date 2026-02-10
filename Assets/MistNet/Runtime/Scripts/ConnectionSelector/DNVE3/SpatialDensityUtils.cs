@@ -1,45 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using MistNet.DNVE3;
 using UnityEngine;
-using MistNet;
 
 namespace MistNet.Utils
 {
-    public static class SphericalHistogramUtils
+    public static class SpatialDensityUtils
     {
         public const int DefaultDistBins = 4;
-        private const int Level1 = 1;
-        private const int Level2 = 2;
-        private const int Level3 = 3;
-        private const int BaseDirectionCount = 26;
-        private const int FibonacciStep = 50;
-
-        private static readonly Vector3[] FaceDirections = new Vector3[]
-        {
-            new Vector3(0, 0, 1), new Vector3(0, 0, -1),
-            new Vector3(1, 0, 0), new Vector3(-1, 0, 0),
-            new Vector3(0, 1, 0), new Vector3(0, -1, 0),
-        };
-
-        private static readonly Vector3[] CornerDirections = new Vector3[]
-        {
-            new Vector3(1, 1, 1), new Vector3(1, 1, -1),
-            new Vector3(1, -1, 1), new Vector3(1, -1, -1),
-            new Vector3(-1, 1, 1), new Vector3(-1, 1, -1),
-            new Vector3(-1, -1, 1), new Vector3(-1, -1, -1)
-        };
-
-        private static readonly Vector3[] EdgeDirections = new Vector3[]
-        {
-            new Vector3(1, 1, 0), new Vector3(1, -1, 0),
-            new Vector3(-1, 1, 0), new Vector3(-1, -1, 0),
-            new Vector3(1, 0, 1), new Vector3(1, 0, -1),
-            new Vector3(-1, 0, 1), new Vector3(-1, 0, -1),
-            new Vector3(0, 1, 1), new Vector3(0, 1, -1),
-            new Vector3(0, -1, 1), new Vector3(0, -1, -1),
-        };
+        private const int DefaultDirectionCount = 26; // 初期値（旧Level 3相当）
 
         private static Vector3[] _directions;
         public static Vector3[] Directions
@@ -47,62 +15,42 @@ namespace MistNet.Utils
             get
             {
                 if (_directions != null) return _directions;
-                Initialize(Level3);
+                Initialize(DefaultDirectionCount);
                 return _directions;
             }
         }
 
-        public static void Initialize(int level)
+        /// <summary>
+        /// 指定された方向数（count）に基づいてフィボナッチ格子を生成し、初期化する
+        /// </summary>
+        /// <param name="count">生成する方向ベクトルの数</param>
+        public static void Initialize(int count)
         {
-            var dirs = new List<Vector3>();
-            switch (level)
-            {
-                case Level1:
-                    dirs.AddRange(FaceDirections);
-                    break;
-                case Level2:
-                    dirs.AddRange(FaceDirections);
-                    dirs.AddRange(CornerDirections);
-                    break;
-                case Level3:
-                    dirs.AddRange(FaceDirections);
-                    dirs.AddRange(CornerDirections);
-                    dirs.AddRange(EdgeDirections);
-                    break;
-                default:
-                    if (level <= 0)
-                    {
-                        dirs.AddRange(FaceDirections);
-                    }
-                    else
-                    {
-                        var count = BaseDirectionCount + (level - Level3) * FibonacciStep;
-                        _directions = GenerateUniformDirections(count);
-                        return;
-                    }
-                    break;
-            }
-
-            _directions = dirs.Select(d => d.normalized).ToArray();
+            if (count <= 0) count = DefaultDirectionCount;
+            _directions = GenerateUniformDirections(count);
         }
 
-        public static Vector3[] GenerateUniformDirections(int count)
+        /// <summary>
+        /// フィボナッチ格子（Fibonacci Sphere）アルゴリズムを用いて
+        /// 球面上に均一な方向ベクトルを生成する
+        /// </summary>
+        private static Vector3[] GenerateUniformDirections(int count)
         {
             var directions = new Vector3[count];
-            if (count <= 0) return directions;
             if (count == 1)
             {
                 directions[0] = Vector3.forward;
                 return directions;
             }
 
-            var phi = Mathf.PI * (3f - Mathf.Sqrt(5f));
+            var phi = Mathf.PI * (3f - Mathf.Sqrt(5f)); // 黄金角
 
             for (var i = 0; i < count; i++)
             {
                 var y = 1 - (i / (float)(count - 1)) * 2;
                 var radius = Mathf.Sqrt(1 - y * y);
                 var theta = phi * i;
+
                 var x = Mathf.Cos(theta) * radius;
                 var z = Mathf.Sin(theta) * radius;
 
@@ -111,12 +59,12 @@ namespace MistNet.Utils
             return directions;
         }
 
-        public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, int distBins = DefaultDistBins)
+        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int distBins = DefaultDistBins)
         {
-            return CreateSphericalHistogram(center, nodes, Directions, distBins);
+            return CreateSpatialDensity(center, nodes, Directions, distBins);
         }
 
-        private static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, Vector3[] directions,
+        private static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, Vector3[] directions,
             int distBins = DefaultDistBins)
         {
             var dirCount = directions.Length;
@@ -136,7 +84,7 @@ namespace MistNet.Utils
                 var vec = node - center;
                 var dist = vec.magnitude;
                 var unitVec = vec.normalized;
-                var distIdx = Mathf.FloorToInt(dist / maxDist * (distBins - 1));
+                var distIdx = Mathf.Min(Mathf.FloorToInt(dist / maxDist * distBins), distBins - 1);
 
                 for (var i = 0; i < dirCount; i++)
                 {
@@ -149,13 +97,13 @@ namespace MistNet.Utils
             return hist;
         }
 
-        public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
+        public static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             int distBins = DefaultDistBins)
         {
-            return ProjectSphericalHistogram(hist, oldCenter, newCenter, Directions, distBins);
+            return ProjectSpatialDensity(hist, oldCenter, newCenter, Directions, distBins);
         }
 
-        private static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
+        private static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             Vector3[] directions, int distBins = DefaultDistBins)
         {
             var offset = newCenter - oldCenter;
@@ -179,21 +127,21 @@ namespace MistNet.Utils
             return projected;
         }
 
-        public static float[,] MergeHistograms(
+        public static float[,] MergeSpatialDensity(
             float[,] selfHist, Vector3 selfCenter,
             float[,] otherHist, Vector3 otherCenter,
             int distBins = DefaultDistBins)
         {
-            return MergeHistograms(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
+            return MergeSpatialDensity(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
         }
 
-        private static float[,] MergeHistograms(
+        private static float[,] MergeSpatialDensity(
             float[,] selfHist, Vector3 selfCenter,
             float[,] otherHist, Vector3 otherCenter,
             Vector3[] directions,
             int distBins = DefaultDistBins)
         {
-            var otherProjected = ProjectSphericalHistogram(otherHist, otherCenter, selfCenter, directions, distBins);
+            var otherProjected = ProjectSpatialDensity(otherHist, otherCenter, selfCenter, directions, distBins);
             var dirs = directions.Length;
             var merged = new float[dirs, distBins];
 
@@ -208,9 +156,9 @@ namespace MistNet.Utils
             return merged;
         }
 
-        public static SpatialHistogramDataByte ToCompact(SpatialHistogramData original)
+        public static SpatialDensityDataByte ToCompact(SpatialDensityData original)
         {
-            var hists = original.Hists;
+            var hists = original.DensityMap;
             var directionsCount = hists.GetLength(0);
             var binCount = hists.GetLength(1);
             var result = new byte[directionsCount * binCount];
@@ -225,15 +173,15 @@ namespace MistNet.Utils
                 result[i] = (byte)(histSpan[i] * invMax);
             }
 
-            return new SpatialHistogramDataByte
+            return new SpatialDensityDataByte
             {
                 Position = original.Position.ToVector3(),
                 MaxValue = maxVal,
-                ByteHists = result
+                ByteDensities = result
             };
         }
 
-        public static SpatialHistogramData FromCompact(SpatialHistogramDataByte compact, int binCount)
+        public static SpatialDensityData FromCompact(SpatialDensityDataByte compact, int binCount)
         {
             var directionsCount = Directions.Length;
             var hists = new float[directionsCount, binCount];
@@ -242,12 +190,12 @@ namespace MistNet.Utils
             float maxVal = compact.MaxValue;
             for (int i = 0; i < histSpan.Length; i++)
             {
-                histSpan[i] = (compact.ByteHists[i] / 255.0f) * maxVal;
+                histSpan[i] = (compact.ByteDensities[i] / 255.0f) * maxVal;
             }
 
-            return new SpatialHistogramData
+            return new SpatialDensityData
             {
-                Hists = hists,
+                DensityMap = hists,
                 Position = new Position(compact.Position)
             };
         }
