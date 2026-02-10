@@ -44,5 +44,14 @@ namespace MistNet.DNVE3
                 info.LastMessageTime = DateTime.UtcNow;
             }
         }
+
+        public void UpdateExpireTime(NodeId id, DateTime expireTime)
+        {
+            if (Neighbors.TryGetValue(id, out var info))
+            {
+                info.ExpireTime = expireTime;
+            }
+        }
     }
 }
+

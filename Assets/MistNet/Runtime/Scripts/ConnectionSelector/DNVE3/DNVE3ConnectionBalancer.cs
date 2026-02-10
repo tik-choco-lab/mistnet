@@ -155,7 +155,7 @@ namespace MistNet.DNVE3
         {
             var score = 0f;
 
-            // 1. ヒストグラム選択ノード（最優先）
+            // 1. 空間密度選択ノード（最優先）
             if (selectedNodeIds.Contains(id)) score += ScoreSelectedNode;
 
             // 2. AOI内ノード（距離に基づく）
@@ -223,7 +223,7 @@ namespace MistNet.DNVE3
             {
                 _routing.AddRouting(node.Id, receiveMessage.Sender);
                 _dataStore.AddOrUpdate(node);
-                _dnveDataStore.Neighbors[node.Id].ExpireTime = expireTime;
+                _dnveDataStore.UpdateExpireTime(node.Id, expireTime);
             }
         }
 

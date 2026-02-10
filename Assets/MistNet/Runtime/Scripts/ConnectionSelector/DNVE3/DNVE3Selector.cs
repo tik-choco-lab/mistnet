@@ -37,7 +37,7 @@ namespace MistNet.DNVE3
         protected override void OnMessage(byte[] data, NodeId id)
         {
             var message = MemoryPackSerializer.Deserialize<DNVEMessage>(data);
-            _dnveDataStore.Neighbors[id].LastMessageTime = System.DateTime.UtcNow;
+            _dnveDataStore.UpdateLastMessageTime(id);
             
             if (!_receivers.TryGetValue(message.Type, out var handler))
             {
@@ -60,7 +60,7 @@ namespace MistNet.DNVE3
             message.Sender = PeerRepository.SelfId;
             if (message.Receiver != null)
             {
-                _dnveDataStore.Neighbors[message.Receiver].LastMessageTime = System.DateTime.UtcNow;
+                _dnveDataStore.UpdateLastMessageTime(message.Receiver);
             }
             var data = MemoryPackSerializer.Serialize(message);
             SendRaw(data, message.Receiver);
