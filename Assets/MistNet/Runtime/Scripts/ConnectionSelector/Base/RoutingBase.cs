@@ -55,6 +55,11 @@ namespace MistNet
             if (sourceId == PeerRepository.SelfId) return;
             if (sourceId == fromId) return;
 
+            if (_expireAt.TryGetValue(sourceId, out var expireTime))
+            {
+                if (DateTime.UtcNow < expireTime) return;
+            }
+            
             MistLogger.Info($"[RoutingTable] Add {sourceId} from {fromId}");
 
             _routingTable[sourceId] = fromId;
