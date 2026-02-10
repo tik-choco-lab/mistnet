@@ -83,7 +83,7 @@ public class SphericalHistogramTests
         }
 
         // 固定サイズ空間密度
-        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length);
+        var densityMap = SpatialDensityUtils.CreateSpatialDensity(centerOld, nodes, nodes.Length, 100f);
         var densityMapProj = SpatialDensityUtils.ProjectSpatialDensity(densityMap, centerOld, centerNew);
 
         // 近似分布を方向ごとに合計
