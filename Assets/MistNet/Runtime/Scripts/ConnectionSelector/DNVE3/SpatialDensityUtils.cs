@@ -59,12 +59,12 @@ namespace MistNet.Utils
             return directions;
         }
 
-        public static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, int distBins = DefaultDistBins)
+        public static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, int distBins = DefaultDistBins)
         {
-            return CreateSphericalHistogram(center, nodes, Directions, distBins);
+            return CreateSpatialDensity(center, nodes, Directions, distBins);
         }
 
-        private static float[,] CreateSphericalHistogram(Vector3 center, Vector3[] nodes, Vector3[] directions,
+        private static float[,] CreateSpatialDensity(Vector3 center, Vector3[] nodes, Vector3[] directions,
             int distBins = DefaultDistBins)
         {
             var dirCount = directions.Length;
@@ -97,13 +97,13 @@ namespace MistNet.Utils
             return hist;
         }
 
-        public static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
+        public static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             int distBins = DefaultDistBins)
         {
-            return ProjectSphericalHistogram(hist, oldCenter, newCenter, Directions, distBins);
+            return ProjectSpatialDensity(hist, oldCenter, newCenter, Directions, distBins);
         }
 
-        private static float[,] ProjectSphericalHistogram(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
+        private static float[,] ProjectSpatialDensity(float[,] hist, Vector3 oldCenter, Vector3 newCenter,
             Vector3[] directions, int distBins = DefaultDistBins)
         {
             var offset = newCenter - oldCenter;
@@ -127,21 +127,21 @@ namespace MistNet.Utils
             return projected;
         }
 
-        public static float[,] MergeHistograms(
+        public static float[,] MergeSpatialDensity(
             float[,] selfHist, Vector3 selfCenter,
             float[,] otherHist, Vector3 otherCenter,
             int distBins = DefaultDistBins)
         {
-            return MergeHistograms(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
+            return MergeSpatialDensity(selfHist, selfCenter, otherHist, otherCenter, Directions, distBins);
         }
 
-        private static float[,] MergeHistograms(
+        private static float[,] MergeSpatialDensity(
             float[,] selfHist, Vector3 selfCenter,
             float[,] otherHist, Vector3 otherCenter,
             Vector3[] directions,
             int distBins = DefaultDistBins)
         {
-            var otherProjected = ProjectSphericalHistogram(otherHist, otherCenter, selfCenter, directions, distBins);
+            var otherProjected = ProjectSpatialDensity(otherHist, otherCenter, selfCenter, directions, distBins);
             var dirs = directions.Length;
             var merged = new float[dirs, distBins];
 

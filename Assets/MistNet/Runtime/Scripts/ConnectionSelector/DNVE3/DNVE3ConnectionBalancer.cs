@@ -240,7 +240,7 @@ namespace MistNet.DNVE3
                 var otherDensityMap = nodeData.Data.DensityMap;
                 var otherCenter = nodeData.Data.Position;
 
-                var projected = SpatialDensityUtils.ProjectSphericalHistogram(
+                var projected = SpatialDensityUtils.ProjectSpatialDensity(
                     otherDensityMap, otherCenter.ToVector3(), selfCenter.ToVector3(), OptConfig.Data.SpatialDistanceLayers
                 );
 

@@ -57,7 +57,7 @@ namespace MistNet.Test
             var dummyNodes = nodeList.ToArray();
 
             // A. Prepare Original Data
-            var hists = SpatialDensityUtils.CreateSphericalHistogram(selfPos, dummyNodes, BinCount);
+            var hists = SpatialDensityUtils.CreateSpatialDensity(selfPos, dummyNodes, BinCount);
             var spatialData = new SpatialDensityData { DensityMap = hists, Position = new Position(selfPos) };
 
             // --- 1. CURRENT APPROACH ---
